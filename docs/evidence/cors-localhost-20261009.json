@@ -1,0 +1,10 @@
+{
+  "observedAt": "2026-10-09T03:48:38.567Z",
+  "origin": "http://127.0.0.1:5173",
+  "endpoint": "/rpc",
+  "status": 400,
+  "allowOrigin": null,
+  "allowed": false,
+  "body": "{\"error\":\"local acceptance request refused\"}",
+  "scope": "Read-only OPTIONS probe; no RPC, custody, AUTH, inference or transaction."
+}

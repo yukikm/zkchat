@@ -1,0 +1,220 @@
+{
+  "timestamp": "2026-10-09T05:10:41.355Z",
+  "observations": [
+    {
+      "path": "/releases/public-devnet-20261008-a/profile-sdk-0.2.0-devnet.3.json",
+      "status": 200,
+      "rpc": null
+    },
+    {
+      "path": "/releases/public-devnet-20261008-a/assets/bundle.json",
+      "status": 200,
+      "rpc": null
+    },
+    {
+      "path": "/releases/public-devnet-20261008-a/assets/manifest.json",
+      "status": 200,
+      "rpc": null
+    },
+    {
+      "path": "/releases/public-devnet-20261008-a/assets/idl.bin",
+      "status": 200,
+      "rpc": null
+    },
+    {
+      "path": "/releases/public-devnet-20261008-a/assets/requestPk.bin",
+      "status": 200,
+      "rpc": null
+    },
+    {
+      "path": "/releases/public-devnet-20261008-a/assets/requestVk.bin",
+      "status": 200,
+      "rpc": null
+    },
+    {
+      "path": "/releases/public-devnet-20261008-a/assets/withdrawalPk.bin",
+      "status": 200,
+      "rpc": null
+    },
+    {
+      "path": "/releases/public-devnet-20261008-a/assets/withdrawalVk.bin",
+      "status": 200,
+      "rpc": null
+    },
+    {
+      "path": "/releases/public-devnet-20261008-a/assets/treePk.bin",
+      "status": 200,
+      "rpc": null
+    },
+    {
+      "path": "/releases/public-devnet-20261008-a/assets/treeVk.bin",
+      "status": 200,
+      "rpc": null
+    },
+    {
+      "path": "/releases/public-devnet-20261008-a/assets/treeSourceBundle.bin",
+      "status": 200,
+      "rpc": null
+    },
+    {
+      "path": "/releases/public-devnet-20261008-a/assets/treeVerifierConstants.bin",
+      "status": 200,
+      "rpc": null
+    },
+    {
+      "path": "/releases/public-devnet-20261008-a/assets/additional-0.bin",
+      "status": 200,
+      "rpc": null
+    },
+    {
+      "path": "/releases/public-devnet-20261008-a/assets/additional-1.bin",
+      "status": 200,
+      "rpc": null
+    },
+    {
+      "path": "/releases/public-devnet-20261008-a/assets/additional-2.bin",
+      "status": 200,
+      "rpc": null
+    },
+    {
+      "path": "/releases/public-devnet-20261008-a/assets/additional-3.bin",
+      "status": 200,
+      "rpc": null
+    },
+    {
+      "path": "/releases/public-devnet-20261008-a/assets/prover.wasm",
+      "status": 200,
+      "rpc": null
+    },
+    {
+      "path": "/releases/public-devnet-20261008-a/assets/Apache-2.0.txt",
+      "status": 200,
+      "rpc": null
+    },
+    {
+      "path": "/releases/public-devnet-20261008-a/assets/BUNDLE-PROVENANCE.md",
+      "status": 200,
+      "rpc": null
+    },
+    {
+      "path": "/releases/public-devnet-20261008-a/assets/PROVENANCE.md",
+      "status": 200,
+      "rpc": null
+    },
+    {
+      "path": "/releases/public-devnet-20261008-a/assets/Rust-dependencies.json",
+      "status": 200,
+      "rpc": null
+    },
+    {
+      "path": "/releases/public-devnet-20261008-a/assets/Rust-notices-1.json",
+      "status": 200,
+      "rpc": null
+    },
+    {
+      "path": "/releases/public-devnet-20261008-a/assets/Rust-notices-2.json",
+      "status": 200,
+      "rpc": null
+    },
+    {
+      "path": "/releases/public-devnet-20261008-a/assets/Solana-zkAPI-LICENSE.txt",
+      "status": 200,
+      "rpc": null
+    },
+    {
+      "path": "/releases/public-devnet-20261008-a/assets/ethereum-VENDORED-045b444.md",
+      "status": 200,
+      "rpc": null
+    },
+    {
+      "path": "/releases/public-devnet-20261008-a/assets/mingyech-README-8b2d4e3.md",
+      "status": 200,
+      "rpc": null
+    },
+    {
+      "path": "/releases/public-devnet-20261008-a/assets/mingyech-setup-README-8b2d4e3.md",
+      "status": 200,
+      "rpc": null
+    },
+    {
+      "path": "/rpc",
+      "status": 200,
+      "rpc": {
+        "method": "getGenesisHash",
+        "resultType": "string"
+      }
+    },
+    {
+      "path": "/rpc",
+      "status": 200,
+      "rpc": {
+        "method": "getAccountInfo",
+        "resultType": "object"
+      }
+    },
+    {
+      "path": "/zkapi/v1/config",
+      "status": 200,
+      "rpc": null
+    },
+    {
+      "path": "/zkapi/v1/catalog",
+      "status": 200,
+      "rpc": null
+    },
+    {
+      "path": "/zkapi/v1/tree/snapshot",
+      "status": 200,
+      "rpc": null
+    },
+    {
+      "path": "/zkapi/v1/tree/snapshots/1ed97a16581c8c4f005eca9d21d56d3c7bb75a74c5479fe67386fe1bcfd993f1.json",
+      "status": 200,
+      "rpc": null
+    },
+    {
+      "path": "/rpc",
+      "status": 200,
+      "rpc": {
+        "method": "getGenesisHash",
+        "resultType": "string"
+      }
+    },
+    {
+      "path": "/rpc",
+      "status": 200,
+      "rpc": {
+        "method": "getBlock",
+        "resultType": "object"
+      }
+    },
+    {
+      "path": "/rpc",
+      "status": 200,
+      "rpc": {
+        "method": "getMultipleAccounts",
+        "resultType": "object"
+      }
+    },
+    {
+      "path": "/rpc",
+      "status": 200,
+      "rpc": {
+        "method": "getBlock",
+        "resultType": "object"
+      }
+    },
+    {
+      "path": "/relay-status",
+      "status": 200,
+      "rpc": null
+    },
+    {
+      "path": "/zkapi/v1/readiness",
+      "status": 200,
+      "rpc": null
+    }
+  ],
+  "failures": [],
+  "visibleResult": "Connection settings\nChat with AI using your wallet.\n\nPay usage charges with USDC on Solana. Network fees require SOL.\n\nSolana Devnet\nSDK 0.2.0-devnet.3 · preview artifact\nDeployment\nSolana zkAPI · Public Devnet\nRoute\nDirect\nPublic Devnet connection\n\nCheck the live service before connecting your wallet. This check needs no funds or signatures.\n\nCheck public connection\n\n10 SDK checks passed. New requests enabled. No invitation required. Provider credit is checked when you send. Checks run again before new work. Last checked: 2:10:41 PM.\n\nInvitation for restricted deployments\n1. Select a wallet\n\nNo supported wallet was found. Enable a Wallet Standard wallet such as Phantom or Solflare. Newly available wallets appear here automatically.\n\nVerify connection\n\nPrompts are sent to the AI provider. In proxy mode, the operator can also read them. ZK proofs do not guarantee response accuracy or network anonymity.\n\nExplore the interface first\nTry the demo"
+}

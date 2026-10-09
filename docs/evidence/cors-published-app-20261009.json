@@ -1,0 +1,10 @@
+{
+  "observedAt": "2026-10-09T03:48:58.167Z",
+  "origin": "https://d30nr98svcwdoe.cloudfront.net",
+  "endpoint": "/rpc",
+  "status": 204,
+  "allowOrigin": "https://d30nr98svcwdoe.cloudfront.net",
+  "allowed": true,
+  "body": "",
+  "scope": "Read-only OPTIONS probe; no RPC, custody, AUTH, inference or transaction."
+}

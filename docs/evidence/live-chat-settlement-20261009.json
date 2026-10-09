@@ -1,0 +1,9 @@
+{
+  "observedAt": "2026-10-09T05:03:11.234Z",
+  "origin": "http://localhost:5173/",
+  "billing": [
+    "Settled · 0.00 USDC"
+  ],
+  "conversation": "Y\nYou\n\n接続テストです。ゼロ知識証明とは何か、日本語で短い一文で説明してください。\n\nzkchat\nopenai/gpt-4o-mini\n\nゼロ知識証明とは、一方が他方に特定の知識を持っていることを証明しつつ、その知識自体を明かさない暗号技術の手法です。\n\nSettled · 0.00 USDC",
+  "scope": "Visible UI from real ZKAPI request, followed by explicit recovery. SDK-reported verified charge; not independent provider invoice reconciliation."
+}

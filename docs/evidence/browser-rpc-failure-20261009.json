@@ -1,0 +1,9 @@
+{
+  "origin": "http://127.0.0.1:5173",
+  "scope": "Actual Chromium read-only preflight, no wallet, custody, AUTH, inference or transaction",
+  "errors": [
+    "Access to fetch at 'https://d366buuvadnp3.cloudfront.net/rpc' from origin 'http://127.0.0.1:5173' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.",
+    "Failed to load resource: net::ERR_FAILED"
+  ],
+  "startedAt": "2026-10-09T03:45:52.873000+00:00"
+}

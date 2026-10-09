@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>zkchat · Wallet connection check</title>
+  </head>
+  <body>
+    <main style="max-width: 640px; margin: 40px auto; padding: 24px">
+      <h1>Wallet connection check</h1>
+      <p>
+        Development diagnostic: connect directly through Wallet Standard to
+        isolate extension errors from the Kit connector and ZKAPI. No signature,
+        transaction, API authorization, or storage creation.
+      </p>
+      <label for="wallet">Wallet</label>
+      <select id="wallet">
+        <option value="">Select wallet</option>
+      </select>
+      <button id="connect" class="primary" disabled>
+        Check Wallet Standard connection
+      </button>
+      <p id="result" role="status">Select a wallet to begin.</p>
+      <a href="/">Return to zkchat</a>
+    </main>
+    <script type="module" src="/src/wallet-check.ts"></script>
+  </body>
+</html>

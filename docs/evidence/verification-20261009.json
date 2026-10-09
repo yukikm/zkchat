@@ -1,0 +1,32 @@
+{
+  "recordedAt": "2026-10-09T05:12:05.911929+00:00",
+  "sdk": "0.2.0-devnet.3",
+  "checks": {
+    "sdkArchiveSha256": "pass",
+    "buildAndTypecheck": "pass",
+    "unitTests": {
+      "passed": 88,
+      "files": 5
+    },
+    "fixtureE2E": {
+      "passed": 20,
+      "liveOptInSkipped": 2
+    },
+    "publicLiveBrowser": {
+      "passed": 2,
+      "port": 5184,
+      "freshViteCache": true,
+      "signing": false,
+      "inference": false
+    },
+    "productionDependencyAudit": {
+      "vulnerabilities": 0
+    }
+  },
+  "initialFailuresResolved": [
+    "Initial public browser custody test reset due to late Vite Worker dependency optimization; eagerly optimize prover-worker and verify with fresh cache.",
+    "Typecheck rejected process in Vite configuration; use Vite loadEnv for test cache path."
+  ],
+  "financialScope": "One actual Solflare-funded session: deposit 2 USDC, one Japanese AI request, recovery and SDK-reported zero-micro-USDC settlement, withdrawal of 2 USDC. Does not establish provider final invoice accuracy, mainnet, multi-user, or continuous availability.",
+  "upstreamModified": false
+}

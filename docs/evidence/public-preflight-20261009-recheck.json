@@ -1,0 +1,68 @@
+{
+  "startedAt": "2026-10-09T04:45:19.442Z",
+  "sdk": "0.2.0-devnet.3",
+  "node": "v24.19.0",
+  "profileSha256": "449657cc3fe90f12878236b83d68ada8077e3c56e67ccb8268c5f301e69e02e5",
+  "checks": [
+    {
+      "stage": "profile",
+      "passed": true,
+      "profileId": "zkapi-public-devnet-20261008-a",
+      "models": [
+        "openai/gpt-4o-mini"
+      ],
+      "wasmBytes": 3678975
+    },
+    {
+      "stage": "preflight",
+      "passed": true,
+      "profileId": "zkapi-public-devnet-20261008-a",
+      "profileSha256": "449657cc3fe90f12878236b83d68ada8077e3c56e67ccb8268c5f301e69e02e5",
+      "deploymentId": "public-devnet-20261008-a",
+      "pool": "Cx8DbA49UCuASoc3goLCU9ro25eWVtcGMbvfPPJsSQzV",
+      "manifestHash": "b97e200769be24448a51999346a28d0ca497892d68212f517b2b9bb4cc1a4643",
+      "slot": "509062256",
+      "paused": false,
+      "chainAllowsNewOperations": true,
+      "operatorAdmission": "unverified",
+      "models": [
+        "openai/gpt-4o-mini"
+      ],
+      "snapshot": {
+        "root": "0x2bb43759c24665d98a33afa8d5094817d359d5e4c72a45b45a2a563176d37933",
+        "slot": 509062256,
+        "sequence": "5",
+        "nextNoteId": 2,
+        "clock": "1791521126",
+        "paused": false,
+        "sourceSlot": 509062242,
+        "pendingCount": 0,
+        "activeCount": 0
+      },
+      "checks": [
+        "profile",
+        "assets",
+        "manifest",
+        "tariffs",
+        "genesis",
+        "finalized_pool",
+        "control_config",
+        "catalog",
+        "shared_snapshot",
+        "chain_clock"
+      ]
+    },
+    {
+      "stage": "readiness",
+      "passed": true,
+      "admission": "enabled",
+      "invitationRequired": false,
+      "recovery": "enabled",
+      "servicesAvailable": true,
+      "expiresAt": 1791521132000,
+      "checkedAt": 1791521127471
+    }
+  ],
+  "scope": "Read-only public HTTP and SDK preflight. No custody, signatures, AUTH or inference.",
+  "completedAt": "2026-10-09T04:45:27.471Z"
+}

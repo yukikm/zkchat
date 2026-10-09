@@ -1,0 +1,61 @@
+{
+  "observedAt": "2026-10-09T04:56:27.542Z",
+  "signature": "42dAGQH9KZ2wwN9p8Ho5wRJJCXhq9DEXMECUVoAuwbK6mgzQMY6PL4H1kCHS3ThivprJGpihWNh2xyRd8gqRiSV9",
+  "commitment": "finalized",
+  "slot": "509064887",
+  "error": null,
+  "feeLamports": "5000",
+  "preTokenBalances": [
+    {
+      "accountIndex": 3,
+      "mint": "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU",
+      "owner": "nHSjCbSd3XD3UwGy5uAAUqEfDf4kBDYaJZ4eF82nCDZ",
+      "programId": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+      "uiTokenAmount": {
+        "amount": "56010000",
+        "decimals": 6,
+        "uiAmount": 56.01,
+        "uiAmountString": "56.01"
+      }
+    },
+    {
+      "accountIndex": 4,
+      "mint": "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU",
+      "owner": "n37aAsYKS2gHRPfLEFpY9RaWbx1zeiVGdJTLhnWRWQS",
+      "programId": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+      "uiTokenAmount": {
+        "amount": "0",
+        "decimals": 6,
+        "uiAmount": null,
+        "uiAmountString": "0"
+      }
+    }
+  ],
+  "postTokenBalances": [
+    {
+      "accountIndex": 3,
+      "mint": "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU",
+      "owner": "nHSjCbSd3XD3UwGy5uAAUqEfDf4kBDYaJZ4eF82nCDZ",
+      "programId": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+      "uiTokenAmount": {
+        "amount": "54010000",
+        "decimals": 6,
+        "uiAmount": 54.01,
+        "uiAmountString": "54.01"
+      }
+    },
+    {
+      "accountIndex": 4,
+      "mint": "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU",
+      "owner": "n37aAsYKS2gHRPfLEFpY9RaWbx1zeiVGdJTLhnWRWQS",
+      "programId": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+      "uiTokenAmount": {
+        "amount": "2000000",
+        "decimals": 6,
+        "uiAmount": 2,
+        "uiAmountString": "2"
+      }
+    }
+  ],
+  "scope": "Public finalized Devnet transaction only. Signed by the user via Solflare; no private journal, witness, session credential or provider key."
+}

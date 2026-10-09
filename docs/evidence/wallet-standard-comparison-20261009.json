@@ -1,0 +1,12 @@
+{
+  "date": "2026-10-09 JST",
+  "appOrigin": "http://localhost:5173",
+  "diagnosticPage": "/wallet-check.html",
+  "observations": [
+    {"wallet": "Phantom", "path": "Kit wallet plugin 0.21.0", "result": "connection failed", "code": -32603},
+    {"wallet": "Phantom", "path": "direct Wallet Standard standard:connect", "result": "connection failed", "code": -32603, "visibleMessage": "This check did not use the Kit connector or ZKAPI."},
+    {"wallet": "Solflare", "path": "direct Wallet Standard standard:connect", "result": "connected", "accounts": 1},
+    {"wallet": "Solflare", "path": "Kit wallet plugin 0.21.0", "result": "connected", "accounts": 1}
+  ],
+  "scope": "Observed in the user's Chrome after explicit wallet choice and approval. No signatures, transactions or inference. Phantom extension root cause remains unknown; failure is reproducible without Kit and ZKAPI."
+}

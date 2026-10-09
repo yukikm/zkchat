@@ -1,0 +1,2325 @@
+{
+  "schema": 1,
+  "kind": "installed_production_dependency_notice_inventory",
+  "packageLockSha256": "b1d10a19f69e38f6ad22c74a9ac9a4addfac73475613fa4cfc864ef4c5e14245",
+  "applicationPackageJsonSha256": "b27295ae54ee0d03a5746f3ac51e2d07ece25165094ce5a7121e5751839d7499",
+  "collectionSha256": "b7ca40c3da00ba69fb998f89ec4b5aa11b784ecb34db92a5b1d97136a9d24d62",
+  "collectionBytes": 247813,
+  "scope": "Installed npm production closure; exact notice bytes preserved; overinclusive relative to Vite bundle",
+  "fontPackages": [
+    "@fontsource-variable/dm-sans",
+    "@fontsource-variable/noto-sans-jp"
+  ],
+  "packages": [
+    {
+      "name": "@fontsource-variable/dm-sans",
+      "version": "5.3.0",
+      "license": "OFL-1.1",
+      "lockIntegrity": "sha512-BpUG5bqePiDFMBM4ZtLSlPdAIOM990uB1dlXzIf4aw21yQR7BmykedLXXXMqGWsR18aMLOsbWccwJNh3ztTQaA==",
+      "packageJsonSha256": "087c0502e4d457ac6e0c06afa21d87f900d0efa509aeafe33a352309ab9bccec",
+      "sources": [
+        {
+          "path": "node_modules/@fontsource-variable/dm-sans/LICENSE",
+          "sha256": "6fbd040a29c2037a765dfb9f2561e9965b5c95c6dcb5dce516089d63d5f17af7",
+          "bytes": 4502
+        }
+      ]
+    },
+    {
+      "name": "@fontsource-variable/noto-sans-jp",
+      "version": "5.3.0",
+      "license": "OFL-1.1",
+      "lockIntegrity": "sha512-XVL9GfGBRjj523v9w3Bctu4mNq7E5rUa+AMZm8DK1EM3LAGlKC3DZMvuqkLn4DB4TwwoAjcsJUCiRpUTDzzOkw==",
+      "packageJsonSha256": "2fdd386d785672c813fd1030ef382f70f583eee390cd7f32d95aa0a62eb542f6",
+      "sources": [
+        {
+          "path": "node_modules/@fontsource-variable/noto-sans-jp/LICENSE",
+          "sha256": "18aabf190848725e2576eefb5c29ba06aac1029d02132252a7f312eac2e50cf3",
+          "bytes": 4314
+        }
+      ]
+    },
+    {
+      "name": "@solana/accounts",
+      "version": "8.4.0",
+      "license": "MIT",
+      "lockIntegrity": "sha512-YklERWeG5UD2fzxR0zwWgzCVyuHRqg6eTIyGBAe8hOWIim8TYS1aPBVFAlVkSZiAXaFRxmu1E3IRfeCe/QSQmg==",
+      "packageJsonSha256": "2e2548863a1a654cb18047da782cadbcc39dc7f5727d81a81e15aea1c81c5eb2",
+      "sources": [
+        {
+          "path": "node_modules/@solana/accounts/LICENSE",
+          "sha256": "c181f3e6911f515d2b5d18513f8e24fba252c36856978fa80b01249fa813453f",
+          "bytes": 1060
+        }
+      ]
+    },
+    {
+      "name": "@solana/addresses",
+      "version": "8.4.0",
+      "license": "MIT",
+      "lockIntegrity": "sha512-5nF1AAaCtmaSEHcFIIs6TPMIWplaYBxeJ2ZR0z5oPIY+fjpWb9lxCuJyYQxYKHIvp4OdSiueW0q11yXrnyqM+A==",
+      "packageJsonSha256": "2d6dcfb3dfba8f11ede17753dc00489cf9e9f1f1ea6c8b41bef96e9bc4a1f18d",
+      "sources": [
+        {
+          "path": "node_modules/@solana/addresses/LICENSE",
+          "sha256": "c181f3e6911f515d2b5d18513f8e24fba252c36856978fa80b01249fa813453f",
+          "bytes": 1060
+        }
+      ]
+    },
+    {
+      "name": "@solana/assertions",
+      "version": "8.4.0",
+      "license": "MIT",
+      "lockIntegrity": "sha512-Pg/PKw/fA+KIHp6X6aGx4fIkr6S7k7wUw7v8Rkr3TkY4tzrbjZDnXEgv1/8dxGh+IX3UNb+5stD8rtAAscxW1g==",
+      "packageJsonSha256": "08f2c1813ba278c27c4c9d2fffe62244f297092922f4dbc59f20192a29f97d90",
+      "sources": [
+        {
+          "path": "node_modules/@solana/assertions/LICENSE",
+          "sha256": "c181f3e6911f515d2b5d18513f8e24fba252c36856978fa80b01249fa813453f",
+          "bytes": 1060
+        }
+      ]
+    },
+    {
+      "name": "@solana/codecs",
+      "version": "8.4.0",
+      "license": "MIT",
+      "lockIntegrity": "sha512-mY7CpMQ4nbecxQIyvslEw7nEreiY0QVvg+aZOPbrBjIiZxu2qj9fyhCrDXJdQlcJ+aYh1sInbR8KARpmHgJLQg==",
+      "packageJsonSha256": "82e4ec8db32ce248ef10a03bdcd0ce77df25d673271fa14d83af6156b5f86109",
+      "sources": [
+        {
+          "path": "node_modules/@solana/codecs/LICENSE",
+          "sha256": "c181f3e6911f515d2b5d18513f8e24fba252c36856978fa80b01249fa813453f",
+          "bytes": 1060
+        }
+      ]
+    },
+    {
+      "name": "@solana/codecs-core",
+      "version": "8.4.0",
+      "license": "MIT",
+      "lockIntegrity": "sha512-HOsIB3Ic/qnlXv4V0Q5gpxFxBy5pBiINpEMtCzGtHRnj7mI3Amsh8HKR7x9nbP1SBDuDlOrP/Mds9yIqyKn8TQ==",
+      "packageJsonSha256": "7c1abe44906155df69f8a8309a5fb0b3e3bd2398f154ec2ab12f79eca15f303b",
+      "sources": [
+        {
+          "path": "node_modules/@solana/codecs-core/LICENSE",
+          "sha256": "c181f3e6911f515d2b5d18513f8e24fba252c36856978fa80b01249fa813453f",
+          "bytes": 1060
+        }
+      ]
+    },
+    {
+      "name": "@solana/codecs-data-structures",
+      "version": "8.4.0",
+      "license": "MIT",
+      "lockIntegrity": "sha512-qx9EnKGZzpiNonUoYNMZC4gfw86jfu4uShh0bcWb1o9dPU1kgZ/xCsCgTRf/5WEPZU2fbPNGtvVMr4dKWCTjzw==",
+      "packageJsonSha256": "628f4ac39e302e6d666a7014e6263f304b07d5690a11f97ad88b72db809d4a86",
+      "sources": [
+        {
+          "path": "node_modules/@solana/codecs-data-structures/LICENSE",
+          "sha256": "c181f3e6911f515d2b5d18513f8e24fba252c36856978fa80b01249fa813453f",
+          "bytes": 1060
+        }
+      ]
+    },
+    {
+      "name": "@solana/codecs-numbers",
+      "version": "8.4.0",
+      "license": "MIT",
+      "lockIntegrity": "sha512-A9SlaBylkTFjtBiVrFUX3We5SZK4L/Q6SKpPyazZQ1MTCO0FyTuKyZwDART2Pzg+C/5xLWjSns+FSTR8FhD/Rg==",
+      "packageJsonSha256": "cf41a086dd974d64cc2db7a6cb6c63b9149bc8356dddf1efb6e1cc05a547065a",
+      "sources": [
+        {
+          "path": "node_modules/@solana/codecs-numbers/LICENSE",
+          "sha256": "c181f3e6911f515d2b5d18513f8e24fba252c36856978fa80b01249fa813453f",
+          "bytes": 1060
+        }
+      ]
+    },
+    {
+      "name": "@solana/codecs-strings",
+      "version": "8.4.0",
+      "license": "MIT",
+      "lockIntegrity": "sha512-jQhRrJT3ZoeDoSA5DtGxPmI5ODJi3STTCrtIXIniLr1J1cXUSlPfYe8BKOurNwC+SlEJyRmKfpVze+qeLacmmw==",
+      "packageJsonSha256": "4b89e4869825dd2804fc80cc64c859862e5a35307d230786fdbd040e259f39a3",
+      "sources": [
+        {
+          "path": "node_modules/@solana/codecs-strings/LICENSE",
+          "sha256": "c181f3e6911f515d2b5d18513f8e24fba252c36856978fa80b01249fa813453f",
+          "bytes": 1060
+        }
+      ]
+    },
+    {
+      "name": "@solana/errors",
+      "version": "8.4.0",
+      "license": "MIT",
+      "lockIntegrity": "sha512-t59ageeK8xa6LrCzj93QEhYtVr5t3GdnTH3qJMGqrCFMYM6IvNFLljlz4N75X+xYktj3sRABTrNoCfekeQlckA==",
+      "packageJsonSha256": "3ae3398afa7b1a9af3ad5f82d010acc6e3496b690cf365875a04a10eb5ec9021",
+      "sources": [
+        {
+          "path": "node_modules/@solana/errors/LICENSE",
+          "sha256": "c181f3e6911f515d2b5d18513f8e24fba252c36856978fa80b01249fa813453f",
+          "bytes": 1060
+        }
+      ]
+    },
+    {
+      "name": "@solana/fast-stable-stringify",
+      "version": "8.4.0",
+      "license": "MIT",
+      "lockIntegrity": "sha512-XKVKeocf0T9hjmUHKrOG+exxfZmv+IPQrdkvuTdegyB6V5X4aOlR6IfrJQiTMsJx6IY4EAW3aisxTgZmH5OlYg==",
+      "packageJsonSha256": "a18b4b694a45c2245fe3970f801427ff447954a7daab6a9f41e323cdd44095c6",
+      "sources": [
+        {
+          "path": "node_modules/@solana/fast-stable-stringify/LICENSE",
+          "sha256": "99209ce2d46c6f9d3493bee0388a6c54f6c0c2c610bdbc99074f4575001b75f6",
+          "bytes": 1101
+        }
+      ]
+    },
+    {
+      "name": "@solana/fixed-points",
+      "version": "8.4.0",
+      "license": "MIT",
+      "lockIntegrity": "sha512-YzWZDPn3B6o3j+leuOhxH7Soip12NJVx5lJaRpEeBB4AcJczTiKGCQMSsxQglGSRHc0jwfrH4+Uxla1BlCkgBg==",
+      "packageJsonSha256": "978e57781500798a7d4f9024bd3264f9dce64d45d79a85b0bae59dc12af01bb3",
+      "sources": [
+        {
+          "path": "node_modules/@solana/fixed-points/LICENSE",
+          "sha256": "c181f3e6911f515d2b5d18513f8e24fba252c36856978fa80b01249fa813453f",
+          "bytes": 1060
+        }
+      ]
+    },
+    {
+      "name": "@solana/functional",
+      "version": "8.4.0",
+      "license": "MIT",
+      "lockIntegrity": "sha512-q5pEoqAtEGFsJXK3mnlemLinzRJHvOMjGmuLoWU6c33NQHjfpTEz80hjnRA25BABMLC0l/vhymeLh+YhUv/szw==",
+      "packageJsonSha256": "6e5ad72c54afa26bef8cb0e10615105fd66484b48239b0cb480375f55b3e0caf",
+      "sources": [
+        {
+          "path": "node_modules/@solana/functional/LICENSE",
+          "sha256": "c181f3e6911f515d2b5d18513f8e24fba252c36856978fa80b01249fa813453f",
+          "bytes": 1060
+        }
+      ]
+    },
+    {
+      "name": "@solana/instruction-plans",
+      "version": "8.4.0",
+      "license": "MIT",
+      "lockIntegrity": "sha512-+qY9d2Jzt2uxzjXs/ZZi448MbpMH0fiB3pWy8krUbCxW8eTl8tMuqIZvltMe05FldFR432xi6xFeMVl0Bw4CWA==",
+      "packageJsonSha256": "225b6cf71dfcb4f94f4221057460fed7802fbd9eee531bf58f9c2b4dd3511224",
+      "sources": [
+        {
+          "path": "node_modules/@solana/instruction-plans/LICENSE",
+          "sha256": "c181f3e6911f515d2b5d18513f8e24fba252c36856978fa80b01249fa813453f",
+          "bytes": 1060
+        }
+      ]
+    },
+    {
+      "name": "@solana/instructions",
+      "version": "8.4.0",
+      "license": "MIT",
+      "lockIntegrity": "sha512-muT/BBKDTl0UsHsnKySVaNBWIcHbs8nn8nOd1GI9J0OvX4gV/pNtaJfrEW+ETX9SjcIB4AcBQZsIr3LjavvrKQ==",
+      "packageJsonSha256": "51c341ebe985e32aff0e315d3af36588e7a465f282dce2f58c1fa250ee4de367",
+      "sources": [
+        {
+          "path": "node_modules/@solana/instructions/LICENSE",
+          "sha256": "c181f3e6911f515d2b5d18513f8e24fba252c36856978fa80b01249fa813453f",
+          "bytes": 1060
+        }
+      ]
+    },
+    {
+      "name": "@solana/keys",
+      "version": "8.4.0",
+      "license": "MIT",
+      "lockIntegrity": "sha512-arjjFlJLBnGq0PWWswqO1n8kHxW02EbP9KTCoZo/TYDcSDcPdC4gL4fjAxbP6t5fVXTIu1tM3QGmab6FZxnmJg==",
+      "packageJsonSha256": "12c604eaf332e61911d5fc21715b70a0f84958302c1cad6d3afa9eeeafd4696c",
+      "sources": [
+        {
+          "path": "node_modules/@solana/keys/LICENSE",
+          "sha256": "c181f3e6911f515d2b5d18513f8e24fba252c36856978fa80b01249fa813453f",
+          "bytes": 1060
+        }
+      ]
+    },
+    {
+      "name": "@solana/kit",
+      "version": "8.4.0",
+      "license": "MIT",
+      "lockIntegrity": "sha512-jbexijXuCqQ7MV5lFzPDEsVScreFENkhUOUVofniTkBsfi67cYGgEeGzJa7oskHGyXcWaEogW0VPVh4ep3cWnw==",
+      "packageJsonSha256": "41fe1d0ca8c53ebd685cc7f16087076070b1d5df931cc32778f9f921bfd3b67a",
+      "sources": [
+        {
+          "path": "node_modules/@solana/kit/LICENSE",
+          "sha256": "c181f3e6911f515d2b5d18513f8e24fba252c36856978fa80b01249fa813453f",
+          "bytes": 1060
+        }
+      ]
+    },
+    {
+      "name": "@solana/nominal-types",
+      "version": "8.4.0",
+      "license": "MIT",
+      "lockIntegrity": "sha512-01LNXtH3THaR0SFXbJ9iXhaZAVBfLJoHWYC/x2GdNIontc45qMX8wFtglZe4RaT528/kre6J+f+4NGGGd4+YPA==",
+      "packageJsonSha256": "28298b491bc721845fe7d3318490d27b3f695ae5f6dc9c2576f28080bffa9e7f",
+      "sources": [
+        {
+          "path": "node_modules/@solana/nominal-types/LICENSE",
+          "sha256": "71eb6e587a0bb038abb51806efbda0fd2c152d38501625829497c0570d674827",
+          "bytes": 1064
+        }
+      ]
+    },
+    {
+      "name": "@solana/offchain-messages",
+      "version": "8.4.0",
+      "license": "MIT",
+      "lockIntegrity": "sha512-vE28aDf14XldqoYGwwRG1OvsUKVal1FTxM+O1p1bPHho0bQgUiHvqtsDvQtTZBPJpx7d4l5Xo7TKN4DVZ+VgTQ==",
+      "packageJsonSha256": "98059c5a3f59e6f64005c35951f7a81c5a83f149f8b845ab302ecd22dfef05ef",
+      "sources": [
+        {
+          "path": "node_modules/@solana/offchain-messages/LICENSE",
+          "sha256": "c181f3e6911f515d2b5d18513f8e24fba252c36856978fa80b01249fa813453f",
+          "bytes": 1060
+        }
+      ]
+    },
+    {
+      "name": "@solana/options",
+      "version": "8.4.0",
+      "license": "MIT",
+      "lockIntegrity": "sha512-3fnmCT/WNWOMpD5uhyi1/aI4fwtb13MQSEqiTqsboZhHClli1WAOyPhyC5I/YeJ7wF+RMzX8UE/11KU9IMazNA==",
+      "packageJsonSha256": "d44bfef3f5cc915c54579a541fcd77229e806c2596c289a7984a2abc264a9ad7",
+      "sources": [
+        {
+          "path": "node_modules/@solana/options/LICENSE",
+          "sha256": "c181f3e6911f515d2b5d18513f8e24fba252c36856978fa80b01249fa813453f",
+          "bytes": 1060
+        }
+      ]
+    },
+    {
+      "name": "@solana/plugin-core",
+      "version": "8.4.0",
+      "license": "MIT",
+      "lockIntegrity": "sha512-mRB5iQ+ZEISGyHnFvFDUJyDmK7YbPxmsJk38SKg3ncxqcSxMEhK4hZ7kJBo2UMsyDX1Sn2VSGJYPhZwdOa3s8w==",
+      "packageJsonSha256": "b64f14afb24ca7180139f6f8a6906fe4414291d1e625b41223800b784a228e66",
+      "sources": [
+        {
+          "path": "node_modules/@solana/plugin-core/LICENSE",
+          "sha256": "c181f3e6911f515d2b5d18513f8e24fba252c36856978fa80b01249fa813453f",
+          "bytes": 1060
+        }
+      ]
+    },
+    {
+      "name": "@solana/plugin-interfaces",
+      "version": "8.4.0",
+      "license": "MIT",
+      "lockIntegrity": "sha512-R1y8z9aBCHXnx7Aqax4ORBaC1wQaHS+KQjnbNEbVZijeJhfoKbSBA5vwlweEZPKT+l2iPL9jlxPrDlVDl4NyhQ==",
+      "packageJsonSha256": "2fade05d81761b4e317f54b624e53556bf9280875cbe0343f8807e49fd5cabcc",
+      "sources": [
+        {
+          "path": "node_modules/@solana/plugin-interfaces/LICENSE",
+          "sha256": "71eb6e587a0bb038abb51806efbda0fd2c152d38501625829497c0570d674827",
+          "bytes": 1064
+        }
+      ]
+    },
+    {
+      "name": "@solana/program-client-core",
+      "version": "8.4.0",
+      "license": "MIT",
+      "lockIntegrity": "sha512-GBgz9wHMp2BOKRTp/IAATooTLPIe+6Y0jCTYOSkXME9F7xyh1o7mGu0lEbotnB6C3fubaXzU6Swk9SYskl7Sig==",
+      "packageJsonSha256": "d79a1939fed9562b728f4334d259d40322b17d860b439b6a00757662ed536d7a",
+      "sources": [
+        {
+          "path": "node_modules/@solana/program-client-core/LICENSE",
+          "sha256": "c181f3e6911f515d2b5d18513f8e24fba252c36856978fa80b01249fa813453f",
+          "bytes": 1060
+        }
+      ]
+    },
+    {
+      "name": "@solana/programs",
+      "version": "8.4.0",
+      "license": "MIT",
+      "lockIntegrity": "sha512-KZvtGP7spytak0igTSb1tulNc5fhCEyjYNlMBObveohVhrzT7/t7M6ioqcJpAvv1bWm+E7E4FI5B+fjMKMpAxQ==",
+      "packageJsonSha256": "65c722c5d08b0adf50723b955b312ed6611ca1d0b2a2e03c2cbc19b73757e6fe",
+      "sources": [
+        {
+          "path": "node_modules/@solana/programs/LICENSE",
+          "sha256": "c181f3e6911f515d2b5d18513f8e24fba252c36856978fa80b01249fa813453f",
+          "bytes": 1060
+        }
+      ]
+    },
+    {
+      "name": "@solana/promises",
+      "version": "8.4.0",
+      "license": "MIT",
+      "lockIntegrity": "sha512-keb+TXJZHRT605HLakRanfjnSVUFYG6za+P7W8UDKA2ZUp+LTi1As5fQTkhRyFO/GOrbmP9a7lYC5eNGAekg6w==",
+      "packageJsonSha256": "ad36970296d2753835ddb06bb10383db8439fb9b4277f77a47048a559ac24a11",
+      "sources": [
+        {
+          "path": "node_modules/@solana/promises/LICENSE",
+          "sha256": "c181f3e6911f515d2b5d18513f8e24fba252c36856978fa80b01249fa813453f",
+          "bytes": 1060
+        }
+      ]
+    },
+    {
+      "name": "@solana/rpc",
+      "version": "8.4.0",
+      "license": "MIT",
+      "lockIntegrity": "sha512-xrJa4Bapskl1aud+qirKFbDy1A22vWHGwW9YKav20Q1YjJRItE8MfJ9N4c3MAtaSkC59QhBeHOsuf3F0gm+Hxw==",
+      "packageJsonSha256": "5f75bf8779efcdd2e3a25b44770742259e3df26dcd23728b2f3ccb75f64ffa90",
+      "sources": [
+        {
+          "path": "node_modules/@solana/rpc/LICENSE",
+          "sha256": "c181f3e6911f515d2b5d18513f8e24fba252c36856978fa80b01249fa813453f",
+          "bytes": 1060
+        }
+      ]
+    },
+    {
+      "name": "@solana/rpc-api",
+      "version": "8.4.0",
+      "license": "MIT",
+      "lockIntegrity": "sha512-tD26U9U7pOQoLiTp7MoyWYPSmnvLAa9OrpQPGQ8NVUU7xXOeVKSKRe3rI4EL/zzcPNXeCAKtLJ449u8ejLT7LA==",
+      "packageJsonSha256": "0567bbf48fa17aecfa19a056d90f5269e6b673aa23bc4b3573294c89037caaf9",
+      "sources": [
+        {
+          "path": "node_modules/@solana/rpc-api/LICENSE",
+          "sha256": "c181f3e6911f515d2b5d18513f8e24fba252c36856978fa80b01249fa813453f",
+          "bytes": 1060
+        }
+      ]
+    },
+    {
+      "name": "@solana/rpc-parsed-types",
+      "version": "8.4.0",
+      "license": "MIT",
+      "lockIntegrity": "sha512-/vBcGcLy/W1r8t0ST+gc3EqVPFx7dRFxkt5RoYE9tepEiroOwLbVg7rKtgtKifkFBODSVDcupEkTBBhRbWpB9A==",
+      "packageJsonSha256": "db0b6acc2760f01c08a333690127b5fd0bb2130f083b5e3cb1e0d4b93d93372a",
+      "sources": [
+        {
+          "path": "node_modules/@solana/rpc-parsed-types/LICENSE",
+          "sha256": "c181f3e6911f515d2b5d18513f8e24fba252c36856978fa80b01249fa813453f",
+          "bytes": 1060
+        }
+      ]
+    },
+    {
+      "name": "@solana/rpc-spec",
+      "version": "8.4.0",
+      "license": "MIT",
+      "lockIntegrity": "sha512-g5R8jJoYDjwb4sEUw8PxReAw5OETSjWSgMF+f/Q+0BGRiX+hNO//3qxWRL0rpWAnHi9R03W5Li/sPOYC8IGL1Q==",
+      "packageJsonSha256": "79ecedf5e954f5c83c920d8aa1008f0dd9a6decec0fb364ebac2b9b77162ad5d",
+      "sources": [
+        {
+          "path": "node_modules/@solana/rpc-spec/LICENSE",
+          "sha256": "c181f3e6911f515d2b5d18513f8e24fba252c36856978fa80b01249fa813453f",
+          "bytes": 1060
+        }
+      ]
+    },
+    {
+      "name": "@solana/rpc-spec-types",
+      "version": "8.4.0",
+      "license": "MIT",
+      "lockIntegrity": "sha512-YnxoUzWy/bwdclB3ipu7+4/mnnb4Jqmgq1O20zhQ81cUGZseEWy++Y4GJA0OBZvrcDHhoRntSd26ABg9q0XaVg==",
+      "packageJsonSha256": "ef72998594d2d9f46755e3fe7cdc779d7a9b11868bc60fc6ccaf28abe23445c8",
+      "sources": [
+        {
+          "path": "node_modules/@solana/rpc-spec-types/LICENSE",
+          "sha256": "c181f3e6911f515d2b5d18513f8e24fba252c36856978fa80b01249fa813453f",
+          "bytes": 1060
+        }
+      ]
+    },
+    {
+      "name": "@solana/rpc-subscriptions",
+      "version": "8.4.0",
+      "license": "MIT",
+      "lockIntegrity": "sha512-XkWl2flaGKkHzw6+StjVsYtJoB5xoGpnsdanXa1h1KnwK4HFFy/wsJ0P+5TY1Z0DR1IDn6voNl3KSQrQuEQm9Q==",
+      "packageJsonSha256": "b2cf4a5dae1f486bd47b72e12d34bd9fa32a10d8087abbbdccf3bc733f3caa53",
+      "sources": [
+        {
+          "path": "node_modules/@solana/rpc-subscriptions/LICENSE",
+          "sha256": "c181f3e6911f515d2b5d18513f8e24fba252c36856978fa80b01249fa813453f",
+          "bytes": 1060
+        }
+      ]
+    },
+    {
+      "name": "@solana/rpc-subscriptions-api",
+      "version": "8.4.0",
+      "license": "MIT",
+      "lockIntegrity": "sha512-qsSYyfmYSB8/VE6yks4Ls4fQyyi2VhS09PZaENfTSFk6iKAYyEnhOkwCu//MdeWOrrHDmGmxC2UdzpB61f+Fcg==",
+      "packageJsonSha256": "f414ee0f9296b4115716477c8d176fee3a29ffcc5079e6ec0d2f653b34449071",
+      "sources": [
+        {
+          "path": "node_modules/@solana/rpc-subscriptions-api/LICENSE",
+          "sha256": "c181f3e6911f515d2b5d18513f8e24fba252c36856978fa80b01249fa813453f",
+          "bytes": 1060
+        }
+      ]
+    },
+    {
+      "name": "@solana/rpc-subscriptions-channel-websocket",
+      "version": "8.4.0",
+      "license": "MIT",
+      "lockIntegrity": "sha512-O0UAs9G/lgBRf4Aw7kvG5quHWDWdfuTn8BJUy3KOvCFADOOGrrH6leXLHJAMxN2T8KmyO28cs2+GGW/CD5kWNQ==",
+      "packageJsonSha256": "ea93467fc5b7dc0752a6f7b6953eb8d8b12c6e6fd4934ea7cc26fa2406ddf3d7",
+      "sources": [
+        {
+          "path": "node_modules/@solana/rpc-subscriptions-channel-websocket/LICENSE",
+          "sha256": "c181f3e6911f515d2b5d18513f8e24fba252c36856978fa80b01249fa813453f",
+          "bytes": 1060
+        }
+      ]
+    },
+    {
+      "name": "@solana/rpc-subscriptions-spec",
+      "version": "8.4.0",
+      "license": "MIT",
+      "lockIntegrity": "sha512-H7Jqleo+WR1hUcPexQCn5rIgGsXa7Ip0Pnl3Vzvv/DIpYEN5lpMrWXf3v9fVyG3jRxom5WW32xmYhiHa2dORzw==",
+      "packageJsonSha256": "554e5e296529fe51314e13acd44eac0163c2f4ff11db27e9d470fc3dae889b60",
+      "sources": [
+        {
+          "path": "node_modules/@solana/rpc-subscriptions-spec/LICENSE",
+          "sha256": "c181f3e6911f515d2b5d18513f8e24fba252c36856978fa80b01249fa813453f",
+          "bytes": 1060
+        }
+      ]
+    },
+    {
+      "name": "@solana/rpc-transformers",
+      "version": "8.4.0",
+      "license": "MIT",
+      "lockIntegrity": "sha512-FTlLgsjN/1RKeBidS5Dfb81VpeqRYESiKg7jTkbY6MXVL96bOMUihQDXAjmgUMMp95nTykuQjKas7pkG2Zsz5w==",
+      "packageJsonSha256": "19297d43479440b01b1525b15edbc9ab8b969d566f405ee331599161dc72cfd5",
+      "sources": [
+        {
+          "path": "node_modules/@solana/rpc-transformers/LICENSE",
+          "sha256": "c181f3e6911f515d2b5d18513f8e24fba252c36856978fa80b01249fa813453f",
+          "bytes": 1060
+        }
+      ]
+    },
+    {
+      "name": "@solana/rpc-transport-http",
+      "version": "8.4.0",
+      "license": "MIT",
+      "lockIntegrity": "sha512-MSlFqehp1CpADeSozzb/YnBEvkBlIrTcmLIVmeKbcTMOELV5yZKnp+bMQl05Q0swsyTr423kQ1XvV9Oqk3/KoA==",
+      "packageJsonSha256": "588e0f51e03350641dfc46975eb297fafd6afa5318c07e06ff4909ddeff1f170",
+      "sources": [
+        {
+          "path": "node_modules/@solana/rpc-transport-http/LICENSE",
+          "sha256": "c181f3e6911f515d2b5d18513f8e24fba252c36856978fa80b01249fa813453f",
+          "bytes": 1060
+        }
+      ]
+    },
+    {
+      "name": "@solana/rpc-types",
+      "version": "8.4.0",
+      "license": "MIT",
+      "lockIntegrity": "sha512-orCi24z9u7AdaozJfgtXwdwHErQy5vO3h6/wCBd/W0bWsfRXiCCWqJcZJqyoZvl1y0oESGEkZR0CzrpedyaAqg==",
+      "packageJsonSha256": "50af640273ae8f9fefafbec72080f0de7b0f6fc6636bf970b7bc5cb03aa10468",
+      "sources": [
+        {
+          "path": "node_modules/@solana/rpc-types/LICENSE",
+          "sha256": "c181f3e6911f515d2b5d18513f8e24fba252c36856978fa80b01249fa813453f",
+          "bytes": 1060
+        }
+      ]
+    },
+    {
+      "name": "@solana/signers",
+      "version": "8.4.0",
+      "license": "MIT",
+      "lockIntegrity": "sha512-hqBzc1M/+y+6rUy7OVAisjoS0/pwhIB3B0VOoJfQ9yBjFmx8TguxcKevn4dP0DIeBK4HqQgiqJyJN0f5hbHfxQ==",
+      "packageJsonSha256": "25c54a4c0462e62c9717928d2e8b9b63d5e316509de7234a304da070d9116ca9",
+      "sources": [
+        {
+          "path": "node_modules/@solana/signers/LICENSE",
+          "sha256": "4594508394d00a9cc33585daee5637fb32d2baea5ebb22e3923a1a000898115a",
+          "bytes": 1060
+        }
+      ]
+    },
+    {
+      "name": "@solana/subscribable",
+      "version": "8.4.0",
+      "license": "MIT",
+      "lockIntegrity": "sha512-EgRMZWnxo1GYan014TscE5i9iDl/dgazwRAgyQ/QRUtB5FVcedRHr0Wh6dW6MJno4htKN4rZsMN+jAuaxLNfmw==",
+      "packageJsonSha256": "e3132736f7180d913892f927641d70e32f9b263e2167871359baa14cac52c7dc",
+      "sources": [
+        {
+          "path": "node_modules/@solana/subscribable/LICENSE",
+          "sha256": "c181f3e6911f515d2b5d18513f8e24fba252c36856978fa80b01249fa813453f",
+          "bytes": 1060
+        }
+      ]
+    },
+    {
+      "name": "@solana/sysvars",
+      "version": "8.4.0",
+      "license": "MIT",
+      "lockIntegrity": "sha512-M2Wk70cji0n0muwHuZiPpDLeRy3Iq19FSOCNQPC/VL5Bg4Ltm7G9PXPvX4/TEODfFGgOLGja4rZmFlECl7tlXg==",
+      "packageJsonSha256": "df93ad884493df8b6d80559000cbf50a65132aa66cf5700ae299b543dfd97544",
+      "sources": [
+        {
+          "path": "node_modules/@solana/sysvars/LICENSE",
+          "sha256": "4594508394d00a9cc33585daee5637fb32d2baea5ebb22e3923a1a000898115a",
+          "bytes": 1060
+        }
+      ]
+    },
+    {
+      "name": "@solana/transaction-confirmation",
+      "version": "8.4.0",
+      "license": "MIT",
+      "lockIntegrity": "sha512-tTKRbzqUzpQGh4ZmL8MTyvZBWHzvcuvDrGROFk8vw2b1FINsv6BAKbxXKWUTWp2RO0ABcznMt+sFHAyPwQ/2/w==",
+      "packageJsonSha256": "c9b77aef36e51702740dd1e11794c0449bf6b9dfdb66ad06dfa1d552128f755a",
+      "sources": [
+        {
+          "path": "node_modules/@solana/transaction-confirmation/LICENSE",
+          "sha256": "c181f3e6911f515d2b5d18513f8e24fba252c36856978fa80b01249fa813453f",
+          "bytes": 1060
+        }
+      ]
+    },
+    {
+      "name": "@solana/transaction-introspection",
+      "version": "8.4.0",
+      "license": "MIT",
+      "lockIntegrity": "sha512-qVvPIRh7Q76k1UNcy2wZIKpA6emmfhMVNUFNheD+eCzOycGDcCT3Y/Mt7H5qU+dDq4NKLNR/20h4aRu1Qendbg==",
+      "packageJsonSha256": "076f0d584a6210cbbafdb532743dd0abb0c77d4bdaabba277b62e0821cb4f3b8",
+      "sources": [
+        {
+          "path": "node_modules/@solana/transaction-introspection/LICENSE",
+          "sha256": "c181f3e6911f515d2b5d18513f8e24fba252c36856978fa80b01249fa813453f",
+          "bytes": 1060
+        }
+      ]
+    },
+    {
+      "name": "@solana/transaction-messages",
+      "version": "8.4.0",
+      "license": "MIT",
+      "lockIntegrity": "sha512-LdihUr4z6bAIv44z13uaShCXgb9C8DY0gZ+RcW9U+CcaDJwWhgZuy5IG2TBAAGa5lbEyRcYPQxD+/aE6b1F/WA==",
+      "packageJsonSha256": "ea384ff0b8b3c5479d70d0c2c68640d5208264a1311bb46e42e445d424b81041",
+      "sources": [
+        {
+          "path": "node_modules/@solana/transaction-messages/LICENSE",
+          "sha256": "c181f3e6911f515d2b5d18513f8e24fba252c36856978fa80b01249fa813453f",
+          "bytes": 1060
+        }
+      ]
+    },
+    {
+      "name": "@solana/transactions",
+      "version": "8.4.0",
+      "license": "MIT",
+      "lockIntegrity": "sha512-+FFNSlr5vVTcGS9c7seH7mNnjZY21uZ3pHxiN9jeduODD7z+caKnGgjmzokZSDYapFUcupniIr736CrJNmbMFw==",
+      "packageJsonSha256": "cd2ca6cb99d69e77ec64ae3827a4fb22a3600e371ac77bfb8d835e0d645229ab",
+      "sources": [
+        {
+          "path": "node_modules/@solana/transactions/LICENSE",
+          "sha256": "c181f3e6911f515d2b5d18513f8e24fba252c36856978fa80b01249fa813453f",
+          "bytes": 1060
+        }
+      ]
+    },
+    {
+      "name": "@types/debug",
+      "version": "4.1.13",
+      "license": "MIT",
+      "lockIntegrity": "sha512-KSVgmQmzMwPlmtljOomayoR89W4FynCAi3E8PPs7vmDVPe84hT+vGPKkJfThkmXs0x0jAaa9U8uW8bbfyS2fWw==",
+      "packageJsonSha256": "3593dbd35512e263c1a4ed9e30545e7f8ffb2f7efabc4e536dddc0868be4e872",
+      "sources": [
+        {
+          "path": "node_modules/@types/debug/LICENSE",
+          "sha256": "c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383",
+          "bytes": 1141
+        }
+      ]
+    },
+    {
+      "name": "@types/estree",
+      "version": "1.0.9",
+      "license": "MIT",
+      "lockIntegrity": "sha512-GhdPgy1el4/ImP05X05Uw4cw2/M93BCUmnEvWZNStlCzEKME4Fkk+YpoA5OiHNQmoS7Cafb8Xa3Pya8m1Qrzeg==",
+      "packageJsonSha256": "3537a6a503f57901111d8a29df81962887653deb199b9a795c7fb50bbfdd1bdc",
+      "sources": [
+        {
+          "path": "node_modules/@types/estree/LICENSE",
+          "sha256": "c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383",
+          "bytes": 1141
+        }
+      ]
+    },
+    {
+      "name": "@types/estree-jsx",
+      "version": "1.0.5",
+      "license": "MIT",
+      "lockIntegrity": "sha512-52CcUVNFyfb1A2ALocQw/Dd1BQFNmSdkuC3BkZ6iqhdMfQz7JWOFRuJFloOzjk+6WijU56m9oKXFAXc7o3Towg==",
+      "packageJsonSha256": "ba60d7c597e351e26bf117d99b6e25981ad8ea4d4f7fae5f936ebb16396fa972",
+      "sources": [
+        {
+          "path": "node_modules/@types/estree-jsx/LICENSE",
+          "sha256": "c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383",
+          "bytes": 1141
+        }
+      ]
+    },
+    {
+      "name": "@types/hast",
+      "version": "3.0.5",
+      "license": "MIT",
+      "lockIntegrity": "sha512-rp/ezSWaD1m44dPKICGhiskI13nVr7qTloFwDa/IYkhhf5nzwP+zIQcIJh3WIFSBOy/H1PzB40jPjMDksN4F+g==",
+      "packageJsonSha256": "403fd6e55486fc6d7ebf23c0642649421ca48a291296ba467d298e391e327466",
+      "sources": [
+        {
+          "path": "node_modules/@types/hast/LICENSE",
+          "sha256": "c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383",
+          "bytes": 1141
+        }
+      ]
+    },
+    {
+      "name": "@types/mdast",
+      "version": "4.0.4",
+      "license": "MIT",
+      "lockIntegrity": "sha512-kGaNbPh1k7AFzgpud/gMdvIm5xuECykRR+JnWKQno9TAXVa6WIVCGTPvYGekIDL4uwCZQSYbUxNBSb1aUo79oA==",
+      "packageJsonSha256": "5a41865d64d4cedba58313fad775cf56bd0474d724343172bcea9f8ad24db563",
+      "sources": [
+        {
+          "path": "node_modules/@types/mdast/LICENSE",
+          "sha256": "c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383",
+          "bytes": 1141
+        }
+      ]
+    },
+    {
+      "name": "@types/ms",
+      "version": "2.1.0",
+      "license": "MIT",
+      "lockIntegrity": "sha512-GsCCIZDE/p3i96vtEqx+7dBUGXrc7zeSK3wwPHIaRThS+9OhWIXRqzs4d6k1SVU8g91DrNRWxWUGhp5KXQb2VA==",
+      "packageJsonSha256": "bbd8f5322ea82216e826e522a6a4ec2ed3086b57a25234d0044673eb374b8e2d",
+      "sources": [
+        {
+          "path": "node_modules/@types/ms/LICENSE",
+          "sha256": "c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383",
+          "bytes": 1141
+        }
+      ]
+    },
+    {
+      "name": "@types/react",
+      "version": "19.3.0",
+      "license": "MIT",
+      "lockIntegrity": "sha512-N0rFCuH9YoxG9/m61l9MfpJKfmLOVU0em7ipIz6TRgSSkvReLB9vL85GB+yr8Bs5leqpvg96JSwF4ZS1s4viQg==",
+      "packageJsonSha256": "505c0df4cd73d6a02c946bd9b81451584bd9c83ea72d75cff9b826efceaa19c2",
+      "sources": [
+        {
+          "path": "node_modules/@types/react/LICENSE",
+          "sha256": "c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383",
+          "bytes": 1141
+        }
+      ]
+    },
+    {
+      "name": "@types/unist",
+      "version": "3.0.3",
+      "license": "MIT",
+      "lockIntegrity": "sha512-ko/gIFJRv177XgZsZcBwnqJN5x/Gien8qNOn0D5bQU/zAzVf9Zt3BlcUiLqhV9y4ARk0GbT3tnUiPNgnTXzc/Q==",
+      "packageJsonSha256": "9aaa6fc2ba9d3eacf1888c727b8b0bf47e4cd9e8e39908a6c91683c39a9bdcd7",
+      "sources": [
+        {
+          "path": "node_modules/@types/unist/LICENSE",
+          "sha256": "c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383",
+          "bytes": 1141
+        }
+      ]
+    },
+    {
+      "name": "@ungap/structured-clone",
+      "version": "1.4.0",
+      "license": "ISC",
+      "lockIntegrity": "sha512-1mEZtMKPM09vDmQt5y7YvmN2+DFTP7Tg0EWXdic8/C6VRnpb33e4ghisCIE3WZjsE2N8mf+QV1Zqh7ZFYLWInQ==",
+      "packageJsonSha256": "8f931c21e4c0b37c35d5ffef35e0bc057f3cbd0224b026b21a5bdb82a98cbd8f",
+      "sources": [
+        {
+          "path": "node_modules/@ungap/structured-clone/LICENSE",
+          "sha256": "dc6d4961d8b6ee747231582ae9c53ce1d66bf76bc9f5a28f554c0e97210953bf",
+          "bytes": 765
+        }
+      ]
+    },
+    {
+      "name": "@wallet-standard/app",
+      "version": "1.1.0",
+      "license": "Apache-2.0",
+      "lockIntegrity": "sha512-3CijvrO9utx598kjr45hTbbeeykQrQfKmSnxeWOgU25TOEpvcipD/bYDQWIqUv1Oc6KK4YStokSMu/FBNecGUQ==",
+      "packageJsonSha256": "20ef7a71c115e1ce3e7eaeac827e802ca734bd64741bb52f15c4f4881194c220",
+      "sources": [
+        {
+          "path": "node_modules/@wallet-standard/app/LICENSE",
+          "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+          "bytes": 11358
+        }
+      ]
+    },
+    {
+      "name": "@wallet-standard/base",
+      "version": "1.1.1",
+      "license": "Apache-2.0",
+      "lockIntegrity": "sha512-gggIHTtxicF9XFMQ12DkfS6NAG92Ak795JeSA7f2whAQ6Y3AkMWWuCMxSZXG2NIPN42kEaZSNVjqMsJRaJRxMQ==",
+      "packageJsonSha256": "9d418bfa9f5a6a0538d97f43c277abe088365938ffa995a0a59120604af970db",
+      "sources": [
+        {
+          "path": "node_modules/@wallet-standard/base/LICENSE",
+          "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+          "bytes": 11358
+        }
+      ]
+    },
+    {
+      "name": "@zkapi/solana-sdk",
+      "version": "0.2.0-devnet.3",
+      "license": "MIT",
+      "lockIntegrity": "sha512-3ufCdcUmFt9mRXXA4e5tmO0BpHeQy6CGSbeyGpsV151IYqtnD8FrqC3hktMThKXKRCXGXG4YJuZfbSYTT3I4rw==",
+      "packageJsonSha256": "0cedb43f53035f70005d62b0029cc353aff58c91c230ee728a5099a478b74ad5",
+      "sources": [
+        {
+          "path": "node_modules/@zkapi/solana-sdk/LICENSE",
+          "sha256": "71afea996cef8ff3d3ef4f84705180bb0b124c1c21a16e89fddacd3b482d4fa7",
+          "bytes": 1097
+        }
+      ]
+    },
+    {
+      "name": "bail",
+      "version": "2.0.2",
+      "license": "MIT",
+      "lockIntegrity": "sha512-0xO6mYd7JB2YesxDKplafRpsiOzPt9V02ddPCLbY1xYGPOX24NTyN50qnUxgCPcSoYMhKpAuBTjQoRZCAkUDRw==",
+      "packageJsonSha256": "337981479ea353a473e2b8126adf545c299e368cf7fa31f21d92fd9b40cb029f",
+      "sources": [
+        {
+          "path": "node_modules/bail/license",
+          "sha256": "63cb98b3f6abfb3c3592c16f88253c1bdc834087bf52671e8ce5609e4eb693cf",
+          "bytes": 1099
+        }
+      ]
+    },
+    {
+      "name": "base-x",
+      "version": "5.0.1",
+      "license": "MIT",
+      "lockIntegrity": "sha512-M7uio8Zt++eg3jPj+rHMfCC+IuygQHHCOU+IYsVtik6FWjuYpVt/+MRKcgsAMHh8mMFAwnB+Bs+mTrFiXjMzKg==",
+      "packageJsonSha256": "219181d85974678247ef7fe8f2adf14ae64059a15f338c33cebc30cd26fc516e",
+      "sources": [
+        {
+          "path": "node_modules/base-x/LICENSE.md",
+          "sha256": "a192bdfbed999ea06e52a3f5a85dd27dfed6ff3ad5a55050b345baba31afb0de",
+          "bytes": 1138
+        }
+      ]
+    },
+    {
+      "name": "base64-js",
+      "version": "1.5.1",
+      "license": "MIT",
+      "lockIntegrity": "sha512-AKpaYlHn8t4SVbOHCy+b5+KKgvR4vrsD8vbvrbiQJps7fKDTkjkDry6ji0rUJjC0kzbNePLwzxq8iypo41qeWA==",
+      "packageJsonSha256": "9758f3ab8c45e07bb9a368e32f9a8b3729623bbf47cbbb205b32d674ab2a91f0",
+      "sources": [
+        {
+          "path": "node_modules/base64-js/LICENSE",
+          "sha256": "5b37224c080cdcc97c871ada971c224e9926370fe74f11b539aa1cf9f3b1aca1",
+          "bytes": 1081
+        }
+      ]
+    },
+    {
+      "name": "bs58",
+      "version": "6.0.0",
+      "license": "MIT",
+      "lockIntegrity": "sha512-PD0wEnEYg6ijszw/u8s+iI3H17cTymlrwkKhDhPZq+Sokl3AU4htyBFTjAeNAlCCmg0f53g6ih3jATyCKftTfw==",
+      "packageJsonSha256": "b48a6f957d976838730a222224eb0607a793bcffae71c33906f6a783216267b6",
+      "sources": [
+        {
+          "path": "node_modules/bs58/LICENSE",
+          "sha256": "57efbd615689807b8341d557af0038fae58da7e2831f29f52d02902f657deb25",
+          "bytes": 1069
+        }
+      ]
+    },
+    {
+      "name": "buffer",
+      "version": "6.0.3",
+      "license": "MIT",
+      "lockIntegrity": "sha512-FTiCpNxtwiZZHEZbcbTIcZjERVICn9yq/pDFkTl95/AxzD1naBctN7YO68riM/gLSDY7sdrMby8hofADYuuqOA==",
+      "packageJsonSha256": "5b105ac0abbf5985cbe62ad28a34032d85c7ef623e0eb01f39441b0feb419004",
+      "sources": [
+        {
+          "path": "node_modules/buffer/LICENSE",
+          "sha256": "06bafa45fdad2579ba0e43b0c9b2c6290287c99c4203c300254a462b38a307f6",
+          "bytes": 1106
+        }
+      ]
+    },
+    {
+      "name": "ccount",
+      "version": "2.0.1",
+      "license": "MIT",
+      "lockIntegrity": "sha512-eyrF0jiFpY+3drT6383f1qhkbGsLSifNAjA61IUjZjmLCWjItY6LB9ft9YhoDgwfmclB2zhu51Lc7+95b8NRAg==",
+      "packageJsonSha256": "007abbcac7038e503a221330fac2515793aa0dfba231b2d54734d2af76b32ed9",
+      "sources": [
+        {
+          "path": "node_modules/ccount/license",
+          "sha256": "63cb98b3f6abfb3c3592c16f88253c1bdc834087bf52671e8ce5609e4eb693cf",
+          "bytes": 1099
+        }
+      ]
+    },
+    {
+      "name": "chalk",
+      "version": "5.6.2",
+      "license": "MIT",
+      "lockIntegrity": "sha512-7NzBL0rN6fMUW+f7A6Io4h40qQlG+xGmtMxfbnH/K7TAtt8JQWVQK+6g0UXKMeVJoyV5EkkNsErQ8pVD3bLHbA==",
+      "packageJsonSha256": "ef029c254479723c952a24c0d8d758378bd8ddf031f5bd6f027f65e1a3d030f3",
+      "sources": [
+        {
+          "path": "node_modules/chalk/license",
+          "sha256": "5c932d88256b4ab958f64a856fa48e8bd1f55bc1d96b8149c65689e0c61789d3",
+          "bytes": 1117
+        }
+      ]
+    },
+    {
+      "name": "character-entities",
+      "version": "2.0.2",
+      "license": "MIT",
+      "lockIntegrity": "sha512-shx7oQ0Awen/BRIdkjkvz54PnEEI/EjwXDSIZp86/KKdbafHh1Df/RYGBhn4hbe2+uKC9FnT5UCEdyPz3ai9hQ==",
+      "packageJsonSha256": "3eaa974f1a9ede7187797d85eb1c799616144cd5ff75d094d30a44bec7d07d88",
+      "sources": [
+        {
+          "path": "node_modules/character-entities/license",
+          "sha256": "63cb98b3f6abfb3c3592c16f88253c1bdc834087bf52671e8ce5609e4eb693cf",
+          "bytes": 1099
+        }
+      ]
+    },
+    {
+      "name": "character-entities-html4",
+      "version": "2.1.0",
+      "license": "MIT",
+      "lockIntegrity": "sha512-1v7fgQRj6hnSwFpq1Eu0ynr/CDEw0rXo2B61qXrLNdHZmPKgb7fqS1a2JwF0rISo9q77jDI8VMEHoApn8qDoZA==",
+      "packageJsonSha256": "20b0c6f32ba0c1a0152d4fa5f6650f7345ac7ac36c1e115f7c50bc7f85178aa6",
+      "sources": [
+        {
+          "path": "node_modules/character-entities-html4/license",
+          "sha256": "63cb98b3f6abfb3c3592c16f88253c1bdc834087bf52671e8ce5609e4eb693cf",
+          "bytes": 1099
+        }
+      ]
+    },
+    {
+      "name": "character-entities-legacy",
+      "version": "3.0.0",
+      "license": "MIT",
+      "lockIntegrity": "sha512-RpPp0asT/6ufRm//AJVwpViZbGM/MkjQFxJccQRHmISF/22NBtsHqAWmL+/pmkPWoIUJdWyeVleTl1wydHATVQ==",
+      "packageJsonSha256": "51e40ca4e6f95c4bc6f2141f8dbb262ffcc33580c40742702f3579cb3bdf2a64",
+      "sources": [
+        {
+          "path": "node_modules/character-entities-legacy/license",
+          "sha256": "63cb98b3f6abfb3c3592c16f88253c1bdc834087bf52671e8ce5609e4eb693cf",
+          "bytes": 1099
+        }
+      ]
+    },
+    {
+      "name": "character-reference-invalid",
+      "version": "2.0.1",
+      "license": "MIT",
+      "lockIntegrity": "sha512-iBZ4F4wRbyORVsu0jPV7gXkOsGYjGHPmAyv+HiHG8gi5PtC9KI2j1+v8/tlibRvjoWX027ypmG/n0HtO5t7unw==",
+      "packageJsonSha256": "e66c10112582a0daee6dc8e1f97db4206ce1920b7f8d65141d7b924762c1384c",
+      "sources": [
+        {
+          "path": "node_modules/character-reference-invalid/license",
+          "sha256": "63cb98b3f6abfb3c3592c16f88253c1bdc834087bf52671e8ce5609e4eb693cf",
+          "bytes": 1099
+        }
+      ]
+    },
+    {
+      "name": "comma-separated-tokens",
+      "version": "2.0.3",
+      "license": "MIT",
+      "lockIntegrity": "sha512-Fu4hJdvzeylCfQPp9SGWidpzrMs7tTrlu6Vb8XGaRGck8QSNZJJp538Wrb60Lax4fPwR64ViY468OIUTbRlGZg==",
+      "packageJsonSha256": "c474231549263b0173a3d66f4fc1c4bac2c7517390b2a8e3f09ea1a1f401726b",
+      "sources": [
+        {
+          "path": "node_modules/comma-separated-tokens/license",
+          "sha256": "ca4662cb5d1b738fbe5350c0d5485ba11773b4b7208974082ae6e129a52d631d",
+          "bytes": 1099
+        }
+      ]
+    },
+    {
+      "name": "commander",
+      "version": "15.0.0",
+      "license": "MIT",
+      "lockIntegrity": "sha512-z67u4ZhzCL/Tydu1lJARtEZYWbWaN7oYLHbsuzocr6y4N6WZAagG3RQ4FW61V1/0+jImpj293XfrcYnd1qxtPg==",
+      "packageJsonSha256": "6ea3e19871a9a05fa0c8b89595b6df05d23d266936b9785607128fd420864337",
+      "sources": [
+        {
+          "path": "node_modules/commander/LICENSE",
+          "sha256": "04512a63dce4d2d506ad612dc0bd7681ccf6e3655f7b6eaef7dfac8323d1ec0b",
+          "bytes": 1098
+        }
+      ]
+    },
+    {
+      "name": "csstype",
+      "version": "3.2.3",
+      "license": "MIT",
+      "lockIntegrity": "sha512-z1HGKcYy2xA8AGQfwrn0PAy+PB7X/GSj3UVJW9qKyn43xWa+gl5nXmU4qqLMRzWVLFC8KusUX8T/0kCiOYpAIQ==",
+      "packageJsonSha256": "c818b74a9bc1556488b7ec2a65399224738f6619228f9a6491c5c02ca91f849e",
+      "sources": [
+        {
+          "path": "node_modules/csstype/LICENSE",
+          "sha256": "11d55bd4541c75ee7879547ac49089c489163dae49551389713c3d026cab383e",
+          "bytes": 1062
+        }
+      ]
+    },
+    {
+      "name": "debug",
+      "version": "4.4.3",
+      "license": "MIT",
+      "lockIntegrity": "sha512-RGwwWnwQvkVfavKVt22FGLw+xYSdzARwm0ru6DhTVA3umU5hZc28V3kO4stgYryrTlLpuvgI9GiijltAjNbcqA==",
+      "packageJsonSha256": "ea8e33d63fe5f3a4c36609b6c3df8e2ef1f8b8ba2fc3a2e1e53cb27291f384af",
+      "sources": [
+        {
+          "path": "node_modules/debug/LICENSE",
+          "sha256": "3a61c6c96caf5c1d9b623fb9b04c822b783dfcb78aa7e49c76a3f643e6ed7f95",
+          "bytes": 1139
+        }
+      ]
+    },
+    {
+      "name": "decode-named-character-reference",
+      "version": "1.3.0",
+      "license": "MIT",
+      "lockIntegrity": "sha512-GtpQYB283KrPp6nRw50q3U9/VfOutZOe103qlN7BPP6Ad27xYnOIWv4lPzo8HCAL+mMZofJ9KEy30fq6MfaK6Q==",
+      "packageJsonSha256": "b034b006d03650d0995148196898eac08012de40712cb984e968c7b99d96b55e",
+      "sources": [
+        {
+          "path": "node_modules/decode-named-character-reference/license",
+          "sha256": "dd1081884a92952802f4803110a6bb543acea9a814c786d58605b4c1219b5ebb",
+          "bytes": 1094
+        }
+      ]
+    },
+    {
+      "name": "dequal",
+      "version": "2.0.3",
+      "license": "MIT",
+      "lockIntegrity": "sha512-0je+qPKHEMohvfRTCEo3CrPG6cAzAYgmzKyxRiYSSDkS6eGJdyVJm7WaYA5ECaAD9wLB2T4EEeymA5aFVcYXCA==",
+      "packageJsonSha256": "a41e430cd3d990700f1544c5ffece552449ab758d778fa34ad5458cf6ec35d6b",
+      "sources": [
+        {
+          "path": "node_modules/dequal/license",
+          "sha256": "306fa513e39b23a6e8747520de761809d206b99800ef41907b530226574c59ae",
+          "bytes": 1114
+        }
+      ]
+    },
+    {
+      "name": "devlop",
+      "version": "1.1.0",
+      "license": "MIT",
+      "lockIntegrity": "sha512-RWmIqhcFf1lRYBvNmr7qTNuyCt/7/ns2jbpp1+PalgE/rDQcBT0fioSMUpJ93irlUhC5hrg4cYqe6U+0ImW0rA==",
+      "packageJsonSha256": "fbb56102cf3bd0e07a8075bfda80825b3ccd78a37642c92cef54a55fbed709dd",
+      "sources": [
+        {
+          "path": "node_modules/devlop/license",
+          "sha256": "6f296a5eccc1dc96714bb94ebaa9cac25b0a1467d74cc5263ac4d0646ab01f62",
+          "bytes": 1099
+        }
+      ]
+    },
+    {
+      "name": "escape-string-regexp",
+      "version": "5.0.0",
+      "license": "MIT",
+      "lockIntegrity": "sha512-/veY75JbMK4j1yjvuUxuVsiS/hr/4iHs9FTT6cgTexxdE0Ly/glccBAkloH/DofkjRbZU3bnoj38mOmhkZ0lHw==",
+      "packageJsonSha256": "6d7ae0240943e38cb8a8dd35242584b2c3415a2bca83aa86497d3b7b1bef08ef",
+      "sources": [
+        {
+          "path": "node_modules/escape-string-regexp/license",
+          "sha256": "5c932d88256b4ab958f64a856fa48e8bd1f55bc1d96b8149c65689e0c61789d3",
+          "bytes": 1117
+        }
+      ]
+    },
+    {
+      "name": "estree-util-is-identifier-name",
+      "version": "3.0.0",
+      "license": "MIT",
+      "lockIntegrity": "sha512-hFtqIDZTIUZ9BXLb8y4pYGyk6+wekIivNVTcmvk8NoOh+VeRn5y6cEHzbURrWbfp1fIqdVipilzj+lfaadNZmg==",
+      "packageJsonSha256": "d0f734156695c70baee2e43c094adde322839ddc23a517ea0039b3ff6a6567f9",
+      "sources": [
+        {
+          "path": "node_modules/estree-util-is-identifier-name/license",
+          "sha256": "536804b3adbff17dbbb9ed0d2bf9655b78f07640278581e37e3d7475282d5e61",
+          "bytes": 1099
+        }
+      ]
+    },
+    {
+      "name": "extend",
+      "version": "3.0.2",
+      "license": "MIT",
+      "lockIntegrity": "sha512-fjquC59cD7CyW6urNXK0FBufkZcoiGG80wTuPujX590cB5Ttln20E2UB4S/WARVqhXffZl2LNgS+gQdPIIim/g==",
+      "packageJsonSha256": "8d891b3f00bead114c4741d8a594e7aaa59114f53782ec9a9319a619709dc14f",
+      "sources": [
+        {
+          "path": "node_modules/extend/LICENSE",
+          "sha256": "97af7428f93afbab9bf79cd09254da1357161794f4255eb1b4599f04dd2d2e7c",
+          "bytes": 1081
+        }
+      ]
+    },
+    {
+      "name": "hast-util-to-jsx-runtime",
+      "version": "2.3.6",
+      "license": "MIT",
+      "lockIntegrity": "sha512-zl6s8LwNyo1P9uw+XJGvZtdFF1GdAkOg8ujOw+4Pyb76874fLps4ueHXDhXWdk6YHQ6OgUtinliG7RsYvCbbBg==",
+      "packageJsonSha256": "30dc325d26a45aed9ca3c9c686249cc40f9e234019d220dd954dad488d9fab49",
+      "sources": [
+        {
+          "path": "node_modules/hast-util-to-jsx-runtime/license",
+          "sha256": "dd1081884a92952802f4803110a6bb543acea9a814c786d58605b4c1219b5ebb",
+          "bytes": 1094
+        }
+      ]
+    },
+    {
+      "name": "hast-util-whitespace",
+      "version": "3.0.0",
+      "license": "MIT",
+      "lockIntegrity": "sha512-88JUN06ipLwsnv+dVn+OIYOvAuvBMy/Qoi6O7mQHxdPXpjy+Cd6xRkWwux7DKO+4sYILtLBRIKgsdpS2gQc7qw==",
+      "packageJsonSha256": "50a1eeeab4c354912b9f61e5b7aad22762dcbd96f740e58146f303bc4826f0b4",
+      "sources": [
+        {
+          "path": "node_modules/hast-util-whitespace/license",
+          "sha256": "ca4662cb5d1b738fbe5350c0d5485ba11773b4b7208974082ae6e129a52d631d",
+          "bytes": 1099
+        }
+      ]
+    },
+    {
+      "name": "html-url-attributes",
+      "version": "3.0.1",
+      "license": "MIT",
+      "lockIntegrity": "sha512-ol6UPyBWqsrO6EJySPz2O7ZSr856WDrEzM5zMqp+FJJLGMW35cLYmmZnl0vztAZxRUoNZJFTCohfjuIJ8I4QBQ==",
+      "packageJsonSha256": "0bd29e79398437b88c9647434c40c48168d87b22f7448f5f083f4f2d8ab063d8",
+      "sources": [
+        {
+          "path": "node_modules/html-url-attributes/license",
+          "sha256": "e18cf5173e928f808f0cd208097fee8fbec9d28fc0255213938e4c559e29ff58",
+          "bytes": 1070
+        }
+      ]
+    },
+    {
+      "name": "ieee754",
+      "version": "1.2.1",
+      "license": "BSD-3-Clause",
+      "lockIntegrity": "sha512-dcyqhDvX1C46lXZcVqCpK+FtMRQVdIMN6/Df5js2zouUsqG7I6sFxitIC+7KYK29KdXOLHdu9zL4sFnoVQnqaA==",
+      "packageJsonSha256": "a8004b9c8dffe2e1b01a058ecf968a5d50beabcabc43cc98c655184ba6afc050",
+      "sources": [
+        {
+          "path": "node_modules/ieee754/LICENSE",
+          "sha256": "18d45466ba3253deae04667e267a91ea8de8548f18c1125264d1c9db28194cc1",
+          "bytes": 1465
+        }
+      ]
+    },
+    {
+      "name": "inline-style-parser",
+      "version": "0.2.7",
+      "license": "MIT",
+      "lockIntegrity": "sha512-Nb2ctOyNR8DqQoR0OwRG95uNWIC0C1lCgf5Naz5H6Ji72KZ8OcFZLz2P5sNgwlyoJ8Yif11oMuYs5pBQa86csA==",
+      "packageJsonSha256": "905dabd170bc0374e32e35b8c5d02068b5ffb797120dd7de0f6bc172a7ae8abd",
+      "sources": [
+        {
+          "path": "node_modules/inline-style-parser/LICENSE",
+          "sha256": "395c95f20598da653ff1eb1cb9d74947c7fac689697147f1d192fd0242a0e635",
+          "bytes": 1098
+        }
+      ]
+    },
+    {
+      "name": "is-alphabetical",
+      "version": "2.0.1",
+      "license": "MIT",
+      "lockIntegrity": "sha512-FWyyY60MeTNyeSRpkM2Iry0G9hpr7/9kD40mD/cGQEuilcZYS4okz8SN2Q6rLCJ8gbCt6fN+rC+6tMGS99LaxQ==",
+      "packageJsonSha256": "764861182abad511ee66eea255053304c637a9ff1928f52a5800ac7043ba6a3b",
+      "sources": [
+        {
+          "path": "node_modules/is-alphabetical/license",
+          "sha256": "ca4662cb5d1b738fbe5350c0d5485ba11773b4b7208974082ae6e129a52d631d",
+          "bytes": 1099
+        }
+      ]
+    },
+    {
+      "name": "is-alphanumerical",
+      "version": "2.0.1",
+      "license": "MIT",
+      "lockIntegrity": "sha512-hmbYhX/9MUMF5uh7tOXyK/n0ZvWpad5caBA17GsC6vyuCqaWliRG5K1qS9inmUhEMaOBIW7/whAnSwveW/LtZw==",
+      "packageJsonSha256": "e6ac8f7e567d2c8079b7c0954e3cb64ceb7834e64f2a4568996935e1f3d58c6b",
+      "sources": [
+        {
+          "path": "node_modules/is-alphanumerical/license",
+          "sha256": "ca4662cb5d1b738fbe5350c0d5485ba11773b4b7208974082ae6e129a52d631d",
+          "bytes": 1099
+        }
+      ]
+    },
+    {
+      "name": "is-decimal",
+      "version": "2.0.1",
+      "license": "MIT",
+      "lockIntegrity": "sha512-AAB9hiomQs5DXWcRB1rqsxGUstbRroFOPPVAomNk/3XHR5JyEZChOyTWe2oayKnsSsr/kcGqF+z6yuH6HHpN0A==",
+      "packageJsonSha256": "aa18d6561f45c1aa9fa982727a9b315719296572287268314e866a2bbb50e684",
+      "sources": [
+        {
+          "path": "node_modules/is-decimal/license",
+          "sha256": "ca4662cb5d1b738fbe5350c0d5485ba11773b4b7208974082ae6e129a52d631d",
+          "bytes": 1099
+        }
+      ]
+    },
+    {
+      "name": "is-hexadecimal",
+      "version": "2.0.1",
+      "license": "MIT",
+      "lockIntegrity": "sha512-DgZQp241c8oO6cA1SbTEWiXeoxV42vlcJxgH+B3hi1AiqqKruZR3ZGF8In3fj4+/y/7rHvlOZLZtgJ/4ttYGZg==",
+      "packageJsonSha256": "cf249c4bb356b19911930acfaf501dbf59df1f4ecb39f007afe7fb32b5555350",
+      "sources": [
+        {
+          "path": "node_modules/is-hexadecimal/license",
+          "sha256": "ca4662cb5d1b738fbe5350c0d5485ba11773b4b7208974082ae6e129a52d631d",
+          "bytes": 1099
+        }
+      ]
+    },
+    {
+      "name": "is-plain-obj",
+      "version": "4.1.0",
+      "license": "MIT",
+      "lockIntegrity": "sha512-+Pgi+vMuUNkJyExiMBt5IlFoMyKnr5zhJ4Uspz58WOhBF5QoIZkFyNHIbBAtHwzVAgk5RtndVNsDRN61/mmDqg==",
+      "packageJsonSha256": "ac84142050cd4d1854c489a3d61e0c991550195ae5ae37d9347b736424b09c59",
+      "sources": [
+        {
+          "path": "node_modules/is-plain-obj/license",
+          "sha256": "5c932d88256b4ab958f64a856fa48e8bd1f55bc1d96b8149c65689e0c61789d3",
+          "bytes": 1117
+        }
+      ]
+    },
+    {
+      "name": "longest-streak",
+      "version": "3.1.0",
+      "license": "MIT",
+      "lockIntegrity": "sha512-9Ri+o0JYgehTaVBBDoMqIl8GXtbWg711O3srftcHhZ0dqnETqLaoIK0x17fUw9rFSlK/0NlsKe0Ahhyl5pXE2g==",
+      "packageJsonSha256": "fe48cd537de554b59fcb057d28c4b10cfef569817040ae61beb8a9b323bf82df",
+      "sources": [
+        {
+          "path": "node_modules/longest-streak/license",
+          "sha256": "9f084fac69d8cf1e6ce983ba5a3499c7695ed74a26ec625c38f0fd19fddd5e10",
+          "bytes": 1106
+        }
+      ]
+    },
+    {
+      "name": "lucide-react",
+      "version": "0.468.0",
+      "license": "ISC",
+      "lockIntegrity": "sha512-6koYRhnM2N0GGZIdXzSeiNwguv1gt/FAjZOiPl76roBi3xKEXa4WmfpxgQwTTL4KipXjefrnf3oV4IsYhi4JFA==",
+      "packageJsonSha256": "609e78dffe97aab720c105246eca516f0aaac1de60725e53c0f5abb908b08320",
+      "sources": [
+        {
+          "path": "node_modules/lucide-react/LICENSE",
+          "sha256": "1e7290b35280a048667bbf0ebabac1c7fd52a75300e8b2946ac165715997f2bc",
+          "bytes": 880
+        }
+      ]
+    },
+    {
+      "name": "markdown-table",
+      "version": "3.0.4",
+      "license": "MIT",
+      "lockIntegrity": "sha512-wiYz4+JrLyb/DqW2hkFJxP7Vd7JuTDm77fvbM8VfEQdmSMqcImWeeRbHwZjBjIFki/VaMK2BhFi7oUUZeM5bqw==",
+      "packageJsonSha256": "545694864e591196ed1cfc43b5b973b1662722cd081d3d113b25f298ac6d02f9",
+      "sources": [
+        {
+          "path": "node_modules/markdown-table/license",
+          "sha256": "dd1081884a92952802f4803110a6bb543acea9a814c786d58605b4c1219b5ebb",
+          "bytes": 1094
+        }
+      ]
+    },
+    {
+      "name": "mdast-util-find-and-replace",
+      "version": "3.0.3",
+      "license": "MIT",
+      "lockIntegrity": "sha512-xPgpDNl0/OXHsI7TlaIs22lWnH3KlpvZdXG1ET/m/YT2Hhdkx8lJV4kLphE6l9simyM4KPDFBwas08BgEob6Jw==",
+      "packageJsonSha256": "5627d0b21fa85ef0786499b60754f30d934bc3d486a93f7147e5bdebeacfd390",
+      "sources": [
+        {
+          "path": "node_modules/mdast-util-find-and-replace/license",
+          "sha256": "dd1081884a92952802f4803110a6bb543acea9a814c786d58605b4c1219b5ebb",
+          "bytes": 1094
+        }
+      ]
+    },
+    {
+      "name": "mdast-util-from-markdown",
+      "version": "2.1.0",
+      "license": "MIT",
+      "lockIntegrity": "sha512-KRLgmPaP2H1ul2bpoJkOS+9pAcDAAj9Nu1mqLnh8NLeJG5tlvj42TH80PIGBpROWlRXLk0lDrWNuZCFy/tsB4A==",
+      "packageJsonSha256": "ae4b7f17ad9c5a0749b005994e8c501b954977a8b40286ee0253eb099697e785",
+      "sources": [
+        {
+          "path": "node_modules/mdast-util-from-markdown/license",
+          "sha256": "dd1081884a92952802f4803110a6bb543acea9a814c786d58605b4c1219b5ebb",
+          "bytes": 1094
+        }
+      ]
+    },
+    {
+      "name": "mdast-util-gfm",
+      "version": "3.1.0",
+      "license": "MIT",
+      "lockIntegrity": "sha512-0ulfdQOM3ysHhCJ1p06l0b0VKlhU0wuQs3thxZQagjcjPrlFRqY215uZGHHJan9GEAXd9MbfPjFJz+qMkVR6zQ==",
+      "packageJsonSha256": "5d3d27f68e6aac77039850c2587d49b2d8047f1fb46914d1f67eaec0a52c8fe1",
+      "sources": [
+        {
+          "path": "node_modules/mdast-util-gfm/license",
+          "sha256": "dd1081884a92952802f4803110a6bb543acea9a814c786d58605b4c1219b5ebb",
+          "bytes": 1094
+        }
+      ]
+    },
+    {
+      "name": "mdast-util-gfm-autolink-literal",
+      "version": "2.0.1",
+      "license": "MIT",
+      "lockIntegrity": "sha512-5HVP2MKaP6L+G6YaxPNjuL0BPrq9orG3TsrZ9YXbA3vDw/ACI4MEsnoDpn6ZNm7GnZgtAcONJyPhOP8tNJQavQ==",
+      "packageJsonSha256": "aaf24f25ff1d5dee2b19c2da3704f98fbc67ac2bdf9424858aeb19430649c50b",
+      "sources": [
+        {
+          "path": "node_modules/mdast-util-gfm-autolink-literal/license",
+          "sha256": "536804b3adbff17dbbb9ed0d2bf9655b78f07640278581e37e3d7475282d5e61",
+          "bytes": 1099
+        }
+      ]
+    },
+    {
+      "name": "mdast-util-gfm-footnote",
+      "version": "2.1.0",
+      "license": "MIT",
+      "lockIntegrity": "sha512-sqpDWlsHn7Ac9GNZQMeUzPQSMzR6Wv0WKRNvQRg0KqHh02fpTz69Qc1QSseNX29bhz1ROIyNyxExfawVKTm1GQ==",
+      "packageJsonSha256": "b91f4521e33413134bda4b3a481b165c764efd453cb7fb379f5b71b09309e11a",
+      "sources": [
+        {
+          "path": "node_modules/mdast-util-gfm-footnote/license",
+          "sha256": "dd1081884a92952802f4803110a6bb543acea9a814c786d58605b4c1219b5ebb",
+          "bytes": 1094
+        }
+      ]
+    },
+    {
+      "name": "mdast-util-gfm-strikethrough",
+      "version": "2.0.1",
+      "license": "MIT",
+      "lockIntegrity": "sha512-OuJHqvr455pwu2OaOrir7dbzqs4jlWKOtlu9L6GjcIjjQwNyw02VntQsr/Ek6/A13vgnXfUhBekWRUP1OkNivw==",
+      "packageJsonSha256": "78d21e77dfc0ae9b54c765ba111f4dfa246e3515a67c8081b2990ef77b9e6e60",
+      "sources": [
+        {
+          "path": "node_modules/mdast-util-gfm-strikethrough/license",
+          "sha256": "dd1081884a92952802f4803110a6bb543acea9a814c786d58605b4c1219b5ebb",
+          "bytes": 1094
+        }
+      ]
+    },
+    {
+      "name": "mdast-util-gfm-table",
+      "version": "2.0.0",
+      "license": "MIT",
+      "lockIntegrity": "sha512-78UEvebzz/rJIxLvE7ZtDd/vIQ0RHv+3Mh5DR96p7cS7HsBhYIICDBCu8csTNWNO6tBWfqXPWekRuj2FNOGOZg==",
+      "packageJsonSha256": "8ab7c1402602e721347f377b537374d4f2dfdef7794f4c7b0711ad1f39e2239f",
+      "sources": [
+        {
+          "path": "node_modules/mdast-util-gfm-table/license",
+          "sha256": "536804b3adbff17dbbb9ed0d2bf9655b78f07640278581e37e3d7475282d5e61",
+          "bytes": 1099
+        }
+      ]
+    },
+    {
+      "name": "mdast-util-gfm-task-list-item",
+      "version": "2.0.0",
+      "license": "MIT",
+      "lockIntegrity": "sha512-IrtvNvjxC1o06taBAVJznEnkiHxLFTzgonUdy8hzFVeDun0uTjxxrRGVaNFqkU1wJR3RBPEfsxmU6jDWPofrTQ==",
+      "packageJsonSha256": "156ef1ae561ef1558f5e3210c41f238a4707d9f451eecda92d832ef821d5e7f1",
+      "sources": [
+        {
+          "path": "node_modules/mdast-util-gfm-task-list-item/license",
+          "sha256": "536804b3adbff17dbbb9ed0d2bf9655b78f07640278581e37e3d7475282d5e61",
+          "bytes": 1099
+        }
+      ]
+    },
+    {
+      "name": "mdast-util-mdx-expression",
+      "version": "2.0.1",
+      "license": "MIT",
+      "lockIntegrity": "sha512-J6f+9hUp+ldTZqKRSg7Vw5V6MqjATc+3E4gf3CFNcuZNWD8XdyI6zQ8GqH7f8169MM6P7hMBRDVGnn7oHB9kXQ==",
+      "packageJsonSha256": "bdc0c68b4eca52b0ffc6e50ce48fb8366d994d2065d99200a081191d05294985",
+      "sources": [
+        {
+          "path": "node_modules/mdast-util-mdx-expression/license",
+          "sha256": "536804b3adbff17dbbb9ed0d2bf9655b78f07640278581e37e3d7475282d5e61",
+          "bytes": 1099
+        }
+      ]
+    },
+    {
+      "name": "mdast-util-mdx-jsx",
+      "version": "3.2.0",
+      "license": "MIT",
+      "lockIntegrity": "sha512-lj/z8v0r6ZtsN/cGNNtemmmfoLAFZnjMbNyLzBafjzikOM+glrjNHPlf6lQDOTccj9n5b0PPihEBbhneMyGs1Q==",
+      "packageJsonSha256": "6bbb6d4cb8876c914de97eaa11c5ef99550e9f93056d8a5d2c3297864135d2f9",
+      "sources": [
+        {
+          "path": "node_modules/mdast-util-mdx-jsx/license",
+          "sha256": "536804b3adbff17dbbb9ed0d2bf9655b78f07640278581e37e3d7475282d5e61",
+          "bytes": 1099
+        }
+      ]
+    },
+    {
+      "name": "mdast-util-mdxjs-esm",
+      "version": "2.0.1",
+      "license": "MIT",
+      "lockIntegrity": "sha512-EcmOpxsZ96CvlP03NghtH1EsLtr0n9Tm4lPUJUBccV9RwUOneqSycg19n5HGzCf+10LozMRSObtVr3ee1WoHtg==",
+      "packageJsonSha256": "e1b80111851201ba096f838cae4f534a22791bc8f3ab46c10596b31c34f1c52e",
+      "sources": [
+        {
+          "path": "node_modules/mdast-util-mdxjs-esm/license",
+          "sha256": "536804b3adbff17dbbb9ed0d2bf9655b78f07640278581e37e3d7475282d5e61",
+          "bytes": 1099
+        }
+      ]
+    },
+    {
+      "name": "mdast-util-phrasing",
+      "version": "4.1.0",
+      "license": "MIT",
+      "lockIntegrity": "sha512-TqICwyvJJpBwvGAMZjj4J2n0X8QWp21b9l0o7eXyVJ25YNWYbJDVIyD1bZXE6WtV6RmKJVYmQAKWa0zWOABz2w==",
+      "packageJsonSha256": "c020a54303d9d422c9def6ba5416db74c0f30b2783f2a84b7248b0d61c2ac113",
+      "sources": [
+        {
+          "path": "node_modules/mdast-util-phrasing/license",
+          "sha256": "b6d1a4e1831b177acc96f22a817d4f0f4c18419355badc3125754445fc69e3a7",
+          "bytes": 1150
+        }
+      ]
+    },
+    {
+      "name": "mdast-util-to-hast",
+      "version": "13.2.1",
+      "license": "MIT",
+      "lockIntegrity": "sha512-cctsq2wp5vTsLIcaymblUriiTcZd0CwWtCbLvrOzYCDZoWyMNV8sZ7krj09FSnsiJi3WVsHLM4k6Dq/yaPyCXA==",
+      "packageJsonSha256": "aa1e17fedf46914534ba0c67016734edc6d0fc919057556eb1034160f795b596",
+      "sources": [
+        {
+          "path": "node_modules/mdast-util-to-hast/license",
+          "sha256": "ca4662cb5d1b738fbe5350c0d5485ba11773b4b7208974082ae6e129a52d631d",
+          "bytes": 1099
+        }
+      ]
+    },
+    {
+      "name": "mdast-util-to-markdown",
+      "version": "2.2.0",
+      "license": "MIT",
+      "lockIntegrity": "sha512-2Jn/ADrHFFyyniBMi0bncTbJqU78K3/TEYvzvwrWWzD9MYPUa/Gm4r3nOeKFQg/PDM5BsbDYdc8ackW4NTY6NA==",
+      "packageJsonSha256": "46cf2fb8901647206bb834da163ba36cd584ab21b284b6c74eef71c7ad7dbd07",
+      "sources": [
+        {
+          "path": "node_modules/mdast-util-to-markdown/license",
+          "sha256": "dd1081884a92952802f4803110a6bb543acea9a814c786d58605b4c1219b5ebb",
+          "bytes": 1094
+        }
+      ]
+    },
+    {
+      "name": "mdast-util-to-string",
+      "version": "4.0.0",
+      "license": "MIT",
+      "lockIntegrity": "sha512-0H44vDimn51F0YwvxSJSm0eCDOJTRlmN0R1yBh4HLj9wiV1Dn0QoXGbvFAWj2hSItVTlCmBF1hqKlIyUBVFLPg==",
+      "packageJsonSha256": "0acb725dee2ee1c9d374b240c7a972da04cc94d13663b58fa52be009c3271a13",
+      "sources": [
+        {
+          "path": "node_modules/mdast-util-to-string/license",
+          "sha256": "63cb98b3f6abfb3c3592c16f88253c1bdc834087bf52671e8ce5609e4eb693cf",
+          "bytes": 1099
+        }
+      ]
+    },
+    {
+      "name": "micromark",
+      "version": "4.0.3",
+      "license": "MIT",
+      "lockIntegrity": "sha512-oGYfQzHSG5dOMovQcJ3fyTmZlWAWpi0XA0sJwJs+i6OT88o1+Jtw/8z0CmdowSLxGhhFK89rQ/oXph/wN02PNw==",
+      "packageJsonSha256": "3a03c47fcb20ceb65d5a938816b1e3ef047fc2e43e9991dbc9638e44d010811d",
+      "sources": [
+        {
+          "path": "node_modules/micromark/license",
+          "sha256": "dd1081884a92952802f4803110a6bb543acea9a814c786d58605b4c1219b5ebb",
+          "bytes": 1094
+        }
+      ]
+    },
+    {
+      "name": "micromark-core-commonmark",
+      "version": "2.0.4",
+      "license": "MIT",
+      "lockIntegrity": "sha512-wxEeE8v8XVvOrxn1TZj74qYhAtTQsSqufHVS3uNVyT1MupXxhyaHk8/9xDNPh9BmL77QNDgWTkZ3RsYHB2ry7w==",
+      "packageJsonSha256": "deb12063e794567270a59ac3746c3a17968ab45e3e45d556dc658161f117aadb",
+      "sources": [
+        {
+          "path": "node_modules/micromark-core-commonmark/license",
+          "sha256": "dd1081884a92952802f4803110a6bb543acea9a814c786d58605b4c1219b5ebb",
+          "bytes": 1094
+        }
+      ]
+    },
+    {
+      "name": "micromark-extension-gfm",
+      "version": "3.0.0",
+      "license": "MIT",
+      "lockIntegrity": "sha512-vsKArQsicm7t0z2GugkCKtZehqUm31oeGBV/KVSorWSy8ZlNAv7ytjFhvaryUiCUJYqs+NoE6AFhpQvBTM6Q4w==",
+      "packageJsonSha256": "f0c6ffb3bbbf52b1e5d939566b8d68097cbdd061598f09fde72af8a38c948bee",
+      "sources": [
+        {
+          "path": "node_modules/micromark-extension-gfm/license",
+          "sha256": "536804b3adbff17dbbb9ed0d2bf9655b78f07640278581e37e3d7475282d5e61",
+          "bytes": 1099
+        }
+      ]
+    },
+    {
+      "name": "micromark-extension-gfm-autolink-literal",
+      "version": "2.1.0",
+      "license": "MIT",
+      "lockIntegrity": "sha512-oOg7knzhicgQ3t4QCjCWgTmfNhvQbDDnJeVu9v81r7NltNCVmhPy1fJRX27pISafdjL+SVc4d3l48Gb6pbRypw==",
+      "packageJsonSha256": "778b72859fb329cbca8ea93653b8b11da652f93147e2752773eef42b9091eaca",
+      "sources": [
+        {
+          "path": "node_modules/micromark-extension-gfm-autolink-literal/license",
+          "sha256": "536804b3adbff17dbbb9ed0d2bf9655b78f07640278581e37e3d7475282d5e61",
+          "bytes": 1099
+        }
+      ]
+    },
+    {
+      "name": "micromark-extension-gfm-footnote",
+      "version": "2.1.0",
+      "license": "MIT",
+      "lockIntegrity": "sha512-/yPhxI1ntnDNsiHtzLKYnE3vf9JZ6cAisqVDauhp4CEHxlb4uoOTxOCJ+9s51bIB8U1N1FJ1RXOKTIlD5B/gqw==",
+      "packageJsonSha256": "6d01f1d739fa38fbe2784fcb9143554b2f19e4c1193f7d62efae46fb7d3b36d6",
+      "sources": [
+        {
+          "path": "node_modules/micromark-extension-gfm-footnote/license",
+          "sha256": "807a88522a850092aece49486207c17c313c4d5708ac276524840fe1caa0b0fa",
+          "bytes": 1099
+        }
+      ]
+    },
+    {
+      "name": "micromark-extension-gfm-strikethrough",
+      "version": "2.1.0",
+      "license": "MIT",
+      "lockIntegrity": "sha512-ADVjpOOkjz1hhkZLlBiYA9cR2Anf8F4HqZUO6e5eDcPQd0Txw5fxLzzxnEkSkfnD0wziSGiv7sYhk/ktvbf1uw==",
+      "packageJsonSha256": "5a115643dd899a6c828ab236bbeab6aaf2108276f5cbc989662d6204f5ab677a",
+      "sources": [
+        {
+          "path": "node_modules/micromark-extension-gfm-strikethrough/license",
+          "sha256": "536804b3adbff17dbbb9ed0d2bf9655b78f07640278581e37e3d7475282d5e61",
+          "bytes": 1099
+        }
+      ]
+    },
+    {
+      "name": "micromark-extension-gfm-table",
+      "version": "2.1.2",
+      "license": "MIT",
+      "lockIntegrity": "sha512-pRzm4kDTu0MjlmBkxmS9yYhw60nncfcEwu9NNdPFSQEFXS95ZKyIIyTSHu/o3ReBUrLKYEq+7YaXCRn/bPB4MA==",
+      "packageJsonSha256": "02cb174d3d305526d0594c5bb9488f37afdd5cae00c286b2f7e8607c165b386a",
+      "sources": [
+        {
+          "path": "node_modules/micromark-extension-gfm-table/license",
+          "sha256": "dd1081884a92952802f4803110a6bb543acea9a814c786d58605b4c1219b5ebb",
+          "bytes": 1094
+        }
+      ]
+    },
+    {
+      "name": "micromark-extension-gfm-tagfilter",
+      "version": "2.0.0",
+      "license": "MIT",
+      "lockIntegrity": "sha512-xHlTOmuCSotIA8TW1mDIM6X2O1SiX5P9IuDtqGonFhEK0qgRI4yeC6vMxEV2dgyr2TiD+2PQ10o+cOhdVAcwfg==",
+      "packageJsonSha256": "6ae932bac51e13e4b1fe4071c2a60f567b68e7a26ef60649d6401bab94bdf0b4",
+      "sources": [
+        {
+          "path": "node_modules/micromark-extension-gfm-tagfilter/license",
+          "sha256": "536804b3adbff17dbbb9ed0d2bf9655b78f07640278581e37e3d7475282d5e61",
+          "bytes": 1099
+        }
+      ]
+    },
+    {
+      "name": "micromark-extension-gfm-task-list-item",
+      "version": "2.1.0",
+      "license": "MIT",
+      "lockIntegrity": "sha512-qIBZhqxqI6fjLDYFTBIa4eivDMnP+OZqsNwmQ3xNLE4Cxwc+zfQEfbs6tzAo2Hjq+bh6q5F+Z8/cksrLFYWQQw==",
+      "packageJsonSha256": "2497c18c449db1459392e6e70bca781256cab6a69b3a35fc55acbd0360ceb85c",
+      "sources": [
+        {
+          "path": "node_modules/micromark-extension-gfm-task-list-item/license",
+          "sha256": "536804b3adbff17dbbb9ed0d2bf9655b78f07640278581e37e3d7475282d5e61",
+          "bytes": 1099
+        }
+      ]
+    },
+    {
+      "name": "micromark-factory-destination",
+      "version": "2.0.1",
+      "license": "MIT",
+      "lockIntegrity": "sha512-Xe6rDdJlkmbFRExpTOmRj9N3MaWmbAgdpSrBQvCFqhezUn4AHqJHbaEnfbVYYiexVSs//tqOdY/DxhjdCiJnIA==",
+      "packageJsonSha256": "71e61f23d5e171525c8934e9a8ac51e649107e4658082938d19dab172533b483",
+      "sources": [
+        {
+          "path": "node_modules/micromark-factory-destination/license",
+          "sha256": "dd1081884a92952802f4803110a6bb543acea9a814c786d58605b4c1219b5ebb",
+          "bytes": 1094
+        }
+      ]
+    },
+    {
+      "name": "micromark-factory-label",
+      "version": "2.0.1",
+      "license": "MIT",
+      "lockIntegrity": "sha512-VFMekyQExqIW7xIChcXn4ok29YE3rnuyveW3wZQWWqF4Nv9Wk5rgJ99KzPvHjkmPXF93FXIbBp6YdW3t71/7Vg==",
+      "packageJsonSha256": "2c1c73d0087a1195a34bff62b47d5119a49f210636b3759c6d459886b559ee5e",
+      "sources": [
+        {
+          "path": "node_modules/micromark-factory-label/license",
+          "sha256": "dd1081884a92952802f4803110a6bb543acea9a814c786d58605b4c1219b5ebb",
+          "bytes": 1094
+        }
+      ]
+    },
+    {
+      "name": "micromark-factory-space",
+      "version": "2.1.0",
+      "license": "MIT",
+      "lockIntegrity": "sha512-fS8hnLIjnjvdQIj39Geug8wWsR0HrYZ43KShKxNfwT7t2LOHo/LbWZEzEaSOjwtjdCsjoE6syHhonEzW0zv0+Q==",
+      "packageJsonSha256": "69fbe941b8151b55316408f23e21864377ac337b3f597ca369a3059fda02575d",
+      "sources": [
+        {
+          "path": "node_modules/micromark-factory-space/license",
+          "sha256": "dd1081884a92952802f4803110a6bb543acea9a814c786d58605b4c1219b5ebb",
+          "bytes": 1094
+        }
+      ]
+    },
+    {
+      "name": "micromark-factory-title",
+      "version": "2.0.1",
+      "license": "MIT",
+      "lockIntegrity": "sha512-5bZ+3CjhAd9eChYTHsjy6TGxpOFSKgKKJPJxr293jTbfry2KDoWkhBb6TcPVB4NmzaPhMs1Frm9AZH7OD4Cjzw==",
+      "packageJsonSha256": "5b7d184aeb5ff4fa8b63a338800e80400a631ee594ff0d698a5a4668eddc9a16",
+      "sources": [
+        {
+          "path": "node_modules/micromark-factory-title/license",
+          "sha256": "dd1081884a92952802f4803110a6bb543acea9a814c786d58605b4c1219b5ebb",
+          "bytes": 1094
+        }
+      ]
+    },
+    {
+      "name": "micromark-factory-whitespace",
+      "version": "2.0.1",
+      "license": "MIT",
+      "lockIntegrity": "sha512-Ob0nuZ3PKt/n0hORHyvoD9uZhr+Za8sFoP+OnMcnWK5lngSzALgQYKMr9RJVOWLqQYuyn6ulqGWSXdwf6F80lQ==",
+      "packageJsonSha256": "ea0cbec4d722111585387048046a248ce272e3c587e228cc3cf98fe4919e48c6",
+      "sources": [
+        {
+          "path": "node_modules/micromark-factory-whitespace/license",
+          "sha256": "dd1081884a92952802f4803110a6bb543acea9a814c786d58605b4c1219b5ebb",
+          "bytes": 1094
+        }
+      ]
+    },
+    {
+      "name": "micromark-util-character",
+      "version": "2.1.1",
+      "license": "MIT",
+      "lockIntegrity": "sha512-wv8tdUTJ3thSFFFJKtpYKOYiGP2+v96Hvk4Tu8KpCAsTMs6yi+nVmGh1syvSCsaxz45J6Jbw+9DD6g97+NV67Q==",
+      "packageJsonSha256": "bf43c5df782cf1cf985d89a8f01fd1a7b7b4bae9bf2b9c07e633c2379b1dbd7f",
+      "sources": [
+        {
+          "path": "node_modules/micromark-util-character/license",
+          "sha256": "dd1081884a92952802f4803110a6bb543acea9a814c786d58605b4c1219b5ebb",
+          "bytes": 1094
+        }
+      ]
+    },
+    {
+      "name": "micromark-util-chunked",
+      "version": "2.0.1",
+      "license": "MIT",
+      "lockIntegrity": "sha512-QUNFEOPELfmvv+4xiNg2sRYeS/P84pTW0TCgP5zc9FpXetHY0ab7SxKyAQCNCc1eK0459uoLI1y5oO5Vc1dbhA==",
+      "packageJsonSha256": "20e4e68a94fb62188c9139721be97740ec32f77464b23c40677a89aee72584f6",
+      "sources": [
+        {
+          "path": "node_modules/micromark-util-chunked/license",
+          "sha256": "dd1081884a92952802f4803110a6bb543acea9a814c786d58605b4c1219b5ebb",
+          "bytes": 1094
+        }
+      ]
+    },
+    {
+      "name": "micromark-util-classify-character",
+      "version": "2.0.1",
+      "license": "MIT",
+      "lockIntegrity": "sha512-K0kHzM6afW/MbeWYWLjoHQv1sgg2Q9EccHEDzSkxiP/EaagNzCm7T/WMKZ3rjMbvIpvBiZgwR3dKMygtA4mG1Q==",
+      "packageJsonSha256": "f84c7e2b5f54a05fa725645d31810ad8531c278901d661c714d114ad978e634d",
+      "sources": [
+        {
+          "path": "node_modules/micromark-util-classify-character/license",
+          "sha256": "dd1081884a92952802f4803110a6bb543acea9a814c786d58605b4c1219b5ebb",
+          "bytes": 1094
+        }
+      ]
+    },
+    {
+      "name": "micromark-util-combine-extensions",
+      "version": "2.0.1",
+      "license": "MIT",
+      "lockIntegrity": "sha512-OnAnH8Ujmy59JcyZw8JSbK9cGpdVY44NKgSM7E9Eh7DiLS2E9RNQf0dONaGDzEG9yjEl5hcqeIsj4hfRkLH/Bg==",
+      "packageJsonSha256": "43686ee41cc83e2460aaa49821d7f36b0b7fd525e88b253e10b1556520196554",
+      "sources": [
+        {
+          "path": "node_modules/micromark-util-combine-extensions/license",
+          "sha256": "dd1081884a92952802f4803110a6bb543acea9a814c786d58605b4c1219b5ebb",
+          "bytes": 1094
+        }
+      ]
+    },
+    {
+      "name": "micromark-util-decode-numeric-character-reference",
+      "version": "2.0.2",
+      "license": "MIT",
+      "lockIntegrity": "sha512-ccUbYk6CwVdkmCQMyr64dXz42EfHGkPQlBj5p7YVGzq8I7CtjXZJrubAYezf7Rp+bjPseiROqe7G6foFd+lEuw==",
+      "packageJsonSha256": "b4eda7dc69734392cf0c79313423b21dacfe03ae43002e5fc18151613f37f532",
+      "sources": [
+        {
+          "path": "node_modules/micromark-util-decode-numeric-character-reference/license",
+          "sha256": "dd1081884a92952802f4803110a6bb543acea9a814c786d58605b4c1219b5ebb",
+          "bytes": 1094
+        }
+      ]
+    },
+    {
+      "name": "micromark-util-decode-string",
+      "version": "2.0.1",
+      "license": "MIT",
+      "lockIntegrity": "sha512-nDV/77Fj6eH1ynwscYTOsbK7rR//Uj0bZXBwJZRfaLEJ1iGBR6kIfNmlNqaqJf649EP0F3NWNdeJi03elllNUQ==",
+      "packageJsonSha256": "3fde5acb664658ceef73bd64e17041e9762819a06ccee998d058d04e8ec34a2e",
+      "sources": [
+        {
+          "path": "node_modules/micromark-util-decode-string/license",
+          "sha256": "dd1081884a92952802f4803110a6bb543acea9a814c786d58605b4c1219b5ebb",
+          "bytes": 1094
+        }
+      ]
+    },
+    {
+      "name": "micromark-util-edit-map",
+      "version": "1.0.0",
+      "license": "MIT",
+      "lockIntegrity": "sha512-Pa2ljlsEL6sVwFaYeyrOLSYbQt73JvGbPOYFq+9AElXiSnfI5Q4465RRZ1sHv7lDjDOnGRDDaqPXqClqWK/q1Q==",
+      "packageJsonSha256": "cb3c2769b1f0184de725e04b83b000bc111601b1572bcf25fe2558ac6ff4199d",
+      "sources": [
+        {
+          "path": "node_modules/micromark-util-edit-map/license",
+          "sha256": "dd1081884a92952802f4803110a6bb543acea9a814c786d58605b4c1219b5ebb",
+          "bytes": 1094
+        }
+      ]
+    },
+    {
+      "name": "micromark-util-encode",
+      "version": "2.0.1",
+      "license": "MIT",
+      "lockIntegrity": "sha512-c3cVx2y4KqUnwopcO9b/SCdo2O67LwJJ/UyqGfbigahfegL9myoEFoDYZgkT7f36T0bLrM9hZTAaAyH+PCAXjw==",
+      "packageJsonSha256": "1758618d3101cb94280c1ddb827bb329790f7d95058cdc616d50352811c7d5ba",
+      "sources": [
+        {
+          "path": "node_modules/micromark-util-encode/license",
+          "sha256": "dd1081884a92952802f4803110a6bb543acea9a814c786d58605b4c1219b5ebb",
+          "bytes": 1094
+        }
+      ]
+    },
+    {
+      "name": "micromark-util-html-tag-name",
+      "version": "2.0.1",
+      "license": "MIT",
+      "lockIntegrity": "sha512-2cNEiYDhCWKI+Gs9T0Tiysk136SnR13hhO8yW6BGNyhOC4qYFnwF1nKfD3HFAIXA5c45RrIG1ub11GiXeYd1xA==",
+      "packageJsonSha256": "d541066042522d8c5247964225d3a9f08f7b902b75682ab57ceecfeee45ed90c",
+      "sources": [
+        {
+          "path": "node_modules/micromark-util-html-tag-name/license",
+          "sha256": "dd1081884a92952802f4803110a6bb543acea9a814c786d58605b4c1219b5ebb",
+          "bytes": 1094
+        }
+      ]
+    },
+    {
+      "name": "micromark-util-normalize-identifier",
+      "version": "2.0.1",
+      "license": "MIT",
+      "lockIntegrity": "sha512-sxPqmo70LyARJs0w2UclACPUUEqltCkJ6PhKdMIDuJ3gSf/Q+/GIe3WKl0Ijb/GyH9lOpUkRAO2wp0GVkLvS9Q==",
+      "packageJsonSha256": "b22a2066064ff412b8f9ded011a14d3fac87c37c696da2d8e8a57a0c9c88dea0",
+      "sources": [
+        {
+          "path": "node_modules/micromark-util-normalize-identifier/license",
+          "sha256": "dd1081884a92952802f4803110a6bb543acea9a814c786d58605b4c1219b5ebb",
+          "bytes": 1094
+        }
+      ]
+    },
+    {
+      "name": "micromark-util-resolve-all",
+      "version": "2.0.1",
+      "license": "MIT",
+      "lockIntegrity": "sha512-VdQyxFWFT2/FGJgwQnJYbe1jjQoNTS4RjglmSjTUlpUMa95Htx9NHeYW4rGDJzbjvCsl9eLjMQwGeElsqmzcHg==",
+      "packageJsonSha256": "f786149ff20e6ab653b42ddf8109d4f14e839b80800513698f7de790b3819628",
+      "sources": [
+        {
+          "path": "node_modules/micromark-util-resolve-all/license",
+          "sha256": "dd1081884a92952802f4803110a6bb543acea9a814c786d58605b4c1219b5ebb",
+          "bytes": 1094
+        }
+      ]
+    },
+    {
+      "name": "micromark-util-sanitize-uri",
+      "version": "2.0.1",
+      "license": "MIT",
+      "lockIntegrity": "sha512-9N9IomZ/YuGGZZmQec1MbgxtlgougxTodVwDzzEouPKo3qFWvymFHWcnDi2vzV1ff6kas9ucW+o3yzJK9YB1AQ==",
+      "packageJsonSha256": "a694d9800a68d5d52916675f9231c16bf7e764658a9045d86b74c29736b59dd6",
+      "sources": [
+        {
+          "path": "node_modules/micromark-util-sanitize-uri/license",
+          "sha256": "dd1081884a92952802f4803110a6bb543acea9a814c786d58605b4c1219b5ebb",
+          "bytes": 1094
+        }
+      ]
+    },
+    {
+      "name": "micromark-util-subtokenize",
+      "version": "2.1.0",
+      "license": "MIT",
+      "lockIntegrity": "sha512-XQLu552iSctvnEcgXw6+Sx75GflAPNED1qx7eBJ+wydBb2KCbRZe+NwvIEEMM83uml1+2WSXpBAcp9IUCgCYWA==",
+      "packageJsonSha256": "8dd7a96c44ac602941d16b0078cef059821871b047a6f6309ffd61bb470cd420",
+      "sources": [
+        {
+          "path": "node_modules/micromark-util-subtokenize/license",
+          "sha256": "dd1081884a92952802f4803110a6bb543acea9a814c786d58605b4c1219b5ebb",
+          "bytes": 1094
+        }
+      ]
+    },
+    {
+      "name": "micromark-util-symbol",
+      "version": "2.0.1",
+      "license": "MIT",
+      "lockIntegrity": "sha512-vs5t8Apaud9N28kgCrRUdEed4UJ+wWNvicHLPxCa9ENlYuAY31M0ETy5y1vA33YoNPDFTghEbnh6efaE8h4x0Q==",
+      "packageJsonSha256": "713151401c413cbfd443283e5e721f914b06b8f3a372e9821139bde73e3c909d",
+      "sources": [
+        {
+          "path": "node_modules/micromark-util-symbol/license",
+          "sha256": "dd1081884a92952802f4803110a6bb543acea9a814c786d58605b4c1219b5ebb",
+          "bytes": 1094
+        }
+      ]
+    },
+    {
+      "name": "micromark-util-types",
+      "version": "2.0.3",
+      "license": "MIT",
+      "lockIntegrity": "sha512-oxB2Ik03hI0gv+VNn9tnh1t1YEe9MDPptViAEgfdf3YQHsn0pzGTgCdlSCJXcwhqm8phaEuM7zeEu3QQzVBrPg==",
+      "packageJsonSha256": "17a96d60509da79300de050b8a29826101de1e5a9d8d01239e48d0377cf2a43d",
+      "sources": [
+        {
+          "path": "node_modules/micromark-util-types/license",
+          "sha256": "dd1081884a92952802f4803110a6bb543acea9a814c786d58605b4c1219b5ebb",
+          "bytes": 1094
+        }
+      ]
+    },
+    {
+      "name": "ms",
+      "version": "2.1.3",
+      "license": "MIT",
+      "lockIntegrity": "sha512-6FlzubTLZG3J2a/NVCAleEhjzq5oxgHyaCU9yYXvcLsvoVaHJq/s5xXI6/XXP6tz7R9xAOtHnSO/tXtF3WRTlA==",
+      "packageJsonSha256": "1a6b4d9739790c0b94ab96c8cc0507e281c164c311ff4fbf5e57fb8d26290b40",
+      "sources": [
+        {
+          "path": "node_modules/ms/license.md",
+          "sha256": "1662fae9b5314d11cf51284e2dcd1f006a354f7343f08712a730fcff9a359801",
+          "bytes": 1079
+        }
+      ]
+    },
+    {
+      "name": "parse-entities",
+      "version": "4.0.2",
+      "license": "MIT",
+      "lockIntegrity": "sha512-GG2AQYWoLgL877gQIKeRPGO1xF9+eG1ujIb5soS5gPvLQ1y2o8FL90w2QWNdf9I361Mpp7726c+lj3U0qK1uGw==",
+      "packageJsonSha256": "7af95256ec23ae6e1095852c4e8a85f836ed4ea1cbaffe5a34ab2cef817ebabb",
+      "sources": [
+        {
+          "path": "node_modules/parse-entities/license",
+          "sha256": "5d0698266086f217bb11ea0499d33453e401fe479fb9126ad04e625e63d3557b",
+          "bytes": 1101
+        }
+      ]
+    },
+    {
+      "name": "@types/unist",
+      "version": "2.0.11",
+      "license": "MIT",
+      "lockIntegrity": "sha512-CmBKiL6NNo/OqgmMn95Fk9Whlp2mtvIv+KNpQKN2F4SjvrEesubTRWGYSg+BnWZOnlCaSTU1sMpsBOzgbYhnsA==",
+      "packageJsonSha256": "018b88713444b719834f13ab3ee85076205adb88d9c351a955458d6112cae2ec",
+      "sources": [
+        {
+          "path": "node_modules/parse-entities/node_modules/@types/unist/LICENSE",
+          "sha256": "c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383",
+          "bytes": 1141
+        }
+      ]
+    },
+    {
+      "name": "property-information",
+      "version": "7.2.0",
+      "license": "MIT",
+      "lockIntegrity": "sha512-IAtzIB6sUiWaJYrX9smp3V46pBGbBeLFRGdh25kg1334VcBlD8HzhPeNIWQH9zhGmo2itIe25EHt9dQP7G5hmg==",
+      "packageJsonSha256": "6cacc66c65e31d11d9d4e5677c1375667faf334e585b69a9d319a0ca25676530",
+      "sources": [
+        {
+          "path": "node_modules/property-information/license",
+          "sha256": "5d0698266086f217bb11ea0499d33453e401fe479fb9126ad04e625e63d3557b",
+          "bytes": 1101
+        }
+      ]
+    },
+    {
+      "name": "react",
+      "version": "19.3.0",
+      "license": "MIT",
+      "lockIntegrity": "sha512-E8LUcbtBWt20bbl2YoHfx4ZDBdxVTfOKtCZn9cDSJ4l6/nuoApcpIBcj47t2wZoVX8g2ZHuMHbiShgCR1T5Sog==",
+      "packageJsonSha256": "6e003e4e9ed25afa7fdd55613f8aa877cefa9b359d9c13f81ee704030248e24e",
+      "sources": [
+        {
+          "path": "node_modules/react/LICENSE",
+          "sha256": "da6d3703ed11cbe42bd212c725957c98da23cbff1998c05fa4b3d976d1a58e93",
+          "bytes": 1088
+        }
+      ]
+    },
+    {
+      "name": "react-dom",
+      "version": "19.3.0",
+      "license": "MIT",
+      "lockIntegrity": "sha512-JDk8dgif51OjFoDE70+OT9ICyYr+69HlmihNwp1+Nsfbna3t5sIiCa9ZJktDmQ4/1b/rn26hIAR2uYXDMr5r0Q==",
+      "packageJsonSha256": "136d4af63de473392ea79d6a21932b0ed9eb37fe518ce70f4621250f3d79e9bb",
+      "sources": [
+        {
+          "path": "node_modules/react-dom/LICENSE",
+          "sha256": "da6d3703ed11cbe42bd212c725957c98da23cbff1998c05fa4b3d976d1a58e93",
+          "bytes": 1088
+        }
+      ]
+    },
+    {
+      "name": "react-markdown",
+      "version": "10.1.0",
+      "license": "MIT",
+      "lockIntegrity": "sha512-qKxVopLT/TyA6BX3Ue5NwabOsAzm0Q7kAPwq6L+wWDwisYs7R8vZ0nRXqq6rkueboxpkjvLGU9fWifiX/ZZFxQ==",
+      "packageJsonSha256": "c6b7d280b5e5a6b620ad252abfd318560f2223562e67414fcc3dcd1f784e89c5",
+      "sources": [
+        {
+          "path": "node_modules/react-markdown/license",
+          "sha256": "f6196c64e144f9a6fa9154c3a80bc8b89615a9567934b83a8951879f06ba2aef",
+          "bytes": 1079
+        }
+      ]
+    },
+    {
+      "name": "remark-gfm",
+      "version": "4.0.1",
+      "license": "MIT",
+      "lockIntegrity": "sha512-1quofZ2RQ9EWdeN34S79+KExV1764+wCUGop5CPL1WGdD0ocPpu91lzPGbwWMECpEpd42kJGQwzRfyov9j4yNg==",
+      "packageJsonSha256": "c199482a69355b610bd1ff225b097776d4a990445b11e5f4c618930dacc8c79d",
+      "sources": [
+        {
+          "path": "node_modules/remark-gfm/license",
+          "sha256": "dd1081884a92952802f4803110a6bb543acea9a814c786d58605b4c1219b5ebb",
+          "bytes": 1094
+        }
+      ]
+    },
+    {
+      "name": "remark-parse",
+      "version": "11.0.0",
+      "license": "MIT",
+      "lockIntegrity": "sha512-FCxlKLNGknS5ba/1lmpYijMUzX2esxW5xQqjWxw2eHFfS2MSdaHVINFmhjo+qN1WhZhNimq0dZATN9pH0IDrpA==",
+      "packageJsonSha256": "47be70916ff853a6c35d8d858844c7b104d100f70999d579884859cf8d88a50c",
+      "sources": [
+        {
+          "path": "node_modules/remark-parse/license",
+          "sha256": "413654b0a78b98661dce96d2aff2e4d075603d220b8483e28b1aa010ccc138b4",
+          "bytes": 1099
+        }
+      ]
+    },
+    {
+      "name": "remark-rehype",
+      "version": "11.1.2",
+      "license": "MIT",
+      "lockIntegrity": "sha512-Dh7l57ianaEoIpzbp0PC9UKAdCSVklD8E5Rpw7ETfbTl3FqcOOgq5q2LVDhgGCkaBv7p24JXikPdvhhmHvKMsw==",
+      "packageJsonSha256": "f9886f99f9f38652d56ca256aa713e359e085ed42f7d89fd66671b49f4b83b64",
+      "sources": [
+        {
+          "path": "node_modules/remark-rehype/license",
+          "sha256": "dd1081884a92952802f4803110a6bb543acea9a814c786d58605b4c1219b5ebb",
+          "bytes": 1094
+        }
+      ]
+    },
+    {
+      "name": "remark-stringify",
+      "version": "11.0.0",
+      "license": "MIT",
+      "lockIntegrity": "sha512-1OSmLd3awB/t8qdoEOMazZkNsfVTeY4fTsgzcQFdXNq8ToTN4ZGwrMnlda4K6smTFKD+GRV6O48i6Z4iKgPPpw==",
+      "packageJsonSha256": "19ab4ef62890334f44384811ca42b366a6f58d0d14f80a6546f418e4bceea196",
+      "sources": [
+        {
+          "path": "node_modules/remark-stringify/license",
+          "sha256": "413654b0a78b98661dce96d2aff2e4d075603d220b8483e28b1aa010ccc138b4",
+          "bytes": 1099
+        }
+      ]
+    },
+    {
+      "name": "scheduler",
+      "version": "0.28.0",
+      "license": "MIT",
+      "lockIntegrity": "sha512-juorfCmIkIw8tT+p5BXSm6PJjQF/ycEYmKyzURCIt/RaZIhL+PulbQ9Yu2z1HdOJDdqDTlxA1+xKBmHXJsczAw==",
+      "packageJsonSha256": "06290718f22bcd93f29eaa1ac8d2ec9a7592ba4fec12bf1230e7cdd9a871b324",
+      "sources": [
+        {
+          "path": "node_modules/scheduler/LICENSE",
+          "sha256": "da6d3703ed11cbe42bd212c725957c98da23cbff1998c05fa4b3d976d1a58e93",
+          "bytes": 1088
+        }
+      ]
+    },
+    {
+      "name": "space-separated-tokens",
+      "version": "2.0.2",
+      "license": "MIT",
+      "lockIntegrity": "sha512-PEGlAwrG8yXGXRjW32fGbg66JAlOAwbObuqVoJpv/mRgoWDQfgH1wDPvtzWyUSNAXBGSk8h755YDbbcEy3SH2Q==",
+      "packageJsonSha256": "ca188b0d34a0cfcfa025597058c3302401155788219f78682243a34f8e5092f1",
+      "sources": [
+        {
+          "path": "node_modules/space-separated-tokens/license",
+          "sha256": "ca4662cb5d1b738fbe5350c0d5485ba11773b4b7208974082ae6e129a52d631d",
+          "bytes": 1099
+        }
+      ]
+    },
+    {
+      "name": "stringify-entities",
+      "version": "4.0.4",
+      "license": "MIT",
+      "lockIntegrity": "sha512-IwfBptatlO+QCJUo19AqvrPNqlVMpW9YEL2LIVY+Rpv2qsjCGxaDLNRgeGsQWJhfItebuJhsGSLjaBbNSQ+ieg==",
+      "packageJsonSha256": "76ab255c4aa582d55d726e40a16910d1cef0d5fc4cf47018d4c957c695d2d341",
+      "sources": [
+        {
+          "path": "node_modules/stringify-entities/license",
+          "sha256": "9f084fac69d8cf1e6ce983ba5a3499c7695ed74a26ec625c38f0fd19fddd5e10",
+          "bytes": 1106
+        }
+      ]
+    },
+    {
+      "name": "style-to-js",
+      "version": "1.1.21",
+      "license": "MIT",
+      "lockIntegrity": "sha512-RjQetxJrrUJLQPHbLku6U/ocGtzyjbJMP9lCNK7Ag0CNh690nSH8woqWH9u16nMjYBAok+i7JO1NP2pOy8IsPQ==",
+      "packageJsonSha256": "ef8bc5b200a5a0e06ffea8b5ebb4bb596a3dbc9821a7144a5f3244d5f4b2231b",
+      "sources": [
+        {
+          "path": "node_modules/style-to-js/LICENSE",
+          "sha256": "bbb380e5c1a717079378d6ea4d33c8a5a81655d4612b749f882e34e46712aab5",
+          "bytes": 1110
+        }
+      ]
+    },
+    {
+      "name": "style-to-object",
+      "version": "1.0.14",
+      "license": "MIT",
+      "lockIntegrity": "sha512-LIN7rULI0jBscWQYaSswptyderlarFkjQ+t79nzty8tcIAceVomEVlLzH5VP4Cmsv6MtKhs7qaAiwlcp+Mgaxw==",
+      "packageJsonSha256": "54ea1a1438b9cb9a02e9f62339d1f4d17c6d896224fe431495605f7e5a4972f3",
+      "sources": [
+        {
+          "path": "node_modules/style-to-object/LICENSE",
+          "sha256": "896c9fd6b5fc48ac31800b9d29a6e3ffcb0c2d534ed077ebfa5c2fa388cc38b7",
+          "bytes": 1110
+        }
+      ]
+    },
+    {
+      "name": "trim-lines",
+      "version": "3.0.1",
+      "license": "MIT",
+      "lockIntegrity": "sha512-kRj8B+YHZCc9kQYdWfJB2/oUl9rA99qbowYYBtr4ui4mZyAQ2JpvVBd/6U2YloATfqBhBTSMhTpgBHtU0Mf3Rg==",
+      "packageJsonSha256": "c279da1994b06098ed6f7fde2755c78c017e91e245c35bb4770232f116597c21",
+      "sources": [
+        {
+          "path": "node_modules/trim-lines/license",
+          "sha256": "9f084fac69d8cf1e6ce983ba5a3499c7695ed74a26ec625c38f0fd19fddd5e10",
+          "bytes": 1106
+        }
+      ]
+    },
+    {
+      "name": "trough",
+      "version": "2.2.0",
+      "license": "MIT",
+      "lockIntegrity": "sha512-tmMpK00BjZiUyVyvrBK7knerNgmgvcV/KLVyuma/SC+TQN167GrMRciANTz09+k3zW8L8t60jWO1GpfkZdjTaw==",
+      "packageJsonSha256": "ced4e1e0914cb51aac812dee30936fa47b15286927180dd97c0e257f05f07e1e",
+      "sources": [
+        {
+          "path": "node_modules/trough/license",
+          "sha256": "6c03fd41cfd7c92d8aa8a2fa521b94b2683f059123281dcf921ddea9216b6254",
+          "bytes": 1099
+        }
+      ]
+    },
+    {
+      "name": "typescript",
+      "version": "5.9.3",
+      "license": "Apache-2.0",
+      "lockIntegrity": "sha512-jl1vZzPDinLr9eUt3J/t7V6FgNEw9QjvBPdysz9KfQDD41fQrC2Y4vKQdiaUpFT4bXlb1RHhLpp8wtm6M5TgSw==",
+      "packageJsonSha256": "822ef7ca6452205657b6288b066481ecf508bfbf43455d715cf7d3ec457561e6",
+      "sources": [
+        {
+          "path": "node_modules/typescript/LICENSE.txt",
+          "sha256": "a7d00bfd54525bc694b6e32f64c7ebcf5e6b7ae3657be5cc12767bce74654a47",
+          "bytes": 9197
+        }
+      ]
+    },
+    {
+      "name": "undici-types",
+      "version": "8.11.2",
+      "license": "MIT",
+      "lockIntegrity": "sha512-iMVNmWZ0leK/goS6eXMizSzmm9CDWtyphwbaCms3DNLqRxDL+mMoNVcZMTyyVgXP0N+Z8neAMzDoUOUJL8veKg==",
+      "packageJsonSha256": "aa2fc6fe1badf523f723e5983f938c9c9d38a772d32f59a6e9368994d73a0dfa",
+      "sources": [
+        {
+          "path": "node_modules/undici-types/LICENSE",
+          "sha256": "a6db8096b2707bc0102d256917d4d33f298ba36d8c3f25de067a2b5bb379db27",
+          "bytes": 1090
+        }
+      ]
+    },
+    {
+      "name": "unified",
+      "version": "11.0.5",
+      "license": "MIT",
+      "lockIntegrity": "sha512-xKvGhPWw3k84Qjh8bI3ZeJjqnyadK+GEFtazSfZv/rKeTkTjOJho6mFqh2SM96iIcZokxiOpg78GazTSg8+KHA==",
+      "packageJsonSha256": "f91a44220f8b7c4a4de6ebaab6fc23b92d29a95cb7e5e6a7f0f24d199779fbad",
+      "sources": [
+        {
+          "path": "node_modules/unified/license",
+          "sha256": "05811400116ed61f1a7693b78fe8ca6598c155a12f3978e609db4df648a4cb3d",
+          "bytes": 1099
+        }
+      ]
+    },
+    {
+      "name": "unist-util-is",
+      "version": "6.0.1",
+      "license": "MIT",
+      "lockIntegrity": "sha512-LsiILbtBETkDz8I9p1dQ0uyRUWuaQzd/cuEeS1hoRSyW5E5XGmTzlwY1OrNzzakGowI9Dr/I8HVaw4hTtnxy8g==",
+      "packageJsonSha256": "0838fa706c4cbda37f47ac4c915fab0b6be3c99aeeb81060d22ec6532fae6272",
+      "sources": [
+        {
+          "path": "node_modules/unist-util-is/license",
+          "sha256": "82974dbf2639d13edab95c32ed9cb6c0867ede272cd2e07ce47ce8548fe55c05",
+          "bytes": 1099
+        }
+      ]
+    },
+    {
+      "name": "unist-util-position",
+      "version": "5.0.0",
+      "license": "MIT",
+      "lockIntegrity": "sha512-fucsC7HjXvkB5R3kTCO7kUjRdrS0BJt3M/FPxmHMBOm8JQi2BsHAHFsy27E0EolP8rp0NzXsJ+jNPyDWvOJZPA==",
+      "packageJsonSha256": "dc3ad29ef3bd19907cbeeda81cf6ea872f15cfff319b4663c7206d16a2a1cf40",
+      "sources": [
+        {
+          "path": "node_modules/unist-util-position/license",
+          "sha256": "63cb98b3f6abfb3c3592c16f88253c1bdc834087bf52671e8ce5609e4eb693cf",
+          "bytes": 1099
+        }
+      ]
+    },
+    {
+      "name": "unist-util-stringify-position",
+      "version": "4.0.0",
+      "license": "MIT",
+      "lockIntegrity": "sha512-0ASV06AAoKCDkS2+xw5RXJywruurpbC4JZSm7nr7MOt1ojAzvyyaO+UxZf18j8FCF6kmzCZKcAgN/yu2gm2XgQ==",
+      "packageJsonSha256": "2fb7e8fcbf4e701e62f07887bd9f16e699e29c87a19acd128c11788fb9e27c0e",
+      "sources": [
+        {
+          "path": "node_modules/unist-util-stringify-position/license",
+          "sha256": "ca4662cb5d1b738fbe5350c0d5485ba11773b4b7208974082ae6e129a52d631d",
+          "bytes": 1099
+        }
+      ]
+    },
+    {
+      "name": "unist-util-visit",
+      "version": "5.1.0",
+      "license": "MIT",
+      "lockIntegrity": "sha512-m+vIdyeCOpdr/QeQCu2EzxX/ohgS8KbnPDgFni4dQsfSCtpz8UqDyY5GjRru8PDKuYn7Fq19j1CQ+nJSsGKOzg==",
+      "packageJsonSha256": "98bf89a2331cae3cb26b4ad27a1cc78cb0f00edb9a7534491b111a34423e9a8a",
+      "sources": [
+        {
+          "path": "node_modules/unist-util-visit/license",
+          "sha256": "63cb98b3f6abfb3c3592c16f88253c1bdc834087bf52671e8ce5609e4eb693cf",
+          "bytes": 1099
+        }
+      ]
+    },
+    {
+      "name": "unist-util-visit-parents",
+      "version": "6.0.2",
+      "license": "MIT",
+      "lockIntegrity": "sha512-goh1s1TBrqSqukSc8wrjwWhL0hiJxgA8m4kFxGlQ+8FYQ3C/m11FcTs4YYem7V664AhHVvgoQLk890Ssdsr2IQ==",
+      "packageJsonSha256": "6b00f27056337866d9206719b72a62c299a11903cdf622f307c92059723845e1",
+      "sources": [
+        {
+          "path": "node_modules/unist-util-visit-parents/license",
+          "sha256": "ca4662cb5d1b738fbe5350c0d5485ba11773b4b7208974082ae6e129a52d631d",
+          "bytes": 1099
+        }
+      ]
+    },
+    {
+      "name": "vfile",
+      "version": "6.0.3",
+      "license": "MIT",
+      "lockIntegrity": "sha512-KzIbH/9tXat2u30jf+smMwFCsno4wHVdNmzFyL+T/L3UGqqk6JKfVqOFOZEpZSHADH1k40ab6NUIXZq422ov3Q==",
+      "packageJsonSha256": "359ca117da48c3c42c73b9032369a412c5ad3462549d85aba090461e35227745",
+      "sources": [
+        {
+          "path": "node_modules/vfile/license",
+          "sha256": "05811400116ed61f1a7693b78fe8ca6598c155a12f3978e609db4df648a4cb3d",
+          "bytes": 1099
+        }
+      ]
+    },
+    {
+      "name": "vfile-message",
+      "version": "4.0.3",
+      "license": "MIT",
+      "lockIntegrity": "sha512-QTHzsGd1EhbZs4AsQ20JX1rC3cOlt/IWJruk893DfLRr57lcnOeMaWG4K0JrRta4mIJZKth2Au3mM3u03/JWKw==",
+      "packageJsonSha256": "407fa964ad59ce6c07cd50f0e6c77366744b952910a5bbb64def63a55bf6a82d",
+      "sources": [
+        {
+          "path": "node_modules/vfile-message/license",
+          "sha256": "dd1081884a92952802f4803110a6bb543acea9a814c786d58605b4c1219b5ebb",
+          "bytes": 1094
+        }
+      ]
+    },
+    {
+      "name": "ws",
+      "version": "8.22.0",
+      "license": "MIT",
+      "lockIntegrity": "sha512-Ydggc987+RO0AnWtZ/7Wq9FtNvcrL1b/RO0ud9mWjUPgDrsAAwQSF51sm2hm1XofbU/4jkpGEsLFsZZxU+1DOg==",
+      "packageJsonSha256": "c1ef91ca04eb4754c011c5f0e7638b5078ff71104fada400c44ac761cf93e0b1",
+      "sources": [
+        {
+          "path": "node_modules/ws/LICENSE",
+          "sha256": "2b29dcfe0d6471f7e8c92c5fb38c9f93edee10330937055440192f1832b1ecef",
+          "bytes": 1183
+        }
+      ]
+    },
+    {
+      "name": "zwitch",
+      "version": "2.0.4",
+      "license": "MIT",
+      "lockIntegrity": "sha512-bXE4cR/kVZhKZX/RjPEflHaKVhUVl85noU3v6b8apfQEc1x4A+zBxjZ4lN8LqGd6WZ3dl98pY4o717VFmoPp+A==",
+      "packageJsonSha256": "01d215553746b3bd19ae5b31cab656830d38e40b6edea656b9b18256916cda0a",
+      "sources": [
+        {
+          "path": "node_modules/zwitch/license",
+          "sha256": "ca4662cb5d1b738fbe5350c0d5485ba11773b4b7208974082ae6e129a52d631d",
+          "bytes": 1099
+        }
+      ]
+    }
+  ]
+}

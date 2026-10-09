@@ -1,0 +1,8 @@
+{
+  "date": "2026-10-09 JST",
+  "scope": "First real browser-factory check in Vite development server; no funds or signing in isolated Chromium.",
+  "result": "Test timed out because Vite reloaded the page during first Worker use.",
+  "evidence": "Playwright trace shows a second [vite] connecting/connected pair, navigation back to initial disconnected UI, and react-dom dependency query changed from f5ddd2e2 to 894f1e20. Optimizer metadata subsequently includes @zkapi/solana-sdk/prover-worker.",
+  "classification": "Application development build configuration, not ZKAPI public API rejection.",
+  "userBrowser": "Same-origin Solflare initialization subsequently succeeded; its original profile/storage binding was retained."
+}
