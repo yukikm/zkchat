@@ -8,6 +8,7 @@ import {
 } from "@zkapi/solana-sdk/public-profile";
 import { BrowserStorageMissing } from "@zkapi/solana-sdk/browser";
 import { checkServiceReadiness, type ServiceReadiness } from "./readiness";
+import { LEGACY_STORAGE_NAME, RECOVERY_RUNTIME } from "./sdkVersion";
 
 export interface PublicAppConfig {
   schema: 2;
@@ -233,6 +234,20 @@ export async function existingAppCustody(
       }
     };
   });
+}
+/** Inspect only metadata. A new SDK must never open or sidestep original custody. */
+export async function assertRuntimeCustody(account: string) {
+  const original =
+    localStorage.getItem(profileBindingKey(LEGACY_STORAGE_NAME, account)) !==
+      null || (await existingAppCustody(LEGACY_STORAGE_NAME, account));
+  if (!RECOVERY_RUNTIME && original)
+    throw new PublicOnboardingError(
+      "Existing SDK .3 storage detected. Open original wallet recovery with the same browser, URL origin and account. Keep its profile and browser data; automatic custody migration is not supported.",
+    );
+  if (RECOVERY_RUNTIME && !original)
+    throw new PublicOnboardingError(
+      "No original SDK .3 storage was found for this account. Use the current app for a new installation.",
+    );
 }
 /** Pin before opening new custody; never adopt an existing unbound journal. */
 export async function retainProfileBinding(

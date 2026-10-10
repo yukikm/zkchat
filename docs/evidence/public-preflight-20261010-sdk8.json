@@ -1,0 +1,45 @@
+{
+  "startedAt": "2026-10-10T07:48:41.500Z",
+  "sdk": "0.2.0-devnet.8",
+  "node": "v24.19.0",
+  "profileSha256": "ec10c1ab41bb5105222d3e25c7e1eba6b96b1b397abd0f854657030269992a77",
+  "checks": [
+    {
+      "stage": "profile",
+      "passed": true,
+      "profileId": "zkapi-public-devnet-20261008-a",
+      "models": [
+        "anthropic/claude-fable-5",
+        "anthropic/claude-fable-5.1",
+        "anthropic/claude-haiku-5.5",
+        "anthropic/claude-opus-5",
+        "anthropic/claude-opus-5.5",
+        "anthropic/claude-sonnet-5",
+        "anthropic/claude-sonnet-5.5",
+        "openai/gpt-5.6-luna",
+        "openai/gpt-5.6-luna-pro",
+        "openai/gpt-5.6-sol",
+        "openai/gpt-5.6-sol-pro",
+        "openai/gpt-5.6-terra",
+        "openai/gpt-5.6-terra-pro",
+        "openai/gpt-6-astra",
+        "openai/gpt-6-astra-pro",
+        "openai/gpt-6-luna",
+        "openai/gpt-6-luna-pro",
+        "openai/gpt-6-sol",
+        "openai/gpt-6-sol-pro",
+        "openai/gpt-6.1-sol",
+        "openai/gpt-6.1-sol-pro"
+      ],
+      "wasmBytes": 3678975
+    },
+    {
+      "stage": "preflight",
+      "passed": false,
+      "component": "catalog",
+      "error": "Public verification failed; no financial action was attempted."
+    }
+  ],
+  "scope": "Read-only public HTTP and SDK preflight. No custody, signatures, AUTH or inference.",
+  "completedAt": "2026-10-10T07:48:50.605Z"
+}

@@ -1,10 +1,10 @@
 {
   "schema": 1,
   "kind": "installed_production_dependency_notice_inventory",
-  "packageLockSha256": "b1d10a19f69e38f6ad22c74a9ac9a4addfac73475613fa4cfc864ef4c5e14245",
-  "applicationPackageJsonSha256": "b27295ae54ee0d03a5746f3ac51e2d07ece25165094ce5a7121e5751839d7499",
-  "collectionSha256": "b7ca40c3da00ba69fb998f89ec4b5aa11b784ecb34db92a5b1d97136a9d24d62",
-  "collectionBytes": 247813,
+  "packageLockSha256": "9aca45fa9db6a2e9518922b16476453d37404f1f58ac8e789c387dc5526b9464",
+  "applicationPackageJsonSha256": "95da3f25d41d121b89579e53273231c816cff9642ee0158a31cd927461c98770",
+  "collectionSha256": "1cec64035a661d5d8b2d5544b85abc0496135d799ef8256c0708b0007262c8fd",
+  "collectionBytes": 249120,
   "scope": "Installed npm production closure; exact notice bytes preserved; overinclusive relative to Vite bundle",
   "fontPackages": [
     "@fontsource-variable/dm-sans",
@@ -797,13 +797,27 @@
     },
     {
       "name": "@zkapi/solana-sdk",
+      "version": "0.2.0-devnet.8",
+      "license": "MIT",
+      "lockIntegrity": "sha512-fvfCGlXdVyzupfpdeMl6DQOMkld2Vl3dOaj+I3BJUYcOZpMi+Hr8wtAIA0dvZigP3Uyl5T/5Jp43si9SocIoeQ==",
+      "packageJsonSha256": "3b509b88ad8a6277583147ed0d6922edbb5e59c7607192eaf9a6d9e877f4fa89",
+      "sources": [
+        {
+          "path": "node_modules/@zkapi/solana-sdk/LICENSE",
+          "sha256": "71afea996cef8ff3d3ef4f84705180bb0b124c1c21a16e89fddacd3b482d4fa7",
+          "bytes": 1097
+        }
+      ]
+    },
+    {
+      "name": "@zkapi/solana-sdk-legacy",
       "version": "0.2.0-devnet.3",
       "license": "MIT",
       "lockIntegrity": "sha512-3ufCdcUmFt9mRXXA4e5tmO0BpHeQy6CGSbeyGpsV151IYqtnD8FrqC3hktMThKXKRCXGXG4YJuZfbSYTT3I4rw==",
       "packageJsonSha256": "0cedb43f53035f70005d62b0029cc353aff58c91c230ee728a5099a478b74ad5",
       "sources": [
         {
-          "path": "node_modules/@zkapi/solana-sdk/LICENSE",
+          "path": "node_modules/@zkapi/solana-sdk-legacy/LICENSE",
           "sha256": "71afea996cef8ff3d3ef4f84705180bb0b124c1c21a16e89fddacd3b482d4fa7",
           "bytes": 1097
         }

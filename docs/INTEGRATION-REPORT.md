@@ -1,5 +1,7 @@
 # Solana zkAPI 第三者チャットアプリ統合レポート
 
+**最新（2026-10-10）:** [SDK .8への更新・既存 .3の復旧経路・公開catalogの障害](SDK-UPGRADE-20261010.md)を別途記録しています。以下はSDK .3を使った2026-10-09時点の結果であり、現在の公開API可用性を示すものではありません。
+
 検証日: **2026-10-09 JST**。参照ソース: [`67b05cf30fbd009facb87a3451ae65b1971e86b5`](https://github.com/yukikm/solana-zkapi/tree/67b05cf30fbd009facb87a3451ae65b1971e86b5)。公開APIソースは `.5` のCORS開放を含み、配布SDKは引き続き **0.2.0-devnet.3** です。
 
 ## 更新後の結果
@@ -80,7 +82,7 @@ Phantomは接続承認後に`-32603`。公式定義は[Internal Error](https://d
 
 元のprofile digest、`zkchat-sdk-0.2.0-devnet.3`、`zkchat-note-sdk-0.2.0-devnet.3`を維持。保存領域はorigin・browser profile・wallet account・deploymentと結び付きます。`localhost`と`127.0.0.1`は別originです。今回の実検証の保存領域は`http://localhost:5173`側です。検証noteは出金済みですが、履歴の再接続にも元のoriginを使います。SDKの暗号化journalと画面の会話履歴は別物で、会話削除は資金やjournalを削除しません。
 
-画面を閉じたりコード変更で再読み込みが起きても、元のorigin・アカウントで`Verify connection`し、保存された操作から続けます。古い`zkchat-v1`を新しいprofileに結び直すことはありません。ポータブルbackupと出金後の新note作成UIは引き続き未提供です。
+画面を閉じたりコード変更で再読み込みが起きても、元のorigin・アカウントで`Verify connection`し、保存された操作から続けます。古い`zkchat-v1`を新しいprofileに結び直すことはありません。ポータブルbackupは引き続き未提供です。2026-10-09の追加修正で、出金後・残高不足時の新しいDepositと保存済みDepositの切替を実装しました（下記参照）。
 
 ## 実AI応答と精算
 
@@ -126,4 +128,16 @@ Solflareの同じnoteから「接続テストです。ゼロ知識証明とは�
 - `npm audit --omit=dev`: production dependenciesの既知脆弱性0件。
 - [結果一覧](evidence/verification-20261009.json)、[初回起動での公開preflight](evidence/browser-preflight-cold-20261009.json)、[公開SDKの保存領域作成・再接続](evidence/browser-custody-cold-20261009.json)・[画面](evidence/browser-custody-cold-20261009.png)。当初のViteリロード失敗は[別の証跡](evidence/browser-initialization-reload-20261009.json)として保持。
 
-実ウォレットで確認したのは1 sessionの入金→応答→精算→通常出金です。複数利用者の同時実行、継続稼働、Mainnet、provider最終invoice、実資金でのescape/challenge/期限切れの全分岐は未検証です。出金後の新note作成UIとポータブルbackupも未実装のため、一般向け本番運用の完成を意味しません。
+実ウォレットで確認した有資金の処理は1 sessionの入金→応答→精算→通常出金です。複数利用者の同時実行、継続稼働、Mainnet、provider最終invoice、実資金でのescape/challenge/期限切れの全分岐は未検証です。ポータブルbackupも未実装のため、一般向け本番運用の完成を意味しません。
+
+## 2026-10-09追加: 再入金と複数Deposit
+
+画面上部に常設の`Deposit`を追加しました。出金済み・残高不足でも`Add deposit`から新しいnoteを作成し、同じウォレットで入金を続けられます。現行SDKの`prepareDeposit`はnoteの新規作成であり、既存noteへの継ぎ足しAPIではありません。各Depositの残高は合算せず、`Saved deposits`で利用・出金対象を明示的に選びます。
+
+初回note ID・storage名・profile bindingを維持し、追加IDと選択状態は同じSDK暗号化保存領域のcatalogへ保存します。SDKに署名可能な操作を依頼する前にIDを永続化します。過去のnoteを削除せず、残高と履歴はSDKが保持します。未確定取引・未精算・緊急出金中は追加/切替を拒否します。複数タブの操作と選択は同じWeb Lockで直列化し、選択が変わった古い接続からの操作を拒否します。
+
+暗号化catalogの再読込・破損時停止、残高不足/出金後の追加、元の残高保持、保存失敗、未確定操作の継続、別タブ競合は自動テストで確認しました。単体107件・通常画面テスト25件が成功し、型チェック・本番ビルド・SDK archive hashの照合も成功しました。公開ネットワーク用のopt-inテスト2件は通常画面テストではスキップしています。UIテストでは追加→準備→再読込→署名/確認→チャット→残高不足案内をfixtureで検証し、375/768/1280pxで確認しています。
+
+実Chrome/Solflareでは元の出金済みDeposit 1の復元、新しいDeposit 2の作成、ページ再読込後のDeposit 2復元、Deposit 1への切替とDeposit 2への復帰まで確認しました。[実画面の入金フォーム](evidence/redeposit-form-20261009.jpg)を残しています。この追加検証では署名・送金・AUTH・推論を実行していません。
+
+OpenRouterはGPT-4専用ではありません。固定profile（SHA-256 `449657cc3fe90f12878236b83d68ada8077e3c56e67ccb8268c5f301e69e02e5`）の`models`と`modelCapabilities`が`openai/gpt-4o-mini`のみのため、UIも1件です。公開profile/catalog側で許可されたモデルを増やす必要があり、この修正で許可外モデルを注入してはいません。

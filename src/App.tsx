@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowDown,
+  ArrowDownLeft,
   ArrowUp,
   Check,
   ChevronDown,
@@ -29,6 +30,8 @@ import {
 } from "lucide-react";
 import type { ClientStatus } from "@zkapi/solana-sdk";
 import { readChatDeltas, readChatText } from "@zkapi/solana-sdk/chat";
+import { SDK_VERSION, RECOVERY_RUNTIME } from "./lib/sdkVersion";
+import { providerResponseError, reusableSession } from "./lib/sdkStatus";
 import {
   loadConfig,
   configuredModels,
@@ -61,6 +64,7 @@ import { Markdown } from "./components/Markdown";
 import { Modal } from "./components/Modal";
 import { disconnectSelectedWallet } from "./lib/walletConnector";
 import { PublicOnboardingError } from "./lib/publicDeployment";
+import { DepositError, hasLowBalance } from "./lib/deposits";
 const suggestions = [
   {
     icon: Feather,
@@ -161,6 +165,7 @@ export default function App() {
       : preferences.maxTokens;
   const canSend =
     !sending &&
+    !connectionBusy &&
     online &&
     !!draft.trim() &&
     draft.length <= MAX_INPUT &&
@@ -324,7 +329,13 @@ export default function App() {
   }
   async function send(override?: string) {
     const input = (override ?? draft).trim();
-    if (!input || input.length > MAX_INPUT || busyRef.current || !online)
+    if (
+      !input ||
+      input.length > MAX_INPUT ||
+      busyRef.current ||
+      connectionBusy ||
+      !online
+    )
       return;
     if (
       selectedMode === "live" &&
@@ -410,6 +421,7 @@ export default function App() {
       } else {
         response = await handle!.client.chat({
           operationId,
+          sessionId: conversation.id,
           model: selectedModel,
           messages: [
             ...contextMessages(conversation.messages),
@@ -450,9 +462,14 @@ export default function App() {
                   ? selectedMode === "demo"
                     ? "Display stopped."
                     : "Display stopped. Charges may still apply. Check the pending settlement."
-                  : error instanceof PublicOnboardingError
+                  : error instanceof PublicOnboardingError ||
+                      error instanceof DepositError
                     ? error.message
-                    : "The response could not be completed. Check pending operations in Connection settings. Requests are not retried automatically.",
+                    : ((!RECOVERY_RUNTIME &&
+                      status?.mode === "direct_openrouter"
+                        ? providerResponseError(response)
+                        : undefined) ??
+                      "The response could not be completed. Check pending operations in Connection settings. Requests are not retried automatically."),
               }
             : m,
         ),
@@ -461,7 +478,7 @@ export default function App() {
       if (response?.body && !response.body.locked && !response.bodyUsed)
         await response.body.cancel().catch(() => {});
       if (selectedMode === "live") {
-        setActivity("Checking settlement…");
+        setActivity("Checking session status…");
         try {
           await refresh();
         } catch {
@@ -628,10 +645,10 @@ export default function App() {
               <span>USDC</span>
               <button
                 className="icon-button"
-                aria-label="Credit connection settings"
+                aria-label="Deposit and manage credits"
                 onClick={() => setDialog("connection")}
               >
-                <ArrowUp size={16} />
+                <Plus size={16} />
               </button>
             </div>
             <p>
@@ -672,6 +689,7 @@ export default function App() {
             <div className="model-picker">
               <select
                 aria-label="Select model"
+                title="Models enabled by this ZKAPI deployment"
                 value={selectedMode === "demo" ? "demo" : selectedModel}
                 disabled={
                   sending ||
@@ -704,6 +722,14 @@ export default function App() {
             </span>
           </div>
           <div className="topbar-right">
+            <button
+              className="connect-button deposit-button"
+              onClick={() => setDialog("connection")}
+              disabled={sending || connectionBusy}
+            >
+              <ArrowDownLeft size={16} />
+              <span>Deposit</span>
+            </button>
             {current && (
               <div className="conversation-menu">
                 <button
@@ -747,6 +773,7 @@ export default function App() {
             )}
             <button
               className={`connect-button ${handle ? "connected" : ""}`}
+              aria-label={handle ? "Connected" : "Connection settings"}
               onClick={() => setDialog("connection")}
             >
               <Wallet size={16} />
@@ -781,10 +808,23 @@ export default function App() {
           <div className="settlement-banner">
             <span>
               <RefreshCw size={14} />
-              Settlement needs attention
+              {reusableSession(status)
+                ? "Session ready for reuse · charges settle when closed"
+                : "Settlement needs attention"}
             </span>
             <button onClick={() => setDialog("connection")}>
-              Check recovery
+              {reusableSession(status) ? "Manage session" : "Check recovery"}
+            </button>
+          </div>
+        )}
+        {selectedMode === "live" && hasLowBalance(status) && (
+          <div className="settlement-banner">
+            <span>Low balance · Add a deposit to continue chatting</span>
+            <button
+              disabled={sending || connectionBusy}
+              onClick={() => setDialog("connection")}
+            >
+              Add funds
             </button>
           </div>
         )}
@@ -955,7 +995,10 @@ export default function App() {
                                   {status?.lastSettlement?.operationIds.includes(
                                     message.operationId,
                                   )
-                                    ? `Settled · ${formatUsdc(status.lastSettlement.chargeMicroUsdc)} USDC`
+                                    ? status.lastSettlement.operationIds
+                                        .length > 1
+                                      ? `Session settled · ${formatUsdc(status.lastSettlement.chargeMicroUsdc)} USDC total`
+                                      : `Settled · ${formatUsdc(status.lastSettlement.chargeMicroUsdc)} USDC`
                                     : "Check settlement in Connection settings"}
                                 </span>
                               )}
@@ -1251,14 +1294,16 @@ export default function App() {
             <h3>Where prompts are sent</h3>
             <p>
               Live requests go to the AI provider. In proxy mode, the operator
-              can also read their content. Sent conversations may remain in the
-              SDK encrypted recovery journal.
+              can also read their content.{" "}
+              {RECOVERY_RUNTIME
+                ? "Sent conversations may remain in the original encrypted recovery journal."
+                : "Direct OpenRouter requests require zero data retention and denied data collection. The SDK omits sent request bodies from its journal, while fingerprints and financial recovery records remain. This does not verify provider deletion or hide your IP address. Requests within a reused session may be linked."}
             </p>
           </div>
           <div className="about-item">
             <h3>Development preview</h3>
             <p>
-              This app uses the pinned SDK 0.2.0-devnet.3 preview artifact. Real
+              This app uses the pinned SDK {SDK_VERSION} preview artifact. Real
               use requires an independently authenticated public profile and a
               complete proof bundle. Operator selection comes from the app's
               installed deployment configuration. Demo responses remain local
@@ -1267,11 +1312,11 @@ export default function App() {
           </div>
           <a
             className="source-link"
-            href="https://github.com/yukikm/solana-zkapi/releases/tag/v0.2.0-devnet.1"
+            href={`https://github.com/yukikm/solana-zkapi/releases/tag/v${SDK_VERSION}`}
             target="_blank"
             rel="noreferrer"
           >
-            Previous public release (0.2.0-devnet.1) <ExternalLink size={14} />
+            SDK release ({SDK_VERSION}) <ExternalLink size={14} />
           </a>
         </Modal>
       )}

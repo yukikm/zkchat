@@ -5,6 +5,11 @@ const sdk = vi.hoisted(() => ({
   options: vi.fn(),
   browser: vi.fn(),
   readiness: vi.fn(),
+  catalog: vi.fn(),
+}));
+vi.mock("../src/lib/deposits", async (original) => ({
+  ...(await original<typeof import("../src/lib/deposits")>()),
+  openDepositCatalog: sdk.catalog,
 }));
 vi.mock("../src/lib/readiness", () => ({
   checkServiceReadiness: sdk.readiness,
@@ -30,6 +35,8 @@ vi.mock("@zkapi/solana-sdk/browser", async (original) => ({
   },
 }));
 import { BrowserStorageMissing } from "@zkapi/solana-sdk/browser";
+import { createDepositCatalog } from "../src/lib/deposits";
+import { memoryCustody } from "./depositStore";
 import { PublicProfileError } from "@zkapi/solana-sdk/public-profile";
 import {
   connectPublicDeployment,
@@ -38,6 +45,7 @@ import {
   retainProfileBinding,
   profileBindingKey,
   connectionCheckError,
+  assertRuntimeCustody,
   type PublicAppConfig,
 } from "../src/lib/publicDeployment";
 import {
@@ -82,8 +90,12 @@ const loaded = () => ({
     },
   },
 });
-beforeEach(() => {
+beforeEach(async () => {
   vi.clearAllMocks();
+  const custody = await memoryCustody();
+  sdk.catalog.mockImplementation(async () =>
+    createDepositCatalog(custody, { deploymentId: "deployment", pool: "pool" }),
+  );
   storage = new Map();
   vi.stubGlobal("localStorage", {
     getItem: (k: string) => storage.get(k) ?? null,
@@ -387,6 +399,171 @@ describe("existing application adapter with public profile", () => {
     );
     return { account, wallet, client };
   };
+  const depositFixture = (initialWallet = "closed") => {
+    const { account, wallet } = make();
+    const states = new Map<string, any>([
+      [
+        NOTE_ID,
+        {
+          noteId: NOTE_ID,
+          wallet: initialWallet,
+          canRequest: false,
+          busy: false,
+          session: null,
+          walletOperation: null,
+          emergencyEscape: null,
+          settledBalanceMicroUsdc: "200000",
+          authorizationCapMicroUsdc: "1000000",
+        },
+      ],
+    ]);
+    const opened: any[] = [];
+    sdk.browser.mockImplementation(async (options) => {
+      const id = options.noteId;
+      if (!states.has(id))
+        states.set(id, {
+          ...states.get(NOTE_ID),
+          noteId: id,
+          wallet: "empty",
+          settledBalanceMicroUsdc: "0",
+        });
+      const client = {
+        status: vi.fn(async () => structuredClone(states.get(id))),
+        subscribe: vi.fn(() => () => {}),
+        prepareDeposit: vi.fn(async (amount) => {
+          states.set(id, {
+            ...states.get(id),
+            wallet: "unfunded",
+            walletOperation: {
+              kind: "deposit",
+              phase: "ready",
+              signature: null,
+            },
+            settledBalanceMicroUsdc: amount,
+          });
+        }),
+        advanceWallet: vi.fn(async () => {
+          states.set(id, {
+            ...states.get(id),
+            wallet: "active",
+            canRequest: true,
+            walletOperation: null,
+          });
+        }),
+        prepareWithdrawal: vi.fn(),
+        chat: vi.fn(),
+        recover: vi.fn(),
+      };
+      const raw = { client, dispose: vi.fn(), persistence: "persistent", id };
+      opened.push(raw);
+      return raw;
+    });
+    const connect = () => connectZkapi(config, wallet as any, account as any);
+    return { connect, states, opened, wallet };
+  };
+  it.each(["closed", "active"])(
+    "adds funds after %s, restores selected deposit, and retains original balance/history",
+    async (state) => {
+      const f = depositFixture(state);
+      const handle = await f.connect();
+      const original = structuredClone(f.states.get(NOTE_ID));
+      await handle.addDeposit();
+      const id = handle.selectedDepositId;
+      expect(id).not.toBe(NOTE_ID);
+      expect(handle.deposits.map((d) => d.id)).toEqual([NOTE_ID, id]);
+      expect(f.states.get(NOTE_ID)).toEqual(original);
+      expect(f.opened[0].client.prepareDeposit).not.toHaveBeenCalled();
+      expect((await handle.client.status()).wallet).toBe("empty");
+      await handle.client.prepareDeposit("2000000");
+      await expect(handle.selectDeposit(NOTE_ID)).rejects.toThrow(/Finish/);
+      handle.dispose();
+      const reopened = await f.connect();
+      expect(reopened.selectedDepositId).toBe(id);
+      expect((await reopened.client.status()).walletOperation?.kind).toBe(
+        "deposit",
+      );
+      await reopened.client.advanceWallet();
+      expect((await reopened.client.status()).canRequest).toBe(true);
+      await reopened.selectDeposit(NOTE_ID);
+      expect(f.states.get(NOTE_ID)).toEqual(original);
+      await reopened.client.prepareWithdrawal("account");
+      expect(f.opened.at(-1).id).toBe(NOTE_ID);
+      expect(f.opened.at(-1).client.prepareWithdrawal).toHaveBeenCalledWith(
+        "account",
+      );
+      await reopened.selectDeposit(id);
+      expect((await reopened.client.status()).settledBalanceMicroUsdc).toBe(
+        "2000000",
+      );
+      reopened.dispose();
+    },
+  );
+  it.each([
+    { session: { phase: "settlement_pending" } },
+    { walletOperation: { kind: "deposit", phase: "failed", signature: null } },
+    { walletOperation: { kind: "mutual_close", signature: "submitted" } },
+    { wallet: "pending_escape" },
+    { busy: true },
+  ])("cannot add a deposit around unresolved operations: %o", async (patch) => {
+    const f = depositFixture("active");
+    const h = await f.connect();
+    f.states.set(NOTE_ID, { ...f.states.get(NOTE_ID), ...patch });
+    await expect(h.addDeposit()).rejects.toThrow(/Finish/);
+    expect(h.deposits).toHaveLength(1);
+    expect(f.opened).toHaveLength(1);
+    h.dispose();
+  });
+  it("blocks a stale tab from sending or depositing after another tab changes selection", async () => {
+    const f = depositFixture("active");
+    const first = await f.connect(),
+      second = await f.connect();
+    await first.addDeposit();
+    await expect(second.client.prepareDeposit("2000000")).rejects.toThrow(
+      /another operation or tab/,
+    );
+    await expect(second.client.chat({} as any)).rejects.toThrow(
+      /another operation or tab/,
+    );
+    await expect(second.addDeposit()).rejects.toThrow(
+      /another operation or tab/,
+    );
+    expect(f.opened[1].client.prepareDeposit).not.toHaveBeenCalled();
+    expect(f.opened[1].client.chat).not.toHaveBeenCalled();
+    expect((await second.client.status()).canRequest).toBe(false);
+    first.dispose();
+    second.dispose();
+  });
+  it("keeps the old client and catalog when opening or saving a new deposit fails", async () => {
+    const f = depositFixture();
+    const h = await f.connect();
+    sdk.browser.mockRejectedValueOnce(new Error("offline"));
+    await expect(h.addDeposit()).rejects.toThrow("offline");
+    const catalog = await sdk.catalog.mock.results[0].value;
+    vi.spyOn(catalog, "save").mockRejectedValueOnce(new Error("storage full"));
+    await expect(h.addDeposit()).rejects.toThrow("storage full");
+    expect(h.selectedDepositId).toBe(NOTE_ID);
+    expect((await catalog.read()).deposits).toHaveLength(1);
+    expect(f.opened[0].dispose).not.toHaveBeenCalled();
+    expect(f.opened.at(-1).dispose).toHaveBeenCalled();
+    h.dispose();
+  });
+  it("rechecks admission for new deposits, but permits returning to previous funds while admission is down", async () => {
+    const f = depositFixture("active");
+    const h = await f.connect();
+    await h.addDeposit();
+    sdk.readiness.mockResolvedValue({
+      admission: "suspended",
+      servicesAvailable: true,
+      expiresAt: Date.now() + 5000,
+    });
+    await h.selectDeposit(NOTE_ID);
+    await expect(h.addDeposit()).rejects.toThrow(
+      /New deposits are unavailable/,
+    );
+    expect(h.selectedDepositId).toBe(NOTE_ID);
+    expect(h.deposits).toHaveLength(2);
+    h.dispose();
+  });
   it.each([false, true])(
     "reports unavailable snapshot before custody or financial admission (initialize=%s)",
     async (initialize) => {
@@ -613,11 +790,11 @@ describe("existing application adapter with public profile", () => {
   });
 });
 
-it("SDK .3 profile binding uses fresh custody without adopting the retained R2 binding", async () => {
+it("SDK .8 profile binding uses fresh custody without adopting the retained R2 binding", async () => {
   const oldKey = profileBindingKey("zkchat-v1", "account");
   storage.set(oldKey, "b".repeat(64));
-  expect(STORAGE_NAME).toBe("zkchat-sdk-0.2.0-devnet.3");
-  expect(NOTE_ID).toBe("zkchat-note-sdk-0.2.0-devnet.3");
+  expect(STORAGE_NAME).toBe("zkchat-sdk-0.2.0-devnet.8");
+  expect(NOTE_ID).toBe("zkchat-note-sdk-0.2.0-devnet.8");
   const newKey = profileBindingKey(STORAGE_NAME, "account");
   expect(newKey).not.toBe(oldKey);
   const hasNewCustody = vi.fn(async () => false);
@@ -632,6 +809,58 @@ it("SDK .3 profile binding uses fresh custody without adopting the retained R2 b
   expect(storage.get(newKey)).toBe(config.profileSha256);
   expect(storage.get(oldKey)).toBe("b".repeat(64));
   expect(storage.size).toBe(2);
+});
+
+describe("original custody is never opened or bypassed by SDK .8", () => {
+  it("blocks an original profile binding before loading a profile or opening a client", async () => {
+    const account = {
+      address: "account",
+      chains: ["solana:devnet"],
+      features: ["solana:signTransaction"],
+    };
+    const wallet = { accounts: [account] };
+    const original = profileBindingKey(
+      "zkchat-sdk-0.2.0-devnet.3",
+      account.address,
+    );
+    storage.set(original, "original-profile-digest");
+    await expect(
+      connectZkapi(config, wallet as any, account as any, true),
+    ).rejects.toThrow(/original wallet recovery/);
+    expect(sdk.load).not.toHaveBeenCalled();
+    expect(sdk.browser).not.toHaveBeenCalled();
+    expect(storage.size).toBe(1);
+    expect(storage.get(original)).toBe("original-profile-digest");
+  });
+  it("blocks original unbound databases without opening or rewriting them", async () => {
+    const open = vi.fn();
+    vi.stubGlobal("indexedDB", {
+      open,
+      databases: async () => [
+        {
+          name: JSON.stringify([
+            "zkchat-sdk-0.2.0-devnet.3",
+            "deployment",
+            "pool",
+            "account",
+          ]),
+        },
+      ],
+    });
+    await expect(assertRuntimeCustody("account")).rejects.toThrow(
+      /original wallet recovery/,
+    );
+    expect(open).not.toHaveBeenCalled();
+    expect(storage.size).toBe(0);
+  });
+  it("allows a new account without changing another account's binding", async () => {
+    storage.set(
+      profileBindingKey("zkchat-sdk-0.2.0-devnet.3", "old-account"),
+      "original",
+    );
+    await expect(assertRuntimeCustody("new-account")).resolves.toBeUndefined();
+    expect(storage.size).toBe(1);
+  });
 });
 
 it("RPC failures do not invent an origin-registration requirement or expose payloads", () => {

@@ -12,7 +12,15 @@ const config = JSON.parse(
 );
 const report = {
   startedAt: new Date().toISOString(),
-  sdk: "0.2.0-devnet.3",
+  sdk: JSON.parse(
+    await readFile(
+      new URL(
+        "../node_modules/@zkapi/solana-sdk/package.json",
+        import.meta.url,
+      ),
+      "utf8",
+    ),
+  ).version,
   node: process.version,
   profileSha256: config.profileSha256,
   checks: [],

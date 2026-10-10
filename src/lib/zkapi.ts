@@ -30,16 +30,27 @@ import {
   connectPublicDeployment,
   loadAppProfile,
   PublicOnboardingError,
+  assertRuntimeCustody,
   type PublicAppConfig,
 } from "./publicDeployment";
 import type { PublicPreflightResult } from "@zkapi/solana-sdk/public-profile";
 import type { ServiceReadiness } from "./readiness";
 import { WalletConnectionError } from "./walletErrors";
+import {
+  openDepositCatalog,
+  ORIGINAL_NOTE_ID,
+  canChangeDeposit,
+  canAddDeposit,
+  DepositError,
+  type DepositCatalog,
+  type SavedDeposit,
+} from "./deposits";
 export { BrowserStorageMissing };
 export type { StandardAccount };
 export const CHAIN = "solana:devnet" as const;
-export const STORAGE_NAME = "zkchat-sdk-0.2.0-devnet.3";
-export const NOTE_ID = "zkchat-note-sdk-0.2.0-devnet.3";
+import { SDK_STORAGE_NAME } from "./sdkVersion";
+export const STORAGE_NAME = SDK_STORAGE_NAME;
+export const NOTE_ID = ORIGINAL_NOTE_ID;
 export type AppConfig = LegacyAppConfig | PublicAppConfig;
 export interface LegacyAppConfig {
   schema: 1;
@@ -66,6 +77,10 @@ export interface BrowserClientHandle {
   account: StandardAccount;
   wallet: AppWallet;
   persistence: BrowserStoragePersistence;
+  readonly deposits: readonly SavedDeposit[];
+  readonly selectedDepositId: string;
+  addDeposit(): Promise<void>;
+  selectDeposit(id: string): Promise<void>;
   readonly invalidated: boolean;
   readonly publicAdmissionReady: boolean;
   readonly diagnostic: {
@@ -403,6 +418,7 @@ export async function connectZkapi(
       "Use HTTPS or localhost with IndexedDB, Web Locks, Web Crypto, and module Workers.",
     );
   const signer = walletStandardAdapter(wallet, account, CHAIN);
+  await assertRuntimeCustody(signer.publicKey);
   selectConnectedAccount(wallet, account);
   const publicConnection =
     installed.schema === 2
@@ -432,8 +448,8 @@ export async function connectZkapi(
   }
   const legacy = installed as LegacyAppConfig;
   let raw: Awaited<ReturnType<typeof createBrowserClient>>;
-  try {
-    raw = await createBrowserClient({
+  const openClient = (noteId: string, initialize = false) =>
+    createBrowserClient({
       ...(publicConnection?.options ?? {
         deployment: {
           manifest: assets.manifest,
@@ -449,8 +465,8 @@ export async function connectZkapi(
         oaVerifier: legacy.oaVerifier,
       }),
       storageName: STORAGE_NAME,
-      noteId: NOTE_ID,
-      initializeStorage,
+      noteId,
+      initializeStorage: initialize,
       wallet: signer,
       createWorker: () =>
         new Worker(new URL("./prover.worker.ts", import.meta.url), {
@@ -460,12 +476,37 @@ export async function connectZkapi(
       wasm: assets.wasm,
       wasmSha256: assets.wasmSha256,
     });
+  let catalog: DepositCatalog;
+  let saved: Awaited<ReturnType<DepositCatalog["read"]>>;
+  try {
+    raw = await openClient(NOTE_ID, initializeStorage);
   } catch (error) {
     publicConnection?.clear();
     throw error;
   }
+  try {
+    catalog = await openDepositCatalog(
+      STORAGE_NAME,
+      assets.verifiedManifest.deployment_id,
+      assets.verifiedManifest.pool,
+      signer.publicKey,
+    );
+    saved = await catalog.read();
+    if (saved.selectedId !== NOTE_ID) {
+      const selected = await openClient(saved.selectedId);
+      raw.dispose();
+      raw = selected;
+    }
+  } catch (error) {
+    raw.dispose();
+    catalog!?.close();
+    publicConnection?.clear();
+    throw error;
+  }
+  let selectedId = saved.selectedId;
   let invalidated = false,
-    disposed = false;
+    disposed = false,
+    switching = false;
   const observers = new Set<(status: ClientStatus) => void>();
   const selectedStillActive = () =>
     !disposed &&
@@ -475,6 +516,7 @@ export async function connectZkapi(
     account.features.includes("solana:signTransaction");
   const project = (status: ClientStatus): ClientStatus =>
     invalidated ||
+    switching ||
     !selectedStillActive() ||
     (publicConnection && !publicConnection.canAdmit)
       ? { ...status, canRequest: false }
@@ -488,9 +530,11 @@ export async function connectZkapi(
     }
   };
   const notifyObservers = () => {
-    void raw.client
+    const current = raw.client;
+    void current
       .status()
       .then((status) => {
+        if (current !== raw.client || disposed) return;
         for (const listener of observers) {
           try {
             listener(project(status));
@@ -500,6 +544,83 @@ export async function connectZkapi(
         }
       })
       .catch(() => {});
+  };
+  const subscribeRaw = () => {
+    const current = raw.client;
+    return current.subscribe((status) => {
+      if (current !== raw.client || disposed) return;
+      for (const listener of observers) {
+        try {
+          listener(project(status));
+        } catch {
+          /* Isolate UI observers. */
+        }
+      }
+    });
+  };
+  let offClient = subscribeRaw();
+  const assertSelectedDeposit = async (requestedId: string) => {
+    const latest = await catalog.read();
+    if (
+      disposed ||
+      requestedId !== selectedId ||
+      latest.selectedId !== selectedId
+    )
+      throw new DepositError(
+        "The selected deposit changed in another operation or tab. Reconnect to load your saved deposits before continuing.",
+      );
+    saved = latest;
+  };
+  const changeDeposit = async (id?: string) => {
+    const requestedId = selectedId;
+    await catalog.withLock(async () => {
+      assertActiveAccount();
+      await assertSelectedDeposit(requestedId);
+      if (id === selectedId) return;
+      const status = await raw.client.status();
+      if (!canChangeDeposit(status) || (!id && !canAddDeposit(status)))
+        throw new DepositError(
+          "Finish the current deposit, withdrawal or settlement before changing deposits. Your saved operation is retained.",
+        );
+      if (id && !saved.deposits.some((d) => d.id === id))
+        throw new DepositError("This deposit is not in the saved account.");
+      switching = true;
+      notifyObservers();
+      let next: typeof raw | undefined;
+      try {
+        if (!id && publicConnection) {
+          await publicConnection.refreshPreflight();
+          if (!publicConnection.canAdmit || !publicConnection.freshAdmission)
+            throw new PublicOnboardingError(
+              "New deposits are unavailable. Refresh operator readiness; your existing deposits remain available.",
+            );
+        }
+        const nextId = id ?? `zkchat-deposit-${crypto.randomUUID()}`;
+        next = await openClient(nextId);
+        assertActiveAccount();
+        const updated = {
+          ...saved,
+          selectedId: nextId,
+          deposits: id
+            ? saved.deposits
+            : [...saved.deposits, { id: nextId, createdAt: Date.now() }],
+        };
+        // Save the ID before exposing a client capable of preparing or signing.
+        await catalog.save(updated);
+        offClient();
+        const previous = raw;
+        raw = next;
+        next = undefined;
+        selectedId = nextId;
+        saved = updated;
+        offClient = subscribeRaw();
+        previous.dispose();
+      } finally {
+        next?.dispose();
+        switching = false;
+        notifyObservers();
+      }
+    });
   };
   const offWallet = watchWallet(wallet, () => {
     if (selectedStillActive()) return;
@@ -525,66 +646,85 @@ export async function connectZkapi(
     "fallbackToEscape",
     "prepareFinalizeEscape",
   ]);
-  // Bind methods to the original SDK instance; preserve recovery after wallet events.
+  // Route through the selected SDK client; preserve every previous journal.
   const client = new Proxy(raw.client, {
-    get(target, property) {
+    get(_target, property) {
+      const target = raw.client;
       if (property === "status")
-        return async () => project(await target.status());
+        return async () => {
+          const current = raw.client;
+          const latest = await catalog.read();
+          const status = project(await current.status());
+          return latest.selectedId === selectedId
+            ? status
+            : { ...status, canRequest: false };
+        };
       if (property === "subscribe")
         return (listener: (status: ClientStatus) => void) => {
           observers.add(listener);
-          const off = target.subscribe((status) => listener(project(status)));
+          notifyObservers();
           return () => {
             observers.delete(listener);
-            off();
           };
         };
       const value = Reflect.get(target, property, target);
       if (typeof value !== "function") return value;
-      if (guarded.has(property))
+      if (property !== "listModels" && property !== "dispose")
         return async (...args: unknown[]) => {
-          assertActiveAccount();
-          if (
-            publicConnection &&
-            ["chat", "request", "prepareDeposit"].includes(String(property))
-          ) {
-            const signal =
-              property === "prepareDeposit"
-                ? undefined
-                : (args[0] as { signal?: AbortSignal }).signal;
-            signal?.throwIfAborted();
-            await publicConnection.refreshPreflight();
-            signal?.throwIfAborted();
-            assertActiveAccount();
-            if (!publicConnection.canAdmit || !publicConnection.freshAdmission)
-              throw new PublicOnboardingError(
-                "New work is unavailable. Refresh operator readiness and check whether this deployment requires an invitation. Recovery remains available.",
-              );
-            if (property === "chat") {
-              const input = args[0] as {
-                model?: string;
-                stream?: boolean;
-                maxOutputTokens?: number;
-              };
-              const capability =
-                publicConnection.loaded.profile.modelCapabilities[
-                  input.model ?? ""
-                ];
-              if (!capability || (input.stream && !capability.streaming))
-                throw new Error(
-                  "The selected public profile does not support this request capability.",
-                );
+          const requestedId = selectedId;
+          return catalog.withLock(async () => {
+            await assertSelectedDeposit(requestedId);
+            const target = raw.client;
+            if (guarded.has(property)) assertActiveAccount();
+            if (
+              publicConnection &&
+              ["chat", "request", "prepareDeposit"].includes(String(property))
+            ) {
+              const signal =
+                property === "prepareDeposit"
+                  ? undefined
+                  : (args[0] as { signal?: AbortSignal }).signal;
+              signal?.throwIfAborted();
+              await publicConnection.refreshPreflight();
+              signal?.throwIfAborted();
+              assertActiveAccount();
               if (
-                !Number.isSafeInteger(input.maxOutputTokens) ||
-                input.maxOutputTokens! < 1 ||
-                input.maxOutputTokens! > 128
+                !publicConnection.canAdmit ||
+                !publicConnection.freshAdmission
               )
-                throw new Error(
-                  "This public Devnet preview allows at most 128 output tokens.",
+                throw new PublicOnboardingError(
+                  "New work is unavailable. Refresh operator readiness and check whether this deployment requires an invitation. Recovery remains available.",
                 );
+              if (property === "chat") {
+                const input = args[0] as {
+                  model?: string;
+                  stream?: boolean;
+                  maxOutputTokens?: number;
+                };
+                const capability =
+                  publicConnection.loaded.profile.modelCapabilities[
+                    input.model ?? ""
+                  ];
+                if (!capability || (input.stream && !capability.streaming))
+                  throw new Error(
+                    "The selected public profile does not support this request capability.",
+                  );
+                if (
+                  !Number.isSafeInteger(input.maxOutputTokens) ||
+                  input.maxOutputTokens! < 1 ||
+                  input.maxOutputTokens! > 128
+                )
+                  throw new Error(
+                    "This public Devnet preview allows at most 128 output tokens.",
+                  );
+              }
             }
-          }
-          return Reflect.apply(value, target, args);
+            return Reflect.apply(
+              Reflect.get(target, property, target),
+              target,
+              args,
+            );
+          });
         };
       return value.bind(target);
     },
@@ -594,7 +734,9 @@ export async function connectZkapi(
   } catch (error) {
     offWallet();
     offRegistry();
+    offClient();
     raw.dispose();
+    catalog.close();
     publicConnection?.clear();
     throw error;
   }
@@ -603,6 +745,14 @@ export async function connectZkapi(
     account,
     wallet,
     persistence: raw.persistence,
+    get deposits() {
+      return saved.deposits.map((d) => ({ ...d }));
+    },
+    get selectedDepositId() {
+      return selectedId;
+    },
+    addDeposit: () => changeDeposit(),
+    selectDeposit: (id) => changeDeposit(id),
     get publicAdmissionReady() {
       return publicConnection?.canAdmit ?? true;
     },
@@ -625,7 +775,9 @@ export async function connectZkapi(
     assertActiveAccount,
     dispose() {
       if (disposed) return;
+      offClient();
       raw.dispose();
+      catalog.close();
       publicConnection?.clear();
       disposed = true;
       offWallet();

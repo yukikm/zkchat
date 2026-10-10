@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite --host 127.0.0.1",
-    "build": "tsc -b && vite build",
+    "build": "tsc -b && node scripts/build.mjs",
+    "dev:recovery": "vite --mode recovery --host 127.0.0.1",
     "preview": "vite preview --host 127.0.0.1",
     "test": "vitest run",
     "test:e2e": "playwright test",
@@ -23,7 +24,8 @@
     "@solana/kit-plugin-wallet": "0.21.0",
     "@wallet-standard/app": "1.1.1",
     "@wallet-standard/ui-registry": "1.1.1",
-    "@zkapi/solana-sdk": "file:vendor/zkapi-solana-sdk-0.2.0-devnet.3.tgz",
+    "@zkapi/solana-sdk": "file:vendor/zkapi-solana-sdk-0.2.0-devnet.8.tgz",
+    "@zkapi/solana-sdk-legacy": "file:vendor/zkapi-solana-sdk-0.2.0-devnet.3.tgz",
     "lucide-react": "^0.468.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
@@ -32,6 +34,7 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.58.0",
+    "@types/node": "24.10.0",
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",
     "@vitejs/plugin-react": "^5.0.0",

@@ -199,7 +199,7 @@ test("public SDK browser factory creates and reopens unfunded custody with no si
     JSON.stringify(
       {
         observedAt: new Date().toISOString(),
-        sdk: "0.2.0-devnet.3",
+        sdk: "0.2.0-devnet.8",
         result: "initialized and reopened",
         blocked,
         visibleResult: await page.getByRole("dialog").innerText(),

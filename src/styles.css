@@ -1458,6 +1458,46 @@ textarea {
 .fund-form > .field {
   margin-bottom: 12px;
 }
+.deposit-retention {
+  margin: 12px 0;
+}
+.deposit-management {
+  display: grid;
+  gap: 12px;
+  margin: 20px 0;
+}
+.deposit-management .field {
+  margin-bottom: 0;
+}
+.deposit-management > button {
+  justify-self: start;
+}
+.model-availability {
+  margin-bottom: 20px;
+}
+.model-availability p {
+  margin-top: 8px;
+}
+.deposit-button {
+  color: var(--accent);
+}
+@media (max-width: 600px) {
+  .topbar-left {
+    min-width: 0;
+  }
+  .model-picker {
+    min-width: 0;
+  }
+  .topbar .model-picker select {
+    max-width: 120px;
+  }
+  .topbar .connect-button {
+    min-height: 40px;
+  }
+  .topbar .connect-button:not(.deposit-button) > span:not(.status-dot) {
+    display: none;
+  }
+}
 .pending-card {
   margin: 18px 0;
   padding: 17px;

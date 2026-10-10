@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   ArrowDownLeft,
   ArrowUpRight,
@@ -12,11 +12,14 @@ import {
   Unplug,
 } from "lucide-react";
 import type { ClientStatus } from "@zkapi/solana-sdk";
+import { SDK_VERSION, RECOVERY_RUNTIME } from "../lib/sdkVersion";
+import { reusableSession } from "../lib/sdkStatus";
 import {
   BrowserStorageMissing,
   connectWallet,
   connectZkapi,
   configuredMode,
+  configuredModels,
   listWallets,
   watchWallets,
   type AppConfig,
@@ -35,6 +38,12 @@ import {
   microUsdc,
 } from "../lib/chat";
 import { WalletConnectionError } from "../lib/walletErrors";
+import {
+  canAddDeposit,
+  canChangeDeposit,
+  DepositError,
+  hasLowBalance,
+} from "../lib/deposits";
 export function ConnectionPanel({
   config,
   configError,
@@ -74,10 +83,22 @@ export function ConnectionPanel({
   const [retentionAccepted, setRetentionAccepted] = useState(false);
   const [withdraw, setWithdraw] = useState(false);
   const [progressState, setProgressState] = useState("");
+  const amountInput = useRef<HTMLInputElement>(null);
+  const focusNewDeposit = useRef(false);
   const [publicCheck, setPublicCheck] = useState<Awaited<
     ReturnType<typeof inspectPublicDeployment>
   > | null>(null);
   useEffect(() => watchWallets(() => setWallets(listWallets())), []);
+  useEffect(() => {
+    setWithdraw(false);
+    setProgressState("");
+  }, [status?.noteId]);
+  useEffect(() => {
+    if (!busy && focusNewDeposit.current && status?.wallet === "empty") {
+      focusNewDeposit.current = false;
+      amountInput.current?.focus();
+    }
+  }, [status?.noteId, status?.wallet, busy]);
   async function action(
     fn: () => Promise<void>,
     fallback = "The operation could not be completed. Check your balance and pending operations. Requests are not retried automatically.",
@@ -94,6 +115,7 @@ export function ConnectionPanel({
     } catch (e) {
       setError(
         e instanceof PublicOnboardingError ||
+          e instanceof DepositError ||
           e instanceof WalletConnectionError ||
           e instanceof AmountInputError
           ? e.message
@@ -175,8 +197,34 @@ export function ConnectionPanel({
           <span className="status-dot" />
           Solana Devnet
         </span>
-        <span>SDK 0.2.0-devnet.3 · preview artifact</span>
+        <span>
+          SDK {SDK_VERSION} ·{" "}
+          {RECOVERY_RUNTIME ? "original wallet recovery" : "preview artifact"}
+        </span>
       </div>
+      {RECOVERY_RUNTIME ? (
+        <p className="small muted">
+          Original wallet recovery keeps SDK .3, its profile and saved deposits.
+          Keep this browser's data until all recovery and withdrawals are
+          complete.
+        </p>
+      ) : (
+        !handle && (
+          <p className="small muted">
+            Existing deposits from SDK .3 use the original recovery app.{" "}
+            {import.meta.env.DEV ? (
+              <>
+                For local recovery, stop this server and run{" "}
+                <code>npm run dev:recovery</code>, then reopen the same URL.
+              </>
+            ) : (
+              <a href={`${import.meta.env.BASE_URL}recovery-v3/`}>
+                Open original wallet recovery
+              </a>
+            )}
+          </p>
+        )
+      )}
       {!config ? (
         <div className="setup-needed">
           <CircleHelp size={22} />
@@ -218,6 +266,25 @@ export function ConnectionPanel({
               {configuredMode(config) === "proxy" ? "Proxy" : "Direct"}
             </strong>
           </div>
+          <details className="model-availability">
+            <summary>
+              Available models ({configuredModels(config).length})
+            </summary>
+            <p className="small muted">
+              This ZKAPI deployment enables{" "}
+              {configuredModels(config)
+                .map((model) => model.label || model.id)
+                .join(", ")}
+              . Model availability is set by the deployment operator.
+            </p>
+            {configuredMode(config) === "direct_openrouter" && (
+              <p className="small muted">
+                OpenRouter supports models from multiple providers. Additional
+                models must be enabled in the ZKAPI public profile before they
+                can be selected here.
+              </p>
+            )}
+          </details>
           {config.schema === 2 && !handle && (
             <div className="notice">
               <strong>Public Devnet connection</strong>
@@ -398,12 +465,106 @@ export function ConnectionPanel({
                   ? "Withdrawal complete. This note no longer holds funds."
                   : status?.wallet === "unfunded" || status?.wallet === "empty"
                     ? "No confirmed deposit yet. Preparing a deposit does not fund the note."
-                    : status?.session
-                      ? "A session is pending settlement. The displayed balance may not be available to spend."
-                      : status?.canRequest
-                        ? "Ready to send. Each request charge is confirmed after settlement."
-                        : "Not ready to send. Check funding, pending operations, and expiry."}
+                    : reusableSession(status)
+                      ? "Ready to send using this session. Charges are deducted after it closes and settlement is verified."
+                      : status?.session
+                        ? "A session is pending settlement. The displayed balance may not be available to spend."
+                        : status?.canRequest
+                          ? "Ready to send. Each request charge is confirmed after settlement."
+                          : "Not ready to send. Check funding, pending operations, and expiry."}
               </p>
+              <section
+                className="deposit-management"
+                aria-label="Manage deposits"
+              >
+                <div className="field">
+                  <label htmlFor="saved-deposit">Saved deposits</label>
+                  <select
+                    id="saved-deposit"
+                    value={handle.selectedDepositId}
+                    disabled={disabled || !canChangeDeposit(status)}
+                    onChange={(e) => {
+                      const id = e.target.value;
+                      void action(
+                        async () => {
+                          await handle.selectDeposit(id);
+                          setInfo(
+                            "Deposit selected. Balance and saved operations have been refreshed.",
+                          );
+                        },
+                        "The deposit could not be opened. Your current deposit and all saved records are retained.",
+                        "Opening the selected deposit…",
+                      );
+                    }}
+                  >
+                    {handle.deposits?.map((deposit, index) => (
+                      <option key={deposit.id} value={deposit.id}>
+                        Deposit {index + 1}
+                        {deposit.id === status?.noteId
+                          ? ` · ${formatUsdc(fundedNoteBalance(status))} USDC${status.wallet === "closed" ? " · Withdrawn" : ""}`
+                          : ""}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <p className="small muted">
+                  Each deposit has its own balance. Select one to use or
+                  withdraw it; balances are not combined. Previous funds and
+                  history stay saved.
+                </p>
+                {hasLowBalance(status) && (
+                  <p className="notice" role="status">
+                    This deposit is below the{" "}
+                    {formatUsdc(status?.authorizationCapMicroUsdc)} USDC needed
+                    to authorize a request. Add a new deposit or select another
+                    funded deposit to continue. You can still withdraw this
+                    balance.
+                  </p>
+                )}
+                {status?.wallet === "closed" && (
+                  <p className="small muted">
+                    Withdrawal complete. Add a new deposit to chat again with
+                    this wallet.
+                  </p>
+                )}
+                <button
+                  className="primary"
+                  disabled={
+                    disabled ||
+                    !canAddDeposit(status) ||
+                    !handle.publicAdmissionReady
+                  }
+                  onClick={() =>
+                    void action(
+                      async () => {
+                        await handle.addDeposit();
+                        focusNewDeposit.current = true;
+                        setInfo(
+                          "New deposit selected. Enter an amount below, then prepare the deposit. No funds have moved.",
+                        );
+                      },
+                      "A new deposit could not be opened. Your previous deposits are retained; reconnect to check the saved selection.",
+                      "Opening a new deposit and retaining your previous balances…",
+                    )
+                  }
+                >
+                  <ArrowDownLeft size={16} />
+                  Add deposit
+                </button>
+                {!canChangeDeposit(status) && (
+                  <p className="small muted">
+                    Complete the pending operation or settlement below before
+                    adding or switching deposits.
+                  </p>
+                )}
+                {(status?.wallet === "empty" ||
+                  status?.wallet === "unfunded") &&
+                  canChangeDeposit(status) && (
+                    <p className="small muted">
+                      Use the deposit form below to fund this deposit first.
+                    </p>
+                  )}
+              </section>
               {status?.expiry && (
                 <p className="notice" role="status">
                   {status.expiry.message}
@@ -445,14 +606,6 @@ export function ConnectionPanel({
                   This storage is not a backup. While funds remain, keep browser
                   data and use the same URL and account.
                 </p>
-                <label className="check-label">
-                  <input
-                    type="checkbox"
-                    checked={retentionAccepted}
-                    onChange={(e) => setRetentionAccepted(e.target.checked)}
-                  />
-                  I understand the storage limitations
-                </label>
               </div>
               {(status?.wallet === "empty" ||
                 status?.wallet === "unfunded") && (
@@ -493,7 +646,16 @@ export function ConnectionPanel({
                     onSubmit={(e) => {
                       e.preventDefault();
                       void action(async () => {
-                        await handle.client.prepareDeposit(microUsdc(amount));
+                        const value = microUsdc(amount);
+                        if (
+                          status &&
+                          BigInt(value) <
+                            BigInt(status.authorizationCapMicroUsdc)
+                        )
+                          throw new AmountInputError(
+                            `Deposit at least ${formatUsdc(status.authorizationCapMicroUsdc)} USDC to authorize a request.`,
+                          );
+                        await handle.client.prepareDeposit(value);
                         setProgressState("");
                         setInfo(
                           "Deposit prepared. Request the wallet signature when ready.",
@@ -504,6 +666,7 @@ export function ConnectionPanel({
                     <div className="field">
                       <label htmlFor="fund-amount">USDC to deposit</label>
                       <input
+                        ref={amountInput}
                         id="fund-amount"
                         inputMode="decimal"
                         autoComplete="off"
@@ -511,10 +674,18 @@ export function ConnectionPanel({
                         onChange={(e) => setAmount(e.target.value)}
                       />
                       <small>
-                        Your balance must exceed the authorization cap. Keep SOL
+                        Deposit at least the authorization cap to chat. Keep SOL
                         available for fees.
                       </small>
                     </div>
+                    <label className="check-label deposit-retention">
+                      <input
+                        type="checkbox"
+                        checked={retentionAccepted}
+                        onChange={(e) => setRetentionAccepted(e.target.checked)}
+                      />
+                      I understand the storage limitations
+                    </label>
                     <button
                       className="primary"
                       disabled={
@@ -667,14 +838,34 @@ export function ConnectionPanel({
               )}
               {status?.session && (
                 <div className="pending-card">
-                  <h4>Pending session</h4>
+                  <h4>
+                    {reusableSession(status)
+                      ? "Reusable session"
+                      : "Pending session"}
+                  </h4>
                   <p className="small">
-                    Even after a response appears, the next request must wait
-                    for verified settlement. Recovery does not replay AI
-                    requests.
+                    {reusableSession(status)
+                      ? "This session can serve another request. Close and settle it before switching deposits or withdrawing. Requests within this session may be linked."
+                      : "Complete recovery or settlement before the next request. Recovery does not replay AI requests."}
                   </p>
                   <code>{status.session.phase}</code>
                   <div className="button-row">
+                    {reusableSession(status) && (
+                      <button
+                        className="primary"
+                        disabled={disabled}
+                        onClick={() =>
+                          void action(async () => {
+                            await handle.client.settle();
+                            setInfo(
+                              "Session close requested. Check the updated settlement status.",
+                            );
+                          })
+                        }
+                      >
+                        Close session / Settle
+                      </button>
+                    )}
                     {status.session.phase === "prepared" &&
                       status.session.operations.length === 0 &&
                       !status.walletOperation && (
@@ -803,12 +994,6 @@ export function ConnectionPanel({
                     <p>Emergency withdrawal: {status.emergencyEscape.phase}</p>
                   )}
                 </details>
-              )}
-              {status?.wallet === "closed" && (
-                <p className="notice">
-                  This note has been withdrawn. Saved transactions are retained.
-                  This app version does not migrate to a new note.
-                </p>
               )}
               {status?.wallet === "active" &&
                 !status.session &&
