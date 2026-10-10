@@ -140,16 +140,11 @@ test("public SDK browser factory creates and reopens unfunded custody with no si
     .getByRole("button", { name: "Connection settings", exact: true })
     .click();
   await expect(
-    page.getByRole("button", { name: "Integration Test Wallet", exact: true }),
+    page.getByRole("button", { name: "Select wallet", exact: true }),
   ).toBeEnabled({ timeout: 180_000 });
   await page
-    .getByRole("button", { name: "Integration Test Wallet", exact: true })
-    .click();
-  await page
-    .getByLabel("2. Select an account")
-    .selectOption("11111111111111111111111111111111");
-  await page
-    .getByRole("button", { name: "Connect account", exact: true })
+    .getByRole("dialog", { name: "Connection settings" })
+    .getByRole("button", { name: "Connect wallet", exact: true })
     .click();
   await expect(
     page.getByRole("button", {
@@ -173,13 +168,8 @@ test("public SDK browser factory creates and reopens unfunded custody with no si
   ).toBeDisabled();
   await page.getByRole("button", { name: "Disconnect", exact: true }).click();
   await page
-    .getByRole("button", { name: "Integration Test Wallet", exact: true })
-    .click();
-  await page
-    .getByLabel("2. Select an account")
-    .selectOption("11111111111111111111111111111111");
-  await page
-    .getByRole("button", { name: "Connect account", exact: true })
+    .getByRole("dialog", { name: "Connection settings" })
+    .getByRole("button", { name: "Connect wallet", exact: true })
     .click();
   await expect(
     page.getByText("Wallet connected.", {

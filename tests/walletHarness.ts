@@ -1,11 +1,8 @@
 // Test-only Wallet Standard wallet. Never bundled into the production app.
 import { getWallets } from "@wallet-standard/app";
 import type { Wallet } from "@wallet-standard/base";
-import { listWallets, connectWallet } from "../src/lib/zkapi";
-import {
-  selectConnectedAccount,
-  disconnectSelectedWallet,
-} from "../src/lib/walletConnector";
+import { listWallets, connectWalletAccount } from "../src/lib/zkapi";
+import { disconnectSelectedWallet } from "../src/lib/walletConnector";
 
 export async function runWalletLifecycle(failureCode?: number) {
   const unregister = registerTestWallet(failureCode);
@@ -13,27 +10,53 @@ export async function runWalletLifecycle(failureCode?: number) {
     const wallet = listWallets().find(
       (wallet) => wallet.name === "Integration Test Wallet",
     )!;
-    const accounts = await connectWallet(wallet);
-    selectConnectedAccount(wallet, accounts[0]);
-    const sameAccount = accounts[0] === wallet.accounts[0];
+    const account = await connectWalletAccount(wallet);
+    const sameAccount = account === wallet.accounts[0];
     await disconnectSelectedWallet();
     return {
       sameAccount,
-      address: accounts[0].address,
+      address: account.address,
       remaining: wallet.accounts.length,
     };
   } finally {
     unregister();
   }
 }
-export function registerTestWallet(failureCode?: number) {
+export async function runWalletSelectedAccountLifecycle() {
+  const unregister = registerTestWallet(undefined, true);
+  try {
+    const wallet = listWallets().find(
+      (wallet) => wallet.name === "Integration Test Wallet",
+    )!;
+    const account = await connectWalletAccount(wallet);
+    const result = {
+      sameAccount: account === wallet.accounts[1],
+      activeAddress: account.address,
+      previousAddress: wallet.accounts[0].address,
+    };
+    await disconnectSelectedWallet();
+    return { ...result, remaining: wallet.accounts.length };
+  } finally {
+    unregister();
+  }
+}
+export function registerTestWallet(
+  failureCode?: number,
+  withPreviousAccount = false,
+) {
   const account = Object.freeze({
     address: "11111111111111111111111111111111",
     publicKey: new Uint8Array(32),
     chains: ["solana:devnet"] as const,
     features: ["solana:signTransaction"] as const,
   });
-  let accounts: readonly (typeof account)[] = [];
+  const previousAccount = Object.freeze({
+    ...account,
+    address: "4vJ9JU1bJJE96FWSJKvHsmmFADCg4gpZQff4P3bkLKi",
+    publicKey: new Uint8Array(32).fill(1),
+  });
+  let accounts: readonly (typeof account | typeof previousAccount)[] =
+    withPreviousAccount ? [previousAccount] : [];
   const listeners = new Set<(value: { accounts: typeof accounts }) => void>();
   const update = () => listeners.forEach((fn) => fn({ accounts }));
   const wallet = {
@@ -52,7 +75,9 @@ export function registerTestWallet(failureCode?: number) {
             throw Object.assign(new Error("Unexpected error"), {
               code: failureCode,
             });
-          accounts = [account];
+          accounts = withPreviousAccount
+            ? [previousAccount, account]
+            : [account];
           update();
           return { accounts };
         },

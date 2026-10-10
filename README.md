@@ -32,7 +32,7 @@ npm run dev
 
 ## 実際の使い方
 
-1. `Connection settings`でウォレットとアカウントを選択し、`Connect account`。初回だけ`Set up this wallet`を選びます。接続・保存領域作成は送金しません。
+1. `Connect wallet`を開き、検出されたウォレットをプルダウンで選んで`Connect wallet`。拡張機能で承認したアカウントのアドレスがヘッダーに表示されます。アプリでアドレスを選び直す必要はありません。初回だけ`Set up this wallet`で入金データの保存設定へ進みます。接続・保存領域作成は送金しません。
 2. [Circle faucet](https://faucet.circle.com/)でUSDC / Solana Devnet、[Solana faucet](https://faucet.solana.com/)でDevnet SOLを用意します。認証済みUSDC mintは`4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU`。SOLは手数料・rent用です。
 3. 保存領域の注意事項を読み、例として2 Devnet USDCを`Review deposit`で準備します。`Approve in wallet`でウォレットに進み、内容を確認して署名します。送信後は`Check transaction`で保存済み取引を確認します。`pending`は未確定です。
 4. 「Ready to chat」になったら送信します。モデルは固定profileの許可リストから選択します。direct OpenRouter、アプリの上限は128 output tokensです。Streaming設定は認証済みprofileに従います。
@@ -92,6 +92,10 @@ npm run check:browser
 招待は現行公開APIでは不要です。別の制限付きoperatorで必要な場合は詳細欄に入力し、メモリ中だけで保持します。認証済みcontrol originの正確なsession POST以外には送信しません。provider管理キー、秘密鍵、招待を公開設定へ記載しません。
 
 ## 公開ビルド
+
+AWSの最小コスト構成（非公開S3 + CloudFront Free定額プラン）、配信用テンプレート、公開手順は[docs/AWS-DEPLOY.md](docs/AWS-DEPLOY.md)にまとめています。`npm run check:aws`で配信動作をローカル検証し、`npm run publish:aws`でAWSを変更せず配信計画を確認できます。
+
+公開URL: [zkchat](https://dzt0611ozdx70.cloudfront.net) / [旧SDKの復旧画面](https://dzt0611ozdx70.cloudfront.net/recovery-v3/)。2026-10-11にCloudFront Freeプランで公開済みです。外部ZKAPIの稼働確認結果は上記デプロイ手順を参照してください。
 
 HTTPS、Web Crypto、Web Locks、IndexedDB、module Worker、WASM対応ブラウザが必要です。サブパスへ配置する場合:
 

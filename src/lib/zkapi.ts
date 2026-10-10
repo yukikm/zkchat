@@ -4,6 +4,7 @@ import {
   discoveredWallets,
   subscribeWallets,
   connectSelectedWallet,
+  getConnectedWalletAccount,
   selectConnectedAccount,
 } from "./walletConnector";
 import type {
@@ -360,6 +361,17 @@ export async function connectWallet(
     );
   return accounts;
 }
+export async function connectWalletAccount(
+  wallet: AppWallet,
+): Promise<StandardAccount> {
+  const accounts = await connectWallet(wallet);
+  const account = getConnectedWalletAccount(wallet);
+  if (!account || !accounts.includes(account))
+    throw new WalletConnectionError(
+      "Choose a Solana Devnet account in your wallet, then connect again.",
+    );
+  return account;
+}
 let assetCache:
   { key: string; promise: Promise<LoadedDeploymentAssets> } | undefined;
 function deploymentAssets(
@@ -428,7 +440,12 @@ export async function connectZkapi(
           signer.publicKey,
           initializeStorage,
           admissionToken,
-        )
+        ).catch((error: unknown) => {
+          // A delayed storage-missing result must not revive setup for an
+          // account that changed while the deployment was being checked.
+          selectConnectedAccount(wallet, account);
+          throw error;
+        })
       : undefined;
   const assets =
     publicConnection?.assets ??
@@ -442,6 +459,7 @@ export async function connectZkapi(
   }
   try {
     walletStandardAdapter(wallet, account, CHAIN);
+    selectConnectedAccount(wallet, account);
   } catch (error) {
     publicConnection?.clear();
     throw error;
@@ -482,6 +500,7 @@ export async function connectZkapi(
     raw = await openClient(NOTE_ID, initializeStorage);
   } catch (error) {
     publicConnection?.clear();
+    selectConnectedAccount(wallet, account);
     throw error;
   }
   try {
@@ -501,6 +520,7 @@ export async function connectZkapi(
     raw.dispose();
     catalog!?.close();
     publicConnection?.clear();
+    selectConnectedAccount(wallet, account);
     throw error;
   }
   let selectedId = saved.selectedId;
@@ -508,12 +528,22 @@ export async function connectZkapi(
     disposed = false,
     switching = false;
   const observers = new Set<(status: ClientStatus) => void>();
-  const selectedStillActive = () =>
-    !disposed &&
-    supportsV0(wallet) &&
-    wallet.accounts.includes(account) &&
-    account.chains.includes(CHAIN) &&
-    account.features.includes("solana:signTransaction");
+  const selectedStillActive = () => {
+    if (
+      disposed ||
+      !supportsV0(wallet) ||
+      !wallet.accounts.includes(account) ||
+      !account.chains.includes(CHAIN) ||
+      !account.features.includes("solana:signTransaction")
+    )
+      return false;
+    try {
+      selectConnectedAccount(wallet, account);
+      return true;
+    } catch {
+      return false;
+    }
+  };
   const project = (status: ClientStatus): ClientStatus =>
     invalidated ||
     switching ||
@@ -622,11 +652,13 @@ export async function connectZkapi(
       }
     });
   };
-  const offWallet = watchWallet(wallet, () => {
+  const checkWalletConnection = () => {
     if (selectedStillActive()) return;
     invalidated = true;
     notifyObservers();
-  });
+  };
+  const offWallet = watchWallet(wallet, checkWalletConnection);
+  const offConnector = subscribeWallets(checkWalletConnection);
   const offRegistry = getWallets().on("unregister", (...removed) => {
     if ((removed as unknown as AppWallet[]).includes(wallet)) {
       invalidated = true;
@@ -733,6 +765,7 @@ export async function connectZkapi(
     assertActiveAccount();
   } catch (error) {
     offWallet();
+    offConnector();
     offRegistry();
     offClient();
     raw.dispose();
@@ -781,6 +814,7 @@ export async function connectZkapi(
       publicConnection?.clear();
       disposed = true;
       offWallet();
+      offConnector();
       offRegistry();
       observers.clear();
     },

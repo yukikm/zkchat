@@ -6,6 +6,8 @@ const sdk = vi.hoisted(() => ({
   browser: vi.fn(),
   readiness: vi.fn(),
   catalog: vi.fn(),
+  assertAccount: vi.fn(),
+  walletListeners: new Set<() => void>(),
 }));
 vi.mock("../src/lib/deposits", async (original) => ({
   ...(await original<typeof import("../src/lib/deposits")>()),
@@ -15,9 +17,12 @@ vi.mock("../src/lib/readiness", () => ({
   checkServiceReadiness: sdk.readiness,
 }));
 vi.mock("../src/lib/walletConnector", () => ({
-  selectConnectedAccount: vi.fn(),
+  selectConnectedAccount: sdk.assertAccount,
   discoveredWallets: () => [],
-  subscribeWallets: () => () => {},
+  subscribeWallets: (listener: () => void) => {
+    sdk.walletListeners.add(listener);
+    return () => sdk.walletListeners.delete(listener);
+  },
   connectSelectedWallet: vi.fn(),
 }));
 vi.mock("@zkapi/solana-sdk/public-profile", async (original) => ({
@@ -92,6 +97,8 @@ const loaded = () => ({
 });
 beforeEach(async () => {
   vi.clearAllMocks();
+  sdk.assertAccount.mockReset();
+  sdk.walletListeners.clear();
   const custody = await memoryCustody();
   sdk.catalog.mockImplementation(async () =>
     createDepositCatalog(custody, { deploymentId: "deployment", pool: "pool" }),
@@ -785,6 +792,64 @@ describe("existing application adapter with public profile", () => {
       connectZkapi(config, wallet as any, account as any, false, token),
     ).rejects.toThrow(/account changed/);
     expect(sdk.browser).not.toHaveBeenCalled();
+  });
+  it("rejects an active-account switch during profile loading even if the original account remains authorized", async () => {
+    const { account, wallet } = make();
+    sdk.preflight.mockImplementationOnce(async () => {
+      sdk.assertAccount.mockImplementation(() => {
+        throw new Error("active account changed");
+      });
+      return { chainAllowsNewOperations: true };
+    });
+    await expect(
+      connectZkapi(config, wallet as any, account as any),
+    ).rejects.toThrow("active account changed");
+    expect(wallet.accounts).toContain(account);
+    expect(sdk.browser).not.toHaveBeenCalled();
+  });
+  it.each(["profile", "client"])(
+    "does not offer new storage for a stale account after %s setup fails",
+    async (stage) => {
+      const { account, wallet } = make();
+      const switchAccount = () => {
+        sdk.assertAccount.mockImplementation(() => {
+          throw new Error("active account changed");
+        });
+      };
+      if (stage === "profile") {
+        storage.delete(profileBindingKey(STORAGE_NAME, account.address));
+        sdk.preflight.mockImplementationOnce(async () => {
+          switchAccount();
+          return { chainAllowsNewOperations: true };
+        });
+      } else {
+        sdk.browser.mockImplementationOnce(async () => {
+          switchAccount();
+          throw new BrowserStorageMissing();
+        });
+      }
+      await expect(
+        connectZkapi(config, wallet as any, account as any),
+      ).rejects.toThrow("active account changed");
+    },
+  );
+  it("invalidates an initialized SDK when the connector switches active accounts", async () => {
+    const { account, wallet, client } = make();
+    const handle = await connectZkapi(config, wallet as any, account as any);
+    sdk.assertAccount.mockImplementation(() => {
+      throw new Error("active account changed");
+    });
+    for (const listener of sdk.walletListeners) listener();
+
+    expect(wallet.accounts).toContain(account);
+    expect(handle.invalidated).toBe(true);
+    expect((await handle.client.status()).canRequest).toBe(false);
+    await expect(handle.client.prepareDeposit("2000000")).rejects.toThrow(
+      /changed or disconnected/,
+    );
+    expect(client.prepareDeposit).not.toHaveBeenCalled();
+    handle.dispose();
+    expect(sdk.walletListeners.size).toBe(0);
   });
 });
 

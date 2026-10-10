@@ -265,7 +265,7 @@ export const configuredStreaming = () => true;
 export const loadConfig = async () => ({ label: 'Test Operator', mode: 'proxy', models: [{ id: 'test/model', label: 'Test Model', apis: ['chat'] }] });
 export const listWallets = () => [wallet];
 export const watchWallets = () => () => {};
-export const connectWallet = async () => [account];
+export const connectWalletAccount = async () => account;
 let state = { mode: 'proxy', canRequest: true, wallet: 'active', busy: false, session: null, walletOperation: null, settledBalanceMicroUsdc: '2000000', authorizationCapMicroUsdc: '100000' };
 const listeners = new Set();
 const update = patch => { state = { ...state, ...patch }; for (const fn of listeners) fn(state); };
@@ -292,12 +292,9 @@ test("live partial failure blocks sends; recovery does not replay; explicit retr
   await page
     .getByRole("button", { name: "Connection settings", exact: true })
     .click();
-  await page.getByRole("button", { name: "Test Wallet", exact: true }).click();
   await page
-    .getByLabel("2. Select an account", { exact: true })
-    .selectOption("11111111111111111111111111111111");
-  await page
-    .getByRole("button", { name: "Connect account", exact: true })
+    .getByRole("dialog", { name: "Connection settings" })
+    .getByRole("button", { name: "Connect wallet", exact: true })
     .click();
   await expect(page.getByText("Ready to chat.")).toBeVisible();
   await page.getByRole("button", { name: "Close", exact: true }).click();
@@ -385,12 +382,9 @@ async function connectFixture(page: Page, source: string) {
   await page
     .getByRole("button", { name: "Connection settings", exact: true })
     .click();
-  await page.getByRole("button", { name: "Test Wallet", exact: true }).click();
   await page
-    .getByLabel("2. Select an account", { exact: true })
-    .selectOption("11111111111111111111111111111111");
-  await page
-    .getByRole("button", { name: "Connect account", exact: true })
+    .getByRole("dialog", { name: "Connection settings" })
+    .getByRole("button", { name: "Connect wallet", exact: true })
     .click();
 }
 test("saved rejected operation remains recoverable after reopening settings", async ({
@@ -413,7 +407,9 @@ test("saved rejected operation remains recoverable after reopening settings", as
     }),
   ).toBeVisible();
   await page.getByRole("button", { name: "Close", exact: true }).click();
-  await page.getByRole("button", { name: "Connected", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Connected wallet", exact: true })
+    .click();
   await page
     .getByRole("button", {
       name: "Try this step again",
@@ -485,12 +481,9 @@ test("public onboarding invitation stays in memory and clears after disconnect",
     .click();
   await page.getByText("Have an invitation?", { exact: true }).click();
   await page.getByLabel("Invitation code").fill(invitation);
-  await page.getByRole("button", { name: "Test Wallet", exact: true }).click();
   await page
-    .getByLabel("2. Select an account", { exact: true })
-    .selectOption("11111111111111111111111111111111");
-  await page
-    .getByRole("button", { name: "Connect account", exact: true })
+    .getByRole("dialog", { name: "Connection settings" })
+    .getByRole("button", { name: "Connect wallet", exact: true })
     .click();
   await expect(
     page.getByText("Wallet connected.", { exact: true }),
@@ -515,7 +508,7 @@ test("public onboarding invitation stays in memory and clears after disconnect",
   await expect(page.getByLabel("Invitation code")).toHaveValue("");
 });
 
-test("Kit wallet connector discovers, connects, selects and disconnects the exact Wallet Standard account", async ({
+test("Kit wallet connector discovers, automatically selects and disconnects the exact Wallet Standard account", async ({
   page,
 }) => {
   await page.goto("/");
@@ -527,6 +520,24 @@ test("Kit wallet connector discovers, connects, selects and disconnects the exac
   expect(result).toEqual({
     sameAccount: true,
     address: "11111111111111111111111111111111",
+    remaining: 0,
+  });
+});
+
+test("Kit connector uses the newly approved account even when another address is already authorized", async ({
+  page,
+}) => {
+  await page.goto("/");
+  const result = await page.evaluate(async () => {
+    // @ts-expect-error Vite serves this test-only module in development.
+    const { runWalletSelectedAccountLifecycle } =
+      await import("/tests/walletHarness.ts");
+    return runWalletSelectedAccountLifecycle();
+  });
+  expect(result).toEqual({
+    sameAccount: true,
+    activeAddress: "11111111111111111111111111111111",
+    previousAddress: "4vJ9JU1bJJE96FWSJKvHsmmFADCg4gpZQff4P3bkLKi",
     remaining: 0,
   });
 });
@@ -549,35 +560,342 @@ test("Kit connector preserves a wallet internal failure without starting SDK wor
   expect(failure).toContain("No transaction was requested");
 });
 
-test("wallet rejection shows actionable diagnostics and allows a deliberate retry", async ({
+test("wallet rejection shows actionable diagnostics and a retry connects without selecting an address", async ({
   page,
 }) => {
   const source =
     'import { walletConnectionError } from "/src/lib/walletErrors.ts";\n' +
     liveStub.replace(
-      "export const connectWallet = async () => [account];",
-      'export const connectWallet = async () => { throw walletConnectionError("Phantom", {code: -32603}); };',
+      "export const connectWalletAccount = async () => account;",
+      `let attempts = 0;
+       export const connectWalletAccount = async () => {
+         localStorage.setItem('zkchat:test-connect-attempts', String(++attempts));
+         if (attempts === 1) throw walletConnectionError("Test Wallet", {code: 4001});
+         return account;
+       };`,
     );
-  await page.route("**/src/lib/zkapi.ts*", (route) =>
-    route.fulfill({ contentType: "application/javascript", body: source }),
-  );
-  await page.goto("/");
-  await page
-    .getByRole("button", { name: "Connection settings", exact: true })
-    .click();
-  await page.getByRole("button", { name: "Test Wallet", exact: true }).click();
+  await connectFixture(page, source);
   await expect(page.getByRole("dialog")).toContainText(
-    "Phantom returned an internal connection error (code -32603)",
+    "Test Wallet connection was declined",
   );
+  const connect = page
+    .getByRole("dialog", { name: "Connection settings" })
+    .getByRole("button", {
+      name: "Connect wallet",
+      exact: true,
+    });
+  await expect(connect).toBeEnabled();
   await expect(
-    page.getByRole("button", { name: "Test Wallet", exact: true }),
+    page.getByRole("button", { name: "Select wallet", exact: true }),
   ).toBeEnabled();
   await expect(
-    page.getByRole("button", { name: "Connect account", exact: true }),
-  ).toBeDisabled();
+    page.getByRole("button", { name: "Connected wallet", exact: true }),
+  ).toHaveCount(0);
+  await expect(
+    page.getByLabel("2. Select an account", { exact: true }),
+  ).toHaveCount(0);
   await expect(page.getByRole("dialog")).not.toContainText(
     "Check your balance",
   );
+  await connect.click();
+  await expect(
+    page.getByText("Wallet connected.", { exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Connected wallet", exact: true }),
+  ).toContainText("1111");
+  expect(
+    await page.evaluate(() =>
+      localStorage.getItem("zkchat:test-connect-attempts"),
+    ),
+  ).toBe("2");
+});
+
+// The fixture returns the account chosen by the extension. The UI must use that
+// exact account for SDK setup and must not introduce another account chooser.
+function connectionFlowStub(
+  options: {
+    pending?: boolean;
+    storageMissing?: boolean;
+    sdkFailure?: boolean;
+  } = {},
+) {
+  return (
+    liveStub
+      .replace(
+        "const wallet = { name: 'Test Wallet' };",
+        `
+      const secondAccount = { address: '22222222222222222222222222222222' };
+      const icon = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg"/>';
+      const wallet = { name: 'Test Wallet', icon, accounts: [account, secondAccount] };
+      const secondWallet = { name: 'Second Wallet', icon, accounts: [secondAccount, account] };
+      window.testWalletCalls = [];
+      window.testSdkCalls = [];
+    `,
+      )
+      .replace(
+        "export const listWallets = () => [wallet];",
+        "export const listWallets = () => [wallet, secondWallet];",
+      )
+      .replace(
+        "export const connectWalletAccount = async () => account;",
+        `
+      export const connectWalletAccount = async selectedWallet => {
+        window.testWalletCalls.push(selectedWallet.name);
+        ${options.pending ? "await new Promise(resolve => { window.testApproveWallet = resolve; });" : ""}
+        return selectedWallet.accounts[0];
+      };
+    `,
+      )
+      .replace("export const connectZkapi =", "const createHandle =") +
+    `
+      export const connectZkapi = async (_config, selectedWallet, selectedAccount, initialize) => {
+        window.testSdkCalls.push({wallet: selectedWallet.name, address: selectedAccount.address, initialize});
+        ${options.storageMissing ? "if (!initialize) throw new BrowserStorageMissing();" : ""}
+        ${options.sdkFailure ? "if (window.testSdkCalls.length === 1) throw new Error('Temporary service failure');" : ""}
+        return {...await createHandle(), wallet: selectedWallet, account: selectedAccount};
+      };
+    `
+  );
+}
+
+const connectionCalls = (page: Page) =>
+  page.evaluate(() => ({
+    wallets: (window as unknown as { testWalletCalls: string[] })
+      .testWalletCalls,
+    sdk: (
+      window as unknown as {
+        testSdkCalls: {
+          wallet: string;
+          address: string;
+          initialize: boolean;
+        }[];
+      }
+    ).testSdkCalls,
+  }));
+
+for (const width of [375, 1280]) {
+  test(`wallet dropdown uses the extension account and shows its address at ${width}px`, async ({
+    page,
+    context,
+  }) => {
+    await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+    await page.setViewportSize({ width, height: 900 });
+    await page.route("**/src/lib/zkapi.ts*", (route) =>
+      route.fulfill({
+        contentType: "application/javascript",
+        body: connectionFlowStub(),
+      }),
+    );
+    await page.goto("/");
+    const topbar = page.getByRole("button", {
+      name: "Connection settings",
+      exact: true,
+    });
+    await expect(topbar).toHaveText("Connect wallet");
+    await topbar.click();
+    const dropdown = page.getByRole("button", {
+      name: "Select wallet",
+      exact: true,
+    });
+    await expect(dropdown).toContainText("Test Wallet");
+    await expect(
+      page.getByLabel("2. Select an account", { exact: true }),
+    ).toHaveCount(0);
+    await dropdown.focus();
+    await page.keyboard.press("Enter");
+    await expect(
+      page
+        .getByRole("listbox", { name: "Available wallets" })
+        .getByRole("option"),
+    ).toHaveCount(2);
+    await page.keyboard.press("ArrowDown");
+    await page.keyboard.press("Enter");
+    await expect(dropdown).toContainText("Second Wallet");
+    expect(await connectionCalls(page)).toEqual({ wallets: [], sdk: [] });
+    await dropdown.click();
+    await page.screenshot({
+      path: test.info().outputPath(`wallet-picker-${width}.png`),
+      fullPage: true,
+    });
+    await page.keyboard.press("Escape");
+    await expect(dropdown).toHaveAttribute("aria-expanded", "false");
+    await expect(
+      page.getByRole("dialog", { name: "Connection settings" }),
+    ).toBeVisible();
+    await page
+      .getByRole("dialog", { name: "Connection settings" })
+      .getByRole("button", { name: "Connect wallet", exact: true })
+      .click();
+    await expect(
+      page.getByText("Wallet connected.", { exact: true }),
+    ).toBeVisible();
+    expect(await connectionCalls(page)).toEqual({
+      wallets: ["Second Wallet"],
+      sdk: [
+        {
+          wallet: "Second Wallet",
+          address: "22222222222222222222222222222222",
+          initialize: false,
+        },
+      ],
+    });
+    const connected = page.getByRole("button", {
+      name: "Connected wallet",
+      exact: true,
+    });
+    await expect(connected).toContainText("2222");
+    await expect(connected.locator(".wallet-address")).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: "Copy wallet address", exact: true }),
+    ).toBeVisible();
+    await page
+      .getByRole("button", { name: "Copy wallet address", exact: true })
+      .click();
+    expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(
+      "22222222222222222222222222222222",
+    );
+    await page.getByRole("button", { name: "Close", exact: true }).click();
+    await expect(connected).toBeVisible();
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= innerWidth,
+      ),
+    ).toBe(true);
+    await page.screenshot({
+      path: test.info().outputPath(`wallet-connected-${width}.png`),
+      fullPage: true,
+    });
+    await connected.click();
+    await page.getByRole("button", { name: "Disconnect", exact: true }).click();
+    await expect(topbar).toHaveText("Connect wallet");
+    await expect(
+      page.getByRole("button", { name: "Select wallet", exact: true }),
+    ).toBeVisible();
+  });
+}
+
+test("pending wallet approval prevents duplicate connects and only opens SDK after approval", async ({
+  page,
+}) => {
+  await connectFixture(page, connectionFlowStub({ pending: true }));
+  await expect(
+    page.getByRole("button", { name: "Select wallet", exact: true }),
+  ).toBeDisabled();
+  await expect(
+    page.getByRole("button", { name: "Connecting…", exact: true }),
+  ).toBeDisabled();
+  expect(await connectionCalls(page)).toEqual({
+    wallets: ["Test Wallet"],
+    sdk: [],
+  });
+  await page.evaluate(() =>
+    (
+      window as unknown as { testApproveWallet: () => void }
+    ).testApproveWallet(),
+  );
+  await expect(
+    page.getByText("Wallet connected.", { exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Connected wallet", exact: true }),
+  ).toContainText("1111");
+  expect(await connectionCalls(page)).toEqual({
+    wallets: ["Test Wallet"],
+    sdk: [
+      {
+        wallet: "Test Wallet",
+        address: "11111111111111111111111111111111",
+        initialize: false,
+      },
+    ],
+  });
+});
+
+test("SDK setup retry keeps the approved wallet after closing and reopening settings", async ({
+  page,
+}) => {
+  await connectFixture(page, connectionFlowStub({ sdkFailure: true }));
+  await expect(page.getByRole("dialog")).toContainText(
+    "Could not open your saved deposits",
+  );
+  const connected = page.getByRole("button", {
+    name: "Connected wallet",
+    exact: true,
+  });
+  await expect(connected.locator(".wallet-address")).toBeVisible();
+  await page.getByRole("button", { name: "Close", exact: true }).click();
+  await connected.click();
+  await page
+    .getByRole("button", { name: "Continue to deposits", exact: true })
+    .click();
+  await expect(
+    page.getByText("Wallet connected.", { exact: true }),
+  ).toBeVisible();
+  expect(await connectionCalls(page)).toEqual({
+    wallets: ["Test Wallet"],
+    sdk: [
+      {
+        wallet: "Test Wallet",
+        address: "11111111111111111111111111111111",
+        initialize: false,
+      },
+      {
+        wallet: "Test Wallet",
+        address: "11111111111111111111111111111111",
+        initialize: false,
+      },
+    ],
+  });
+});
+
+test("first-time browser storage setup keeps the approved address and requires explicit setup", async ({
+  page,
+}) => {
+  await connectFixture(page, connectionFlowStub({ storageMissing: true }));
+  const setup = page.getByRole("button", {
+    name: "Set up this wallet",
+    exact: true,
+  });
+  await expect(setup).toBeEnabled();
+  const connected = page.getByRole("button", {
+    name: "Connected wallet",
+    exact: true,
+  });
+  await expect(connected).toContainText("1111");
+  expect(await connectionCalls(page)).toEqual({
+    wallets: ["Test Wallet"],
+    sdk: [
+      {
+        wallet: "Test Wallet",
+        address: "11111111111111111111111111111111",
+        initialize: false,
+      },
+    ],
+  });
+  await page.getByRole("button", { name: "Close", exact: true }).click();
+  await connected.click();
+  await expect(setup).toBeEnabled();
+  await setup.click();
+  await expect(
+    page.getByText("Wallet connected.", { exact: true }),
+  ).toBeVisible();
+  expect(await connectionCalls(page)).toEqual({
+    wallets: ["Test Wallet"],
+    sdk: [
+      {
+        wallet: "Test Wallet",
+        address: "11111111111111111111111111111111",
+        initialize: false,
+      },
+      {
+        wallet: "Test Wallet",
+        address: "11111111111111111111111111111111",
+        initialize: true,
+      },
+    ],
+  });
+  await expect(setup).toHaveCount(0);
 });
 
 test("expiry and emergency recovery remain visible without replaying inference", async ({

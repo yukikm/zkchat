@@ -12,7 +12,7 @@ export const configuredStreaming = () => false;
 export const loadConfig = async () => ({ schema:1, label:'Offline test', mode:'direct_openrouter', models:[{id:'test/model',apis:['chat']}] });
 export const listWallets = () => [wallet];
 export const watchWallets = () => () => {};
-export const connectWallet = async () => [account];
+export const connectWalletAccount = async () => account;
 let data = JSON.parse(localStorage.getItem('test-deposits') || 'null') || { selected:'original', entries:[{id:'original'}], states: {original:{ noteId:'original',mode:'direct_openrouter',wallet:'${wallet}',busy:false,session:null,walletOperation:null,emergencyEscape:null,settledBalanceMicroUsdc:'200000',authorizationCapMicroUsdc:'1000000',canRequest:false }} };
 const listeners = new Set();
 const state = () => data.states[data.selected];
@@ -33,13 +33,8 @@ export const connectZkapi = async () => ({ account,wallet,persistence:'persisten
 async function connect(page: Page) {
   await page.getByRole("button", { name: "Deposit", exact: true }).click();
   await page
-    .getByRole("button", { name: "Deposit Test Wallet", exact: true })
-    .click();
-  await page
-    .getByLabel("2. Select an account")
-    .selectOption("11111111111111111111111111111111");
-  await page
-    .getByRole("button", { name: "Connect account", exact: true })
+    .getByRole("dialog", { name: "Connection settings" })
+    .getByRole("button", { name: "Connect wallet", exact: true })
     .click();
   await expect(page.getByLabel("Saved deposits")).toBeVisible();
 }

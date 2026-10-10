@@ -47,25 +47,36 @@ export async function connectSelectedWallet(wallet: AppWallet) {
     throw failure;
   }
 }
-export function selectConnectedAccount(
+export function getConnectedWalletAccount(
   wallet: AppWallet,
-  account: StandardAccount,
-) {
-  const client = getConnector();
-  const connected = client.wallet.getState().connected;
+): StandardAccount | null {
+  const connected = getConnector().wallet.getState().connected;
   if (
     !connected ||
     (getWalletForHandle(connected.wallet) as unknown) !== wallet
   )
-    throw new WalletConnectionError("Reconnect the selected wallet first.");
-  const selected = connected.wallet.accounts.find(
-    (candidate) => candidate.address === account.address,
+    return null;
+  // Preserve the wallet's original account object: signing adapters can require
+  // reference identity, while the connector exposes a Wallet Standard UI copy.
+  return (
+    wallet.accounts.find(
+      (candidate) => candidate.address === connected.account.address,
+    ) ?? null
   );
+}
+
+/** Validate the connection without overriding the account chosen at connect. */
+export function selectConnectedAccount(
+  wallet: AppWallet,
+  account: StandardAccount,
+) {
+  const selected = getConnectedWalletAccount(wallet);
   if (!selected)
+    throw new WalletConnectionError("Reconnect the selected wallet first.");
+  if (selected !== account)
     throw new WalletConnectionError(
-      "The selected account is no longer available. Reconnect the wallet to select it again.",
+      "Your wallet account changed. Connect again to continue with the active account.",
     );
-  client.wallet.selectAccount(selected);
 }
 export async function disconnectSelectedWallet() {
   await getConnector().wallet.disconnect();

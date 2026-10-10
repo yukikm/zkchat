@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import {
   ArrowDownLeft,
   ArrowUpRight,
-  Check,
+  Copy,
   CircleHelp,
   ExternalLink,
   LoaderCircle,
@@ -16,7 +16,7 @@ import { SDK_VERSION, RECOVERY_RUNTIME } from "../lib/sdkVersion";
 import { reusableSession } from "../lib/sdkStatus";
 import {
   BrowserStorageMissing,
-  connectWallet,
+  connectWalletAccount,
   connectZkapi,
   configuredMode,
   configuredModels,
@@ -44,6 +44,14 @@ import {
   DepositError,
   hasLowBalance,
 } from "../lib/deposits";
+import { WalletIcon, WalletPicker } from "./WalletPicker";
+
+export interface WalletConnection {
+  wallet: AppWallet;
+  account: StandardAccount;
+  needsSetup?: boolean;
+}
+
 export function ConnectionPanel({
   config,
   configError,
@@ -52,6 +60,8 @@ export function ConnectionPanel({
   handle,
   status,
   onConnect,
+  walletConnection,
+  onWalletConnect,
   onDisconnect,
   refresh,
   locked,
@@ -64,6 +74,8 @@ export function ConnectionPanel({
   handle: BrowserClientHandle | null;
   status: ClientStatus | null;
   onConnect: (handle: BrowserClientHandle, address: string) => void;
+  walletConnection: WalletConnection | null;
+  onWalletConnect: (connection: WalletConnection) => void;
   onDisconnect: () => void;
   refresh: () => Promise<void>;
   locked: boolean;
@@ -71,10 +83,13 @@ export function ConnectionPanel({
 }) {
   const [invitation, setInvitation] = useState("");
   const [wallets, setWallets] = useState<AppWallet[]>(listWallets);
-  const [wallet, setWallet] = useState<AppWallet | null>(null);
-  const [accounts, setAccounts] = useState<StandardAccount[]>([]);
-  const [account, setAccount] = useState("");
-  const [storageMissing, setStorageMissing] = useState(false);
+  const [selectedWallet, setSelectedWallet] = useState<AppWallet | null>(null);
+  const wallet =
+    selectedWallet && wallets.includes(selectedWallet)
+      ? selectedWallet
+      : wallets[0];
+  const connection = walletConnection;
+  const storageMissing = connection?.needsSetup ?? false;
   const [busy, setBusy] = useState(false);
   const [progressMessage, setProgressMessage] = useState("");
   const [error, setError] = useState("");
@@ -89,6 +104,12 @@ export function ConnectionPanel({
     ReturnType<typeof inspectPublicDeployment>
   > | null>(null);
   useEffect(() => watchWallets(() => setWallets(listWallets())), []);
+  useEffect(() => {
+    if (!connection) {
+      setError("");
+      setInfo("");
+    }
+  }, [connection?.wallet, connection?.account.address]);
   useEffect(() => {
     setWithdraw(false);
     setProgressState("");
@@ -129,48 +150,63 @@ export function ConnectionPanel({
       onBusy(false);
     }
   }
-  async function pickWallet(w: AppWallet) {
-    await action(
-      async () => {
-        setWallet(w);
-        setAccounts([]);
-        setAccount("");
-        setStorageMissing(false);
-        const available = await connectWallet(w);
-        setAccounts(available);
-        if (!available.length)
-          setError("Select a Solana Devnet account in your wallet.");
-      },
-      "Unlock your wallet, select Devnet, and try again. No transaction was requested.",
-      "Open your wallet to approve the connection.",
-    );
+  async function openChat(
+    connectedWallet: WalletConnection,
+    initialize = false,
+  ) {
+    if (!config) return;
+    try {
+      setProgressMessage("Opening your saved deposits…");
+      const connected = await connectZkapi(
+        config,
+        connectedWallet.wallet,
+        connectedWallet.account,
+        initialize,
+        invitation || undefined,
+      );
+      setInvitation("");
+      onWalletConnect({
+        wallet: connectedWallet.wallet,
+        account: connectedWallet.account,
+      });
+      onConnect(connected, connectedWallet.account.address);
+      setInfo("Wallet connected.");
+    } catch (e) {
+      if (e instanceof BrowserStorageMissing) {
+        onWalletConnect({ ...connectedWallet, needsSetup: true });
+      } else {
+        throw e;
+      }
+    }
   }
   async function connect(initialize = false) {
-    if (!config || !wallet || !account) return;
-    await action(async () => {
-      const selected = accounts.find((a) => a.address === account);
-      if (!selected) return;
-      try {
-        const connected = await connectZkapi(
-          config,
-          wallet,
-          selected,
-          initialize,
-          invitation || undefined,
-        );
-        setInvitation("");
-        onConnect(connected, selected.address);
-        setStorageMissing(false);
-        setInfo("Wallet connected.");
-      } catch (e) {
-        if (e instanceof BrowserStorageMissing) {
-          setStorageMissing(true);
-          setInfo("First visit? Set up this wallet to continue.");
-        } else {
-          throw e;
+    if (!config || (!connection && !wallet)) return;
+    await action(
+      async () => {
+        let connectedWallet = connection;
+        if (!connectedWallet && wallet) {
+          const account = await connectWalletAccount(wallet);
+          connectedWallet = { wallet, account };
+          onWalletConnect(connectedWallet);
         }
-      }
-    });
+        if (connectedWallet) await openChat(connectedWallet, initialize);
+      },
+      "Could not open your saved deposits. Try again with the same wallet.",
+      connection
+        ? "Opening your saved deposits…"
+        : `Approve the connection in ${wallet?.name}.`,
+    );
+  }
+  async function copyAddress() {
+    if (!connection) return;
+    try {
+      await navigator.clipboard.writeText(connection.account.address);
+      setInfo("Address copied.");
+    } catch {
+      setError(
+        "Could not copy the address. Select it below and copy it manually.",
+      );
+    }
   }
   const disabled = busy || locked || configLoading || !!status?.busy;
   return (
@@ -180,7 +216,13 @@ export function ConnectionPanel({
           <Wallet size={22} />
         </div>
         <div>
-          <h3>Connect, deposit, chat.</h3>
+          <h3>
+            {handle?.invalidated
+              ? "Reconnect your wallet"
+              : connection
+                ? "Your wallet"
+                : "Connect your wallet"}
+          </h3>
           <p>Pay for AI with USDC. Keep SOL for network fees.</p>
         </div>
       </div>
@@ -191,32 +233,38 @@ export function ConnectionPanel({
         </span>
         <span>Test tokens only</span>
       </div>
-      {RECOVERY_RUNTIME ? (
-        <p className="small muted">
-          Recover your older deposits here. Keep this browser’s data until all
-          withdrawals are complete.
-        </p>
-      ) : (
-        !handle && (
-          <details
-            className="connection-details"
-            open={error.includes("SDK .3")}
+      {connection && (
+        <div className="connected-wallet-summary">
+          <WalletIcon wallet={connection.wallet} />
+          <div className="connected-wallet-details">
+            <span className="connected-wallet-name">
+              {!handle?.invalidated && <span className="status-dot" />}
+              {connection.wallet.name}
+            </span>
+            <code title={connection.account.address}>
+              {connection.account.address}
+            </code>
+          </div>
+          <button
+            className="icon-button"
+            aria-label="Copy wallet address"
+            onClick={() => void copyAddress()}
           >
-            <summary>Have an older deposit?</summary>
-            {import.meta.env.DEV ? (
-              <p className="small muted">
-                Stop this server, run <code>npm run dev:recovery</code>, and
-                reopen the same URL with your original wallet.
-              </p>
-            ) : (
-              <p>
-                <a href={`${import.meta.env.BASE_URL}recovery-v3/`}>
-                  Recover an older deposit
-                </a>
-              </p>
-            )}
-          </details>
-        )
+            <Copy size={17} />
+          </button>
+          <button
+            className="icon-button"
+            aria-label="Disconnect"
+            title="Disconnect"
+            disabled={disabled}
+            onClick={() => {
+              setInvitation("");
+              onDisconnect();
+            }}
+          >
+            <Unplug size={17} />
+          </button>
+        </div>
       )}
       {!config ? (
         <div className="setup-needed">
@@ -253,6 +301,63 @@ export function ConnectionPanel({
         <>
           {!handle ? (
             <>
+              {!connection && wallet && (
+                <div className="wallet-connect-form">
+                  <WalletPicker
+                    wallets={wallets}
+                    selected={wallet}
+                    disabled={disabled}
+                    onSelect={(selected) => {
+                      setSelectedWallet(selected);
+                      setError("");
+                      setInfo("");
+                    }}
+                  />
+                  <button
+                    className="primary full"
+                    disabled={disabled}
+                    onClick={() => void connect()}
+                  >
+                    {busy && <LoaderCircle className="spin" size={16} />}
+                    {busy ? "Connecting…" : "Connect wallet"}
+                  </button>
+                  <p className="small muted wallet-connect-hint">
+                    Choose your wallet, then approve the connection in the
+                    extension.
+                  </p>
+                </div>
+              )}
+              {!connection && !wallet && (
+                <p className="notice">
+                  No Solana wallet detected. Install or enable{" "}
+                  <a
+                    href="https://phantom.com/"
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    Phantom
+                  </a>{" "}
+                  or{" "}
+                  <a
+                    href="https://solflare.com/"
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    Solflare
+                  </a>
+                  , then reload this page.
+                </p>
+              )}
+              {connection && !storageMissing && (
+                <button
+                  className="primary full"
+                  disabled={disabled}
+                  onClick={() => void connect()}
+                >
+                  {busy && <LoaderCircle className="spin" size={16} />}
+                  {busy ? "Opening your deposits…" : "Continue to deposits"}
+                </button>
+              )}
               {config.schema === 2 && (
                 <details className="notice">
                   <summary>Have an invitation?</summary>
@@ -275,74 +380,6 @@ export function ConnectionPanel({
                     </small>
                   </div>
                 </details>
-              )}
-              <h4 className="field-heading">1. Select a wallet</h4>
-              {wallets.length ? (
-                <div className="wallet-list">
-                  {wallets.map((w, i) => (
-                    <button
-                      key={`${w.name}-${i}`}
-                      className={`wallet-choice ${wallet === w ? "selected" : ""}`}
-                      disabled={disabled}
-                      onClick={() => void pickWallet(w)}
-                    >
-                      <Wallet size={18} />
-                      <span>{w.name}</span>
-                      {wallet === w && <Check size={16} />}
-                    </button>
-                  ))}
-                </div>
-              ) : (
-                <p className="notice">
-                  Install or enable{" "}
-                  <a
-                    href="https://phantom.com/"
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    Phantom
-                  </a>{" "}
-                  or{" "}
-                  <a
-                    href="https://solflare.com/"
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    Solflare
-                  </a>
-                  , then reload this page.
-                </p>
-              )}
-              {accounts.length > 0 && (
-                <div className="field">
-                  <label htmlFor="wallet-account">2. Select an account</label>
-                  <select
-                    id="wallet-account"
-                    value={account}
-                    onChange={(e) => {
-                      setAccount(e.target.value);
-                      setStorageMissing(false);
-                    }}
-                    disabled={disabled}
-                  >
-                    <option value="">Select account</option>
-                    {accounts.map((a) => (
-                      <option key={a.address} value={a.address}>
-                        {a.address}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              )}
-              {!storageMissing && (
-                <button
-                  className="primary full"
-                  disabled={disabled || !account}
-                  onClick={() => void connect()}
-                >
-                  {busy && <LoaderCircle className="spin" size={16} />}
-                  Connect account
-                </button>
               )}
               {storageMissing && (
                 <div className="notice">
@@ -505,35 +542,6 @@ export function ConnectionPanel({
                   URL with the same wallet.
                 </p>
               </div>
-              {(status?.wallet === "empty" ||
-                status?.wallet === "unfunded") && (
-                <details className="notice">
-                  <summary>Need test tokens?</summary>
-                  <p>
-                    Get test USDC from{" "}
-                    <a
-                      href="https://faucet.circle.com/"
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      Circle’s faucet
-                    </a>{" "}
-                    (USDC → Solana Devnet) and SOL for fees from the{" "}
-                    <a
-                      href="https://faucet.solana.com/"
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      Solana faucet
-                    </a>
-                    .
-                  </p>
-                  <p className="small">
-                    Send the faucet tokens to{" "}
-                    <code>{handle.account.address}</code>.
-                  </p>
-                </details>
-              )}
               {!status?.walletOperation &&
                 !status?.session &&
                 (status?.wallet === "empty" ||
@@ -955,17 +963,6 @@ export function ConnectionPanel({
                   <RefreshCw size={14} />
                   Refresh status
                 </button>
-                <button
-                  className="text-button"
-                  disabled={disabled}
-                  onClick={() => {
-                    setInvitation("");
-                    onDisconnect();
-                  }}
-                >
-                  <Unplug size={14} />
-                  Disconnect
-                </button>
               </div>
             </>
           )}
@@ -986,6 +983,68 @@ export function ConnectionPanel({
         <p className="error-message" role="alert">
           {error}
         </p>
+      )}
+      <section className="notice faucet-notice" aria-label="Get test tokens">
+        <strong>Need USDC or SOL?</strong>
+        <p>
+          You need USDC for your deposit and SOL for gas fees. If your wallet
+          does not have enough of either token, get it from a faucet before
+          depositing.
+        </p>
+        <div className="faucet-links">
+          <a
+            href="https://faucet.circle.com/"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            USDC faucet <ExternalLink size={13} aria-hidden="true" />
+          </a>
+          <a
+            href="https://faucet.solana.com/"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            SOL faucet <ExternalLink size={13} aria-hidden="true" />
+          </a>
+        </div>
+        <p className="small">
+          Select USDC on Circle and Solana Devnet on both faucets.
+          {handle ? (
+            <>
+              {" "}
+              Send the tokens to <code>{handle.account.address}</code>.
+            </>
+          ) : (
+            " Send the tokens to the wallet you use here."
+          )}
+        </p>
+      </section>
+      {RECOVERY_RUNTIME ? (
+        <p className="small muted">
+          Recover your older deposits here. Keep this browser’s data until all
+          withdrawals are complete.
+        </p>
+      ) : (
+        !handle && (
+          <details
+            className="connection-details"
+            open={error.includes("SDK .3")}
+          >
+            <summary>Have an older deposit?</summary>
+            {import.meta.env.DEV ? (
+              <p className="small muted">
+                Stop this server, run <code>npm run dev:recovery</code>, and
+                reopen the same URL with your original wallet.
+              </p>
+            ) : (
+              <p>
+                <a href={`${import.meta.env.BASE_URL}recovery-v3/`}>
+                  Recover an older deposit
+                </a>
+              </p>
+            )}
+          </details>
+        )
       )}
       <details className="connection-details">
         <summary>Connection details</summary>

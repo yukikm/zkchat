@@ -10,7 +10,7 @@ export const configuredStreaming=()=>false;
 export const loadConfig=async()=>({schema:1,mode:'direct_openrouter',models:[{id:'test/model',apis:['chat']}]});
 export const listWallets=()=>[wallet];
 export const watchWallets=()=>()=>{};
-export const connectWallet=async()=>[account];
+export const connectWalletAccount=async()=>account;
 let state={noteId:'fixture',mode:'direct_openrouter',wallet:'active',canRequest:true,busy:false,session:null,walletOperation:null,emergencyEscape:null,settledBalanceMicroUsdc:'2000000',authorizationCapMicroUsdc:'1000000'};
 const listeners=new Set();
 const update=value=>{state={...state,...value};for(const fn of listeners)fn(state)};
@@ -56,13 +56,8 @@ const callAttempts = (page: Page) =>
 
 async function connectAccount(page: Page) {
   await page
-    .getByRole("button", { name: "SDK Upgrade Test Wallet", exact: true })
-    .click();
-  await page
-    .getByLabel("2. Select an account")
-    .selectOption("11111111111111111111111111111111");
-  await page
-    .getByRole("button", { name: "Connect account", exact: true })
+    .getByRole("dialog", { name: "Connection settings" })
+    .getByRole("button", { name: "Connect wallet", exact: true })
     .click();
   await expect(page.getByLabel("Saved deposits")).toBeVisible();
 }

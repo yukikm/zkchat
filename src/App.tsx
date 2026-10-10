@@ -36,6 +36,7 @@ import {
   loadConfig,
   configuredModels,
   configuredStreaming,
+  watchWallets,
   type AppConfig,
   type BrowserClientHandle,
 } from "./lib/zkapi";
@@ -59,10 +60,17 @@ import {
   type Message,
   type Preferences,
 } from "./lib/chat";
-import { ConnectionPanel } from "./components/ConnectionPanel";
+import {
+  ConnectionPanel,
+  type WalletConnection,
+} from "./components/ConnectionPanel";
+import { WalletIcon } from "./components/WalletPicker";
 import { Markdown } from "./components/Markdown";
 import { Modal } from "./components/Modal";
-import { disconnectSelectedWallet } from "./lib/walletConnector";
+import {
+  disconnectSelectedWallet,
+  getConnectedWalletAccount,
+} from "./lib/walletConnector";
 import { PublicOnboardingError } from "./lib/publicDeployment";
 import { DepositError, hasLowBalance } from "./lib/deposits";
 const suggestions = [
@@ -143,7 +151,9 @@ export default function App() {
     noteId: string;
     conversationId: string;
   } | null>(null);
-  const [address, setAddress] = useState("");
+  const [walletConnection, setWalletConnection] =
+    useState<WalletConnection | null>(null);
+  const address = walletConnection?.account.address ?? "";
   const [sending, setSending] = useState(false);
   const [connectionBusy, setConnectionBusy] = useState(false);
   const [activity, setActivity] = useState("");
@@ -228,6 +238,15 @@ export default function App() {
     if (!handle) return;
     return handle.client.subscribe(setStatus);
   }, [handle]);
+  useEffect(() => {
+    if (!walletConnection || handle) return;
+    return watchWallets(() => {
+      const active = getConnectedWalletAccount(walletConnection.wallet);
+      if (active !== walletConnection.account) {
+        setWalletConnection(null);
+      }
+    });
+  }, [walletConnection, handle]);
   useEffect(() => {
     const timer = setTimeout(() => {
       try {
@@ -545,24 +564,31 @@ export default function App() {
       setToast("Copy failed. Select the text and copy it manually.");
     }
   }
-  function disconnect() {
-    if (!handle || busyRef.current) return;
+  async function disconnect() {
+    if ((!handle && !walletConnection) || busyRef.current || connectionBusy)
+      return;
     try {
-      handle.dispose();
-      setHandle(null);
-      setStatus(null);
-      setSessionOwner(null);
-      setAddress("");
-      void disconnectSelectedWallet().catch(() =>
-        setToast(
-          "App disconnected. Disconnect the extension from its wallet menu if needed.",
-        ),
-      );
-      setToast("Disconnected. Saved data is retained.");
+      handle?.dispose();
     } catch {
       setToast(
         "An operation is in progress. Wait for it to finish before disconnecting.",
       );
+      return;
+    }
+    setConnectionBusy(true);
+    setHandle(null);
+    setStatus(null);
+    setSessionOwner(null);
+    setWalletConnection(null);
+    try {
+      await disconnectSelectedWallet();
+      setToast("Disconnected. Saved data is retained.");
+    } catch {
+      setToast(
+        "App disconnected. Disconnect the extension from its wallet menu if needed.",
+      );
+    } finally {
+      setConnectionBusy(false);
     }
   }
   const visibleChats = useMemo(
@@ -681,8 +707,8 @@ export default function App() {
               </button>
             </div>
             <p>
-              {handle
-                ? `${address.slice(0, 5)}…${address.slice(-5)}`
+              {walletConnection
+                ? `${address.slice(0, 4)}…${address.slice(-4)}`
                 : "Connect a wallet to get started"}
             </p>
           </div>
@@ -801,13 +827,37 @@ export default function App() {
               </div>
             )}
             <button
-              className={`connect-button ${handle ? "connected" : ""}`}
-              aria-label={handle ? "Connected" : "Connection settings"}
+              className={`connect-button wallet-connect-button ${walletConnection && !handle?.invalidated ? "connected" : ""}`}
+              aria-label={
+                handle?.invalidated
+                  ? "Wallet changed"
+                  : walletConnection
+                    ? "Connected wallet"
+                    : "Connection settings"
+              }
+              title={
+                walletConnection
+                  ? `${handle?.invalidated ? "Wallet changed. Reconnect to continue. " : ""}${walletConnection.wallet.name}: ${address}`
+                  : undefined
+              }
               onClick={() => setDialog("connection")}
             >
-              <Wallet size={16} />
-              <span>{handle ? "Connected" : "Connection settings"}</span>
-              {handle && <span className="status-dot" />}
+              {walletConnection ? (
+                <WalletIcon wallet={walletConnection.wallet} />
+              ) : (
+                <Wallet size={16} />
+              )}
+              <span className={walletConnection ? "wallet-address" : undefined}>
+                {handle?.invalidated
+                  ? "Reconnect wallet"
+                  : walletConnection
+                    ? `${address.slice(0, 4)}…${address.slice(-4)}`
+                    : "Connect wallet"}
+              </span>
+              {walletConnection && !handle?.invalidated && (
+                <span className="status-dot" />
+              )}
+              {walletConnection && <ChevronDown size={14} aria-hidden="true" />}
             </button>
           </div>
         </header>
@@ -1176,18 +1226,19 @@ export default function App() {
           )}
           <ConnectionPanel
             onBusy={setConnectionBusy}
+            walletConnection={walletConnection}
+            onWalletConnect={setWalletConnection}
             config={config}
             configError={configError}
             configLoading={configLoading}
             onRetryConfig={() => void retryConfig()}
             handle={handle}
             status={status}
-            locked={sending}
+            locked={sending || connectionBusy}
             refresh={refresh}
-            onConnect={(h, addr) => {
+            onConnect={(h) => {
               setHandle(h);
               setSessionOwner(null);
-              setAddress(addr);
               setMode("live");
               setActiveId(null);
               void h.client

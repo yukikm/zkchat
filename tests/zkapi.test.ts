@@ -1,5 +1,12 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { loadConfig, parseConfig } from "../src/lib/zkapi";
+import {
+  connectWalletAccount,
+  loadConfig,
+  parseConfig,
+  type AppWallet,
+  type StandardAccount,
+} from "../src/lib/zkapi";
+import * as walletConnector from "../src/lib/walletConnector";
 const config = () => ({
   schema: 1,
   chain: "solana:devnet",
@@ -35,7 +42,10 @@ const config = () => ({
   ],
 });
 describe("independent operator configuration", () => {
-  afterEach(() => { vi.unstubAllGlobals(); vi.unstubAllEnvs(); });
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.unstubAllEnvs();
+  });
   it("accepts a reviewed shape without mutating it (cryptographic validation happens in SDK)", () => {
     const original = config();
     const parsed = parseConfig(original);
@@ -116,12 +126,78 @@ describe("independent operator configuration", () => {
   });
 });
 
-
 it("fetches configuration under the built release base instead of the hostname root", async () => {
   vi.stubEnv("BASE_URL", "/releases/reviewed-revision/chat/");
   const fetcher = vi.fn(async () => Response.json(null));
   vi.stubGlobal("fetch", fetcher);
   expect(await loadConfig()).toBeNull();
-  expect(fetcher.mock.calls[0][0]).toBe("/releases/reviewed-revision/chat/zkapi-config.json");
-  vi.unstubAllGlobals(); vi.unstubAllEnvs();
+  expect(fetcher.mock.calls[0][0]).toBe(
+    "/releases/reviewed-revision/chat/zkapi-config.json",
+  );
+  vi.unstubAllGlobals();
+  vi.unstubAllEnvs();
+});
+
+describe("wallet-selected connection", () => {
+  afterEach(() => vi.restoreAllMocks());
+  const account = (
+    address: string,
+    chain = "solana:devnet",
+  ): StandardAccount => ({
+    address,
+    publicKey: new Uint8Array(32),
+    chains: [chain],
+    features: ["solana:signTransaction"],
+  });
+  const wallet = (accounts: StandardAccount[]) =>
+    ({
+      name: "Test Wallet",
+      accounts,
+      chains: ["solana:devnet"],
+      features: {
+        "solana:signTransaction": {
+          supportedTransactionVersions: [0],
+          signTransaction: vi.fn(),
+        },
+      },
+    }) as unknown as AppWallet;
+
+  it("uses the connector's active account instead of the first authorized address", async () => {
+    const previous = account("previous"),
+      active = account("active");
+    const selectedWallet = wallet([previous, active]);
+    const connect = vi
+      .spyOn(walletConnector, "connectSelectedWallet")
+      .mockResolvedValue();
+    vi.spyOn(walletConnector, "getConnectedWalletAccount").mockReturnValue(
+      active,
+    );
+
+    expect(await connectWalletAccount(selectedWallet)).toBe(active);
+    expect(connect).toHaveBeenCalledExactlyOnceWith(selectedWallet);
+  });
+
+  it("requires the active account to support Devnet instead of selecting a different authorized account", async () => {
+    const supported = account("devnet"),
+      active = account("mainnet", "solana:mainnet");
+    vi.spyOn(walletConnector, "connectSelectedWallet").mockResolvedValue();
+    vi.spyOn(walletConnector, "getConnectedWalletAccount").mockReturnValue(
+      active,
+    );
+
+    await expect(
+      connectWalletAccount(wallet([supported, active])),
+    ).rejects.toThrow(/in your wallet/);
+  });
+
+  it("rejects a connection whose active account disappeared", async () => {
+    vi.spyOn(walletConnector, "connectSelectedWallet").mockResolvedValue();
+    vi.spyOn(walletConnector, "getConnectedWalletAccount").mockReturnValue(
+      null,
+    );
+
+    await expect(
+      connectWalletAccount(wallet([account("authorized")])),
+    ).rejects.toThrow(/connect again/);
+  });
 });
