@@ -236,7 +236,7 @@ export function ConnectionPanel({
                   "Ask the app owner to configure the service. You can try the demo now."}
             </p>
             <a
-              href="https://github.com/yukikm/solana-zkapi/blob/main/docs/sdk/public-devnet-preview.md"
+              href="https://github.com/yukikm/solana-zkapi/blob/main/docs/getting-started/sdk.md"
               target="_blank"
               rel="noreferrer"
             >
@@ -739,7 +739,7 @@ export function ConnectionPanel({
                   </h4>
                   <p className="small">
                     {reusableSession(status)
-                      ? "You can keep chatting. Settle charges before switching deposits or withdrawing."
+                      ? "You can keep chatting in the same conversation. Settle charges before sending in another chat, switching deposits, or withdrawing."
                       : "Check the payment before sending again. This does not resend your message."}
                   </p>
                   <details className="connection-details">

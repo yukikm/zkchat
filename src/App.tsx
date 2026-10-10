@@ -136,6 +136,13 @@ export default function App() {
   const [configError, setConfigError] = useState("");
   const [handle, setHandle] = useState<BrowserClientHandle | null>(null);
   const [status, setStatus] = useState<ClientStatus | null>(null);
+  // Conversation scope belongs to this live SDK instance, never to persisted
+  // history or status.session.id (which identifies the SDK authorization).
+  const [sessionOwner, setSessionOwner] = useState<{
+    handle: BrowserClientHandle;
+    noteId: string;
+    conversationId: string;
+  } | null>(null);
   const [address, setAddress] = useState("");
   const [sending, setSending] = useState(false);
   const [connectionBusy, setConnectionBusy] = useState(false);
@@ -163,6 +170,14 @@ export default function App() {
     config?.schema === 2
       ? Math.min(preferences.maxTokens, 128)
       : preferences.maxTokens;
+  const needsConversationSettlement =
+    selectedMode === "live" &&
+    reusableSession(status) &&
+    !(
+      sessionOwner?.handle === handle &&
+      sessionOwner?.noteId === status?.noteId &&
+      sessionOwner?.conversationId === current?.id
+    );
   const canSend =
     !sending &&
     !connectionBusy &&
@@ -170,7 +185,10 @@ export default function App() {
     !!draft.trim() &&
     draft.length <= MAX_INPUT &&
     (selectedMode === "demo" ||
-      (!!handle && !!status?.canRequest && !!selectedModel));
+      (!!handle &&
+        !!status?.canRequest &&
+        !!selectedModel &&
+        !needsConversationSettlement));
   const refresh = useCallback(async () => {
     if (handle) setStatus(await handle.client.status());
   }, [handle]);
@@ -337,6 +355,11 @@ export default function App() {
       !online
     )
       return;
+    if (needsConversationSettlement) {
+      if (override !== undefined) setDraft(override);
+      setDialog("connection");
+      return;
+    }
     if (
       selectedMode === "live" &&
       (!handle || !status?.canRequest || !selectedModel)
@@ -419,6 +442,11 @@ export default function App() {
           delta,
         );
       } else {
+        setSessionOwner({
+          handle: handle!,
+          noteId: status!.noteId,
+          conversationId: conversation.id,
+        });
         response = await handle!.client.chat({
           operationId,
           sessionId: conversation.id,
@@ -523,6 +551,7 @@ export default function App() {
       handle.dispose();
       setHandle(null);
       setStatus(null);
+      setSessionOwner(null);
       setAddress("");
       void disconnectSelectedWallet().catch(() =>
         setToast(
@@ -807,12 +836,18 @@ export default function App() {
           <div className="settlement-banner">
             <span>
               <RefreshCw size={14} />
-              {reusableSession(status)
-                ? "Chat ready · Charges not yet settled"
-                : "Check payment before sending again"}
+              {needsConversationSettlement
+                ? "Settle the previous chat before sending here."
+                : reusableSession(status)
+                  ? "Chat ready · Charges not yet settled"
+                  : "Check payment before sending again"}
             </span>
             <button onClick={() => setDialog("connection")}>
-              {reusableSession(status) ? "Manage session" : "Review payment"}
+              {needsConversationSettlement
+                ? "Review settlement"
+                : reusableSession(status)
+                  ? "Manage session"
+                  : "Review payment"}
             </button>
           </div>
         )}
@@ -877,9 +912,11 @@ export default function App() {
                   ) : handle ? (
                     <span>
                       <Check size={14} />
-                      {status?.canRequest
-                        ? "Ready. Type a message below."
-                        : "Open Deposit to continue setup."}
+                      {needsConversationSettlement
+                        ? "Review settlement before sending in this chat."
+                        : status?.canRequest
+                          ? "Ready. Type a message below."
+                          : "Open Deposit to continue setup."}
                     </span>
                   ) : (
                     <>
@@ -969,6 +1006,8 @@ export default function App() {
                                   className="text-button"
                                   disabled={
                                     sending ||
+                                    connectionBusy ||
+                                    needsConversationSettlement ||
                                     (selectedMode === "live" &&
                                       !status?.canRequest)
                                   }
@@ -1084,9 +1123,11 @@ export default function App() {
                     aria-label="Send message"
                     disabled={!canSend}
                     title={
-                      selectedMode === "live" && !status?.canRequest
-                        ? "Open Connection settings to finish setup"
-                        : "Send message"
+                      needsConversationSettlement
+                        ? "Settle the previous chat before sending here"
+                        : selectedMode === "live" && !status?.canRequest
+                          ? "Open Connection settings to finish setup"
+                          : "Send message"
                     }
                   >
                     <ArrowUp size={20} />
@@ -1127,6 +1168,12 @@ export default function App() {
           }}
           wide
         >
+          {needsConversationSettlement && (
+            <p className="notice">
+              Settle charges for your previous chat below. Your draft will stay
+              here until you send it.
+            </p>
+          )}
           <ConnectionPanel
             onBusy={setConnectionBusy}
             config={config}
@@ -1139,6 +1186,7 @@ export default function App() {
             refresh={refresh}
             onConnect={(h, addr) => {
               setHandle(h);
+              setSessionOwner(null);
               setAddress(addr);
               setMode("live");
               setActiveId(null);

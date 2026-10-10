@@ -1,6 +1,6 @@
 # SDK 0.2.0-devnet.8 更新確認
 
-確認日: **2026-10-10 JST**。対象は[公開release v0.2.0-devnet.8](https://github.com/yukikm/solana-zkapi/releases/tag/v0.2.0-devnet.8)、ソース `fb95814720033fea4075cababe594b6c5bb7de26`。release公開は2026-10-10 04:57 JSTです。mainの未リリースコードは組み込んでいません。
+SDK更新確認日: **2026-10-10 JST**。公開サービスと上流ドキュメントの追記: **2026-10-11 JST**。対象は[公開release v0.2.0-devnet.8](https://github.com/yukikm/solana-zkapi/releases/tag/v0.2.0-devnet.8)、ソース `fb95814720033fea4075cababe594b6c5bb7de26`。release公開は2026-10-10 04:57 JSTです。mainの未リリースコードは組み込んでいません。
 
 ## 上流の変更とアプリの対応
 
@@ -40,6 +40,18 @@
 - 生成済み本体から復旧版への同一origin遷移、両profile pin、SDK表示、保存状態の保持を`/`と`/chat/`で確認。
 - Reactの変更を`vercel:react-best-practices`で確認。派生stateはrender時に計算し、新しいnetwork pollやeffectは追加していない。
 
-**公開APIは現在利用可能とは判定できません。** 2026-10-10 16:48 JSTのread-only確認では、`.8` profile・証明assets・21モデルを検証できましたが、preflightは`catalog`で失敗しました。公開`GET /zkapi/v1/catalog`もHTTP 200で`{"models":[]}`を返しています。[検査結果](evidence/public-preflight-20261010-sdk8.json)を保存しました。上流releaseにも同じ制限が記載されています。
+**2026-10-10 16:48 JSTの記録（過去の結果）:** read-only確認では、`.8` profile・証明assets・21モデルを検証できましたが、preflightは`catalog`で失敗しました。公開`GET /zkapi/v1/catalog`もHTTP 200で`{"models":[]}`を返していました。[検査結果](evidence/public-preflight-20261010-sdk8.json)を保持しています。この空catalogの結果は現在の状態を示すものではありません。
+
+## 2026-10-11追記: catalog復旧と接続状態
+
+上流の[`be8ffc4`](https://github.com/yukikm/solana-zkapi/commit/be8ffc4)で公開catalogが復旧し、固定の試用枠が撤廃されました。ドキュメント再編後の[`2a5c588`](https://github.com/yukikm/solana-zkapi/tree/2a5c588ddde11cd443fbfdca6d531c3267df5111)までSDK本体に追加の変更はなく、zkchatの `.8` archive・revision-6 profile・SHA-256は[現行SDK導入ガイド](https://github.com/yukikm/solana-zkapi/blob/2a5c588ddde11cd443fbfdca6d531c3267df5111/docs/getting-started/sdk.md)と一致しています。元の `.3` 復旧経路と128 output tokensの上限を維持します。
+
+**2026-10-11 01:24–01:25 JSTのread-only再確認:**
+
+- `.8` revision-6 profileを検証し、`/zkapi/v1/models`で21モデル、`/zkapi/v1/catalog`で空でないOpenRouterのwildcard tariffを確認しました。
+- `/provider-budget`はschema 2、`budget_scope: operator_funded`、`trial_limits: false`。新規受付と取引は許可されていましたが、`provider_credit: not_checked`でprovider残高は未確認です。[公開Devnet利用条件](https://github.com/yukikm/solana-zkapi/blob/2a5c588ddde11cd443fbfdca6d531c3267df5111/docs/getting-started/devnet.md)でも、受付許可とreadiness・provider容量を区別しています。
+- `npm run check:public`は`rpc`で失敗しました。RPCの`getGenesisHash`はHTTP 429（configured upstream unavailable）、readinessはHTTP 503（Indexer unavailable）でした。
+
+**この再確認時点でも公開APIを利用可能とは判定できません。** 空catalogの問題は解消していますが、RPCとIndexerの可用性は別の問題です。利用前には改めて`Check service`で確認します。
 
 有資金の `.8` lifecycle、実ウォレット署名、AUTH、推論・精算・出金は今回実行していません。元の `.3` の有資金検証は[2026-10-09の記録](INTEGRATION-REPORT.md)で、`.8` の実動作を示すものではありません。上流operatorや本番ホスティングへの変更・デプロイは行っていません。

@@ -2,7 +2,9 @@
 
 Solana zkAPIをLLMバックエンドにするReactチャットアプリです。新規利用は公開SDK **0.2.0-devnet.8** とrevision-6の認証済み公開Devnet profileを使います。既存の `.3` 保存領域には元のSDK・profileを使う復旧版を同梱しています。Solanaは **`@solana/kit` 8.4.0**、ウォレット接続は **`@solana/kit-plugin-wallet` 0.21.0 / Wallet Standard**。`web3.js`は使用しません。
 
-**2026-10-10 SDK更新:** `.8` の配布物とGitHubリリース署名を確認し、セッション再利用、会話単位のsession ID、ZDR必須化に伴うエラー表示へ対応しました。現在の公開catalogは空のため、新規接続のpreflightは `catalog` で停止します。[更新内容と検証範囲](docs/SDK-UPGRADE-20261010.md)を参照してください。
+**2026-10-10 SDK更新:** `.8` の配布物とGitHubリリース署名を確認し、セッション再利用、会話単位のsession ID、ZDR必須化に伴うエラー表示へ対応しました。[更新内容と検証範囲](docs/SDK-UPGRADE-20261010.md)を参照してください。
+
+**公開サービスの最終確認（2026-10-11 01:24–01:25 JST）:** 公開catalogの空応答は解消し、モデル一覧21件と空でないcatalogを確認しました。一方、公開preflightはRPCで失敗し、RPCはHTTP 429、readinessはHTTP 503（Indexer unavailable）でした。この時点では利用可能と判定できていません。利用前に`Check service`で再確認してください。`.8` の有資金での入金・推論・精算・出金は未検証です。
 
 **2026-10-09のSDK .3での検証（過去の結果）:** CORSは解消済みです。localhostから公開preflight 10項目に成功し、実SolflareでSDK初期化・2 Devnet USDC入金・実AI応答・精算・2 USDCの出金完了まで確認しました。Phantomの接続内部エラーは、Kit/ZKAPIを使わない接続でも再現し、別の環境問題として記録しています。[検証結果・ZKAPI側の残課題](docs/INTEGRATION-REPORT.md)を参照してください。
 
@@ -34,7 +36,7 @@ npm run dev
 2. [Circle faucet](https://faucet.circle.com/)でUSDC / Solana Devnet、[Solana faucet](https://faucet.solana.com/)でDevnet SOLを用意します。認証済みUSDC mintは`4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU`。SOLは手数料・rent用です。
 3. 保存領域の注意事項を読み、例として2 Devnet USDCを`Review deposit`で準備します。`Approve in wallet`でウォレットに進み、内容を確認して署名します。送信後は`Check transaction`で保存済み取引を確認します。`pending`は未確定です。
 4. 「Ready to chat」になったら送信します。モデルは固定profileの許可リストから選択します。direct OpenRouter、アプリの上限は128 output tokensです。Streaming設定は認証済みprofileに従います。
-5. `.8` のdirect sessionは標準で300秒のleaseを再利用し、残り90秒で更新対象になります。同じ会話は同じsession IDを使い、新しい会話では分離します。`Manage session` → `Settle charges`で明示的に閉じ、精算後にDeposit切替・出金へ進みます。応答後も復旧が必要なら`Review payment` → `Check payment`。推論は再送しません。新しい送信は新しいUUIDを使う別の操作です。
+5. `.8` のdirect sessionは標準で300秒のleaseを再利用し、残り90秒で更新対象になります。同じ会話は同じsession IDを使い、新しい会話では分離します。別の会話へ送信する前には、前の会話のsessionを`Manage session`（別会話では`Review settlement`）→ `Settle charges`で明示的に閉じます。下書きは保持され、精算後に改めて送信します。Deposit切替・出金も精算後に進みます。応答後も復旧が必要なら`Review payment` → `Check payment`。推論は再送しません。新しい送信は新しいUUIDを使う別の操作です。
 6. 精算後に`Withdraw balance` → `Review withdrawal`で準備します。**現行SDKの出金は複数回の署名が必要**です。証明buffer作成 → 分割アップロード → 封印 → 出金実行の各取引に署名とネットワーク手数料が発生します。アップロード回数はpayload量次第で、公開APIには総数・現在段階がありません。署名ボタンと送信済み確認ボタンを使って一段ずつ進め、`Withdrawal complete`まで同じnoteを保持します。
 
 **追加のDeposit / 出金後の再入金:** 画面上部の`Deposit` → `Add deposit`で新しい入金先を作成し、金額入力 → `Review deposit` → ウォレット署名 → 送信済み取引確認と進みます。同じウォレットで繰り返し利用できます。SDKは既存noteへの継ぎ足し・残高合算に対応しないため、各入金は独立したnoteです。`Saved deposits`で利用・出金する入金を選択します。前の残高と履歴は保持され、出金済みnoteも削除しません。未確定取引・未精算セッション・緊急出金がある間は追加と切替を止め、元の操作を完了します。残高が認証上限を下回ったら`Add funds`の案内から追加できます。
@@ -45,7 +47,7 @@ npm run dev
 
 受付停止・Pool pause・readiness失敗では新規入金/送信を止めます。元の保存領域での復旧/出金は残します。SDKの条件に応じて未送信AUTH取消、期限切れsetup照合、未署名出金からescapeへの切替、緊急出金、challenge照合、期限後のfinalizeも表示します。
 
-認証上限1 USDCと実請求額は別です。初回請求後も次の認証上限を満たす残高が必要です。Devnetトークンはテスト資金ですが、provider費用はoperatorが負担します。公開受付の有効表示はprovider容量の保証ではありません。
+認証上限1 USDCと実請求額は別です。初回請求後も次の認証上限を満たす残高が必要です。Devnetトークンはテスト資金ですが、provider費用はoperatorが負担します。[現行の公開Devnet利用条件](https://github.com/yukikm/solana-zkapi/blob/2a5c588ddde11cd443fbfdca6d531c3267df5111/docs/getting-started/devnet.md)では固定の試用枠はありません。`provider_credit: "not_checked"`はprovider残高が未確認という意味で、公開受付の有効表示はprovider容量の保証ではありません。
 
 ## 接続の切り分け
 
@@ -81,7 +83,7 @@ npm run check:browser
 
 ## 固定設定と保存
 
-[SDK .8更新ガイド](https://github.com/yukikm/solana-zkapi/blob/v0.2.0-devnet.8/docs/releases/usability-preview.md)のSDK `.8`、revision-6 profile、独立公開SHA-256を`public/zkapi-config.json`へ固定しています。復旧版は`config/zkapi-config.devnet.3.json`の元のrevision-2 profileを使用します。`verify:sdk`で両方のvendor archiveを公開SHA-256と照合できます。配布元はnpm registryではなくGitHub releaseです。
+[現行SDK導入ガイド](https://github.com/yukikm/solana-zkapi/blob/2a5c588ddde11cd443fbfdca6d531c3267df5111/docs/getting-started/sdk.md)のSDK `.8`、revision-6 profile、独立公開SHA-256を`public/zkapi-config.json`へ固定しています。復旧版は`config/zkapi-config.devnet.3.json`の元のrevision-2 profileを使用します。`verify:sdk`で両方のvendor archiveを公開SHA-256と照合できます。配布元はnpm registryではなくGitHub releaseです。
 
 新規 `.8` は保存名`zkchat-sdk-0.2.0-devnet.8`、初回note ID`zkchat-note-sdk-0.2.0-devnet.8`を使います。復旧版は`zkchat-sdk-0.2.0-devnet.3` / `zkchat-note-sdk-0.2.0-devnet.3`を維持します。追加noteと選択状態は各SDKの暗号化catalogに保存します。SDK・Worker・profileを混在させず、旧`zkchat-v1`も消去・移行しません。操作と切替はアカウント・deployment別のWeb Lockで直列化し、別タブで選択が変わった古い接続からの操作は拒否します。
 

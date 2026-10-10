@@ -1,6 +1,6 @@
 # Solana zkAPI 第三者チャットアプリ統合レポート
 
-**最新（2026-10-10）:** [SDK .8への更新・既存 .3の復旧経路・公開catalogの障害](SDK-UPGRADE-20261010.md)を別途記録しています。以下はSDK .3を使った2026-10-09時点の結果であり、現在の公開API可用性を示すものではありません。
+**最新の再確認（2026-10-11 01:24–01:25 JST）:** [SDK .8への更新・既存 .3の復旧経路・catalog復旧後の接続状態](SDK-UPGRADE-20261010.md)を別途記録しています。catalogは空でなくなりましたが、RPCはHTTP 429、readinessはHTTP 503（Indexer unavailable）で、利用可能とは判定できていません。以下はSDK .3を使った2026-10-09時点の結果であり、現在の公開API可用性や `.8` の有資金動作を示すものではありません。
 
 検証日: **2026-10-09 JST**。参照ソース: [`67b05cf30fbd009facb87a3451ae65b1971e86b5`](https://github.com/yukikm/solana-zkapi/tree/67b05cf30fbd009facb87a3451ae65b1971e86b5)。公開APIソースは `.5` のCORS開放を含み、配布SDKは引き続き **0.2.0-devnet.3** です。
 
@@ -58,11 +58,13 @@
 
 以前のHTTP400とHTTPS許可リストの問題は、[上流のCORS開放記録](https://github.com/yukikm/solana-zkapi/blob/67b05cf30fbd009facb87a3451ae65b1971e86b5/docs/evidence/PD-public-cors-20261009.md)および今回の実ブラウザ/OPTIONS検証により解消を確認しました。旧記録は[変更前のレポート](INTEGRATION-REPORT-20261009-before-cors.md)へ保存しました。
 
-### ZKAPI-02: consumerドキュメントのバージョン・招待説明 — 残存
+### ZKAPI-02: consumerドキュメントのバージョン・招待説明 — 2026-10-09時点の指摘
 
 [quickstart](https://github.com/yukikm/solana-zkapi/blob/67b05cf30fbd009facb87a3451ae65b1971e86b5/docs/sdk/quickstart.md)のインストール例と[public-profile guide](https://github.com/yukikm/solana-zkapi/blob/67b05cf30fbd009facb87a3451ae65b1971e86b5/docs/sdk/public-profile.md)は`.2`中心です。[funding guide](https://github.com/yukikm/solana-zkapi/blob/67b05cf30fbd009facb87a3451ae65b1971e86b5/docs/sdk/devnet-funding.md)にはinvitation-onlyと招待取得の指示が残り、現行公開ガイド/実APIの`.3`・招待不要と整合していません。
 
 consumerの開始点で現行入力を一貫して示し、古いcampaignの条件を日付付き履歴へ分離する必要があります。本アプリは現行の[公開Devnetガイド](https://github.com/yukikm/solana-zkapi/blob/67b05cf30fbd009facb87a3451ae65b1971e86b5/docs/sdk/public-devnet-preview.md)と認証済みprofileを採用しました。
+
+**2026-10-11追記:** この指摘は上流のドキュメント再編前の記録です。[現行SDK導入ガイド](https://github.com/yukikm/solana-zkapi/blob/2a5c588ddde11cd443fbfdca6d531c3267df5111/docs/getting-started/sdk.md)は `.8` とrevision-6 profileを示し、[公開Devnet利用条件](https://github.com/yukikm/solana-zkapi/blob/2a5c588ddde11cd443fbfdca6d531c3267df5111/docs/getting-started/devnet.md)も招待不要・固定の試用枠なしと明記しています。zkchatのSetup guideも新しい導入ガイドへ更新しました。
 
 ### ZKAPI-03: provider容量・最終請求の検証範囲
 
