@@ -39,7 +39,7 @@ async function connect(page: Page) {
     .getByLabel("2. Select an account")
     .selectOption("11111111111111111111111111111111");
   await page
-    .getByRole("button", { name: "Verify connection", exact: true })
+    .getByRole("button", { name: "Connect account", exact: true })
     .click();
   await expect(page.getByLabel("Saved deposits")).toBeVisible();
 }
@@ -62,21 +62,21 @@ for (const initial of ["closed", "active"] as const) {
       .getByRole("button", { name: "Add deposit", exact: true })
       .click();
     await expect(page.getByLabel("Saved deposits")).toHaveValue("deposit-1");
-    await page.getByLabel("I understand the storage limitations").check();
+    await page.getByLabel("I will keep this browser’s data").check();
     await page.getByLabel("USDC to deposit").fill("0.2");
     await page
-      .getByRole("button", { name: "Prepare deposit", exact: true })
+      .getByRole("button", { name: "Review deposit", exact: true })
       .click();
     await expect(page.getByRole("alert")).toContainText(
       "Deposit at least 1.00 USDC",
     );
     await page.getByLabel("USDC to deposit").fill("2");
     await page
-      .getByRole("button", { name: "Prepare deposit", exact: true })
+      .getByRole("button", { name: "Review deposit", exact: true })
       .click();
     await expect(
       page.getByRole("button", {
-        name: "Continue to wallet signature",
+        name: "Approve in wallet",
         exact: true,
       }),
     ).toBeVisible();
@@ -89,13 +89,13 @@ for (const initial of ["closed", "active"] as const) {
     await expect(page.getByLabel("Saved deposits")).toHaveValue("deposit-1");
     await page
       .getByRole("button", {
-        name: "Continue to wallet signature",
+        name: "Approve in wallet",
         exact: true,
       })
       .click();
     await expect(page.locator(".balance-panel strong")).toHaveText("0.00");
     await page
-      .getByRole("button", { name: "Check submitted transaction", exact: true })
+      .getByRole("button", { name: "Check transaction", exact: true })
       .click();
     await expect(page.locator(".balance-panel strong")).toHaveText("2.00");
     await page.getByLabel("Saved deposits").selectOption("original");

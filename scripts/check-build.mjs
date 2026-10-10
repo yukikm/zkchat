@@ -46,18 +46,17 @@ try {
     .getByRole("button", { name: "Connection settings", exact: true })
     .click();
   assert.match(
-    await page.getByRole("dialog").innerText(),
+    await page.getByRole("dialog").textContent(),
     /SDK 0\.2\.0-devnet\.8/,
   );
-  await page
-    .getByRole("link", { name: "Open original wallet recovery" })
-    .click();
+  await page.getByText("Have an older deposit?", { exact: true }).click();
+  await page.getByRole("link", { name: "Recover an older deposit" }).click();
   await page.waitForURL(`${origin}${base}recovery-v3/`);
   await page
     .getByRole("button", { name: "Connection settings", exact: true })
     .click();
   assert.match(
-    await page.getByRole("dialog").innerText(),
+    await page.getByRole("dialog").textContent(),
     /SDK 0\.2\.0-devnet\.3/,
   );
   assert.equal(

@@ -311,9 +311,7 @@ describe("profile and original custody binding", () => {
     await expect(
       connectPublicDeployment(config, "zkchat-v1", "account", true, token),
     ).rejects.toMatchObject({
-      message: expect.stringContaining(
-        "Connection checks are unavailable: deployment profile.",
-      ),
+      message: expect.stringContaining("Could not verify service settings."),
     });
     expect(storage.size).toBe(0);
   });
@@ -586,7 +584,7 @@ describe("existing application adapter with public profile", () => {
       ).catch((error: unknown) => error);
       expect(error).toBeInstanceOf(PublicOnboardingError);
       expect((error as Error).message).toBe(
-        "Connection checks are unavailable: finalized chain snapshot. No AUTH, inference, or transaction was submitted. The finalized chain snapshot could not be verified. Retry the connection check when the indexer is available; adding funds will not resolve this check.",
+        "Could not verify finalized chain snapshot. Try Check service later. Adding funds will not fix this. No request or transaction was sent.",
       );
       expect((error as Error).message).not.toMatch(
         /private|secret|balance|pending|https:/,
@@ -826,7 +824,7 @@ describe("original custody is never opened or bypassed by SDK .8", () => {
     storage.set(original, "original-profile-digest");
     await expect(
       connectZkapi(config, wallet as any, account as any, true),
-    ).rejects.toThrow(/original wallet recovery/);
+    ).rejects.toThrow(/Recover an older deposit/);
     expect(sdk.load).not.toHaveBeenCalled();
     expect(sdk.browser).not.toHaveBeenCalled();
     expect(storage.size).toBe(1);
@@ -848,7 +846,7 @@ describe("original custody is never opened or bypassed by SDK .8", () => {
       ],
     });
     await expect(assertRuntimeCustody("account")).rejects.toThrow(
-      /original wallet recovery/,
+      /Recover an older deposit/,
     );
     expect(open).not.toHaveBeenCalled();
     expect(storage.size).toBe(0);
@@ -867,7 +865,7 @@ it("RPC failures do not invent an origin-registration requirement or expose payl
   const failure = new PublicProfileError("rpc");
   failure.message = "private backend credential";
   const message = connectionCheckError(failure).message;
-  expect(message).toContain("without origin registration");
-  expect(message).toContain("does not establish a CORS failure");
+  expect(message).toContain("Check your internet connection");
+  expect(message).not.toMatch(/CORS|register|origin registration/);
   expect(message).not.toContain("private backend");
 });

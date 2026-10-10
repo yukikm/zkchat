@@ -14,7 +14,7 @@ async function demo(page: Page) {
   await page.goto("/");
   await page.getByRole("button", { name: "Try the demo", exact: true }).click();
   await expect(page.locator(".demo-banner")).toContainText(
-    "Not connected to AI or Solana",
+    "Sample replies, no AI or payments",
   );
 }
 async function finish(page: Page) {
@@ -48,9 +48,9 @@ test("default is disconnected with no invented balance; demo makes no external r
     .click();
   await expect(
     page.getByRole("dialog", { name: "Connection settings" }),
-  ).toContainText("An operator configuration is required");
+  ).toContainText("Live chat is not set up");
   await expect(
-    page.getByRole("button", { name: "Prepare deposit", exact: true }),
+    page.getByRole("button", { name: "Review deposit", exact: true }),
   ).toHaveCount(0);
   await page
     .getByRole("dialog", { name: "Connection settings" })
@@ -59,7 +59,7 @@ test("default is disconnected with no invented balance; demo makes no external r
   await send(page).click();
   await finish(page);
   await expect(page.locator(".message.assistant")).toContainText(
-    "locally generated sample",
+    "Demo reply · No AI request or payment",
   );
   expect(external).toEqual([]);
 });
@@ -114,9 +114,7 @@ test("demo history persists, restores its mode, and supports rename/search/expor
   expect((await downloadPromise).suggestedFilename()).toMatch(
     /^zkchat-.*\.md$/,
   );
-  await page
-    .getByRole("button", { name: "Return to live mode", exact: true })
-    .click();
+  await page.getByRole("button", { name: "Use AI chat", exact: true }).click();
   await expect(page.locator(".demo-banner")).toHaveCount(0);
   await input(page).fill("実接続で送る");
   await expect(send(page)).toBeDisabled();
@@ -145,9 +143,7 @@ test("stopped generation remains incomplete and retry is an explicit new operati
   await expect(page.locator(".message-feedback")).toHaveText(
     "Display stopped.",
   );
-  await page
-    .getByRole("button", { name: "Retry as a new request", exact: true })
-    .click();
+  await page.getByRole("button", { name: "Send again", exact: true }).click();
   await finish(page);
   await expect(page.locator(".message.assistant")).toHaveCount(2);
   await expect
@@ -275,7 +271,7 @@ const listeners = new Set();
 const update = patch => { state = { ...state, ...patch }; for (const fn of listeners) fn(state); };
 const calls = []; let recoveries = 0;
 const frame = value => 'data: ' + JSON.stringify(value) + '\\n\\n';
-export const connectZkapi = async () => ({ account, persistence: 'persistent', publicAdmissionReady: true, async refreshPreflight() {}, dispose() {}, client: {
+export const connectZkapi = async () => ({ account, persistence: 'persistent', publicAdmissionReady: true, deployment: { mint: 'fixture-mint' }, async refreshPreflight() {}, dispose() {}, client: {
   status: async () => state,
   subscribe: fn => { listeners.add(fn); return () => listeners.delete(fn); },
   chat: async request => {
@@ -301,13 +297,9 @@ test("live partial failure blocks sends; recovery does not replay; explicit retr
     .getByLabel("2. Select an account", { exact: true })
     .selectOption("11111111111111111111111111111111");
   await page
-    .getByRole("button", { name: "Verify connection", exact: true })
+    .getByRole("button", { name: "Connect account", exact: true })
     .click();
-  await expect(
-    page.getByText(
-      "Ready to send. Each request charge is confirmed after settlement.",
-    ),
-  ).toBeVisible();
+  await expect(page.getByText("Ready to chat.")).toBeVisible();
   await page.getByRole("button", { name: "Close", exact: true }).click();
   await input(page).fill("実接続テスト");
   await send(page).click();
@@ -316,21 +308,21 @@ test("live partial failure blocks sends; recovery does not replay; explicit retr
     "途中までの応答",
   );
   await expect(page.locator(".message-feedback")).toContainText(
-    "Requests are not retried automatically",
+    "Nothing is resent automatically",
   );
   await expect(
-    page.getByRole("button", { name: "Retry as a new request", exact: true }),
+    page.getByRole("button", { name: "Send again", exact: true }),
   ).toBeDisabled();
   await input(page).fill("未精算中の入力");
   await expect(send(page)).toBeDisabled();
   await page
-    .getByRole("button", { name: "Check recovery", exact: true })
+    .getByRole("button", { name: "Review payment", exact: true })
     .click();
   await page
-    .getByRole("button", { name: "Check settlement / Recover", exact: true })
+    .getByRole("button", { name: "Check payment", exact: true })
     .click();
   await expect(
-    page.getByText("Recovery check completed. Check the updated status."),
+    page.getByText("Payment checked. Follow the status below."),
   ).toBeVisible();
   expect(
     await page.evaluate(
@@ -341,9 +333,7 @@ test("live partial failure blocks sends; recovery does not replay; explicit retr
     await page.evaluate(() => localStorage.getItem("zkchat:test-recoveries")),
   ).toBe("1");
   await page.getByRole("button", { name: "Close", exact: true }).click();
-  await page
-    .getByRole("button", { name: "Retry as a new request", exact: true })
-    .click();
+  await page.getByRole("button", { name: "Send again", exact: true }).click();
   await finish(page);
   await expect(page.locator(".message.assistant").last()).toContainText(
     "再試行後の回答",
@@ -400,7 +390,7 @@ async function connectFixture(page: Page, source: string) {
     .getByLabel("2. Select an account", { exact: true })
     .selectOption("11111111111111111111111111111111");
   await page
-    .getByRole("button", { name: "Verify connection", exact: true })
+    .getByRole("button", { name: "Connect account", exact: true })
     .click();
 }
 test("saved rejected operation remains recoverable after reopening settings", async ({
@@ -418,7 +408,7 @@ test("saved rejected operation remains recoverable after reopening settings", as
   await connectFixture(page, source);
   await expect(
     page.getByRole("button", {
-      name: "Prepare rejected operation again",
+      name: "Try this step again",
       exact: true,
     }),
   ).toBeVisible();
@@ -426,7 +416,7 @@ test("saved rejected operation remains recoverable after reopening settings", as
   await page.getByRole("button", { name: "Connected", exact: true }).click();
   await page
     .getByRole("button", {
-      name: "Prepare rejected operation again",
+      name: "Try this step again",
       exact: true,
     })
     .click();
@@ -453,10 +443,10 @@ test("unknown proxy send has explicit absence reconciliation without replay", as
     );
   await connectFixture(page, source);
   await page
-    .getByRole("button", { name: "Reconcile unaccepted send", exact: true })
+    .getByRole("button", { name: "Check unsent request", exact: true })
     .click();
   await expect(
-    page.getByText("Unaccepted send reconciled. No AI request was replayed."),
+    page.getByText("Request checked. No message was resent."),
   ).toBeVisible();
   expect(
     await page.evaluate(() => localStorage.getItem("zkchat:test-absent")),
@@ -493,19 +483,17 @@ test("public onboarding invitation stays in memory and clears after disconnect",
   await page
     .getByRole("button", { name: "Connection settings", exact: true })
     .click();
-  await page
-    .getByText("Invitation for restricted deployments", { exact: true })
-    .click();
-  await page.getByLabel("Invitation (only if required)").fill(invitation);
+  await page.getByText("Have an invitation?", { exact: true }).click();
+  await page.getByLabel("Invitation code").fill(invitation);
   await page.getByRole("button", { name: "Test Wallet", exact: true }).click();
   await page
     .getByLabel("2. Select an account", { exact: true })
     .selectOption("11111111111111111111111111111111");
   await page
-    .getByRole("button", { name: "Verify connection", exact: true })
+    .getByRole("button", { name: "Connect account", exact: true })
     .click();
   await expect(
-    page.getByText("Last connection checks passed", { exact: true }),
+    page.getByText("Wallet connected.", { exact: true }),
   ).toBeVisible();
   expect(
     await page.evaluate(() => (window as any).testInvitationWasPassed),
@@ -519,16 +507,12 @@ test("public onboarding invitation stays in memory and clears after disconnect",
     ),
   ).not.toContain(invitation);
   await page.getByRole("button", { name: "Disconnect", exact: true }).click();
-  await expect(page.getByLabel("Invitation (only if required)")).toHaveValue(
-    "",
-  );
+  await expect(page.getByLabel("Invitation code")).toHaveValue("");
   await page.reload();
   await page
     .getByRole("button", { name: "Connection settings", exact: true })
     .click();
-  await expect(page.getByLabel("Invitation (only if required)")).toHaveValue(
-    "",
-  );
+  await expect(page.getByLabel("Invitation code")).toHaveValue("");
 });
 
 test("Kit wallet connector discovers, connects, selects and disconnects the exact Wallet Standard account", async ({
@@ -589,7 +573,7 @@ test("wallet rejection shows actionable diagnostics and allows a deliberate retr
     page.getByRole("button", { name: "Test Wallet", exact: true }),
   ).toBeEnabled();
   await expect(
-    page.getByRole("button", { name: "Verify connection", exact: true }),
+    page.getByRole("button", { name: "Connect account", exact: true }),
   ).toBeDisabled();
   await expect(page.getByRole("dialog")).not.toContainText(
     "Check your balance",
@@ -612,15 +596,13 @@ test("expiry and emergency recovery remain visible without replaying inference",
   await expect(
     page.getByText("This note expires within one day."),
   ).toBeVisible();
+  await page.getByText("Delayed withdrawal options", { exact: true }).click();
   await page
-    .getByText("Emergency withdrawal and challenge recovery", { exact: true })
-    .click();
-  await page
-    .getByRole("button", { name: "Check challenged withdrawal", exact: true })
+    .getByRole("button", { name: "Check withdrawal dispute", exact: true })
     .click();
   await page
     .getByRole("button", {
-      name: "Prepare emergency withdrawal to this wallet",
+      name: "Start delayed withdrawal",
       exact: true,
     })
     .click();
@@ -633,6 +615,7 @@ test("expiry and emergency recovery remain visible without replaying inference",
   expect(
     await page.evaluate(() => localStorage.getItem("zkchat:test-calls")),
   ).toBeNull();
+  await page.getByText("Transaction details", { exact: true }).click();
   await expect(
     page.getByText("initiate_escape / ready", { exact: true }),
   ).toBeVisible();
@@ -652,16 +635,14 @@ test("unsent authorization cancellation is explicit and never offered for uncert
     );
   await connectFixture(page, source);
   await page
-    .getByRole("button", { name: "Cancel unsent authorization", exact: true })
+    .getByRole("button", { name: "Cancel unused authorization", exact: true })
     .click();
   await expect(
-    page.getByText(
-      "Unsent authorization cancelled. No AI request was replayed.",
-    ),
+    page.getByText("Authorization cancelled. No message was sent."),
   ).toBeVisible();
   await expect(
     page.getByRole("button", {
-      name: "Cancel unsent authorization",
+      name: "Cancel unused authorization",
       exact: true,
     }),
   ).toHaveCount(0);
@@ -689,11 +670,13 @@ test("unsigned withdrawal fallback and signed setup recovery use separate explic
   await expect(
     page.getByText("Blocked withdrawal options", { exact: true }),
   ).toHaveCount(0);
-  await page.getByRole("button", { name: "Resume proof", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Resume preparation", exact: true })
+    .click();
   await page.getByText("Blocked withdrawal options", { exact: true }).click();
   await page
     .getByRole("button", {
-      name: "Switch unsigned withdrawal to escape",
+      name: "Use delayed withdrawal",
       exact: true,
     })
     .click();
@@ -704,7 +687,7 @@ test("unsigned withdrawal fallback and signed setup recovery use separate explic
     page.getByText("Expired setup recovery", { exact: true }),
   ).toHaveCount(0);
   await page
-    .getByRole("button", { name: "Check submitted transaction", exact: true })
+    .getByRole("button", { name: "Check transaction", exact: true })
     .click();
   await page.getByText("Expired setup recovery", { exact: true }).click();
   await page
@@ -766,23 +749,23 @@ test("withdrawal explains multiple approvals and separates signing from saved tr
     .getByRole("button", { name: "Withdraw balance", exact: true })
     .click();
   await expect(
-    page.getByText(/Expect multiple wallet approvals and network fees/),
+    page.getByText(/approve several transactions, each with a SOL fee/),
   ).toBeVisible();
   await page
     .getByRole("button", {
-      name: "Prepare withdrawal to this wallet",
+      name: "Review withdrawal",
       exact: true,
     })
     .click();
   await expect(
-    page.getByText(/SDK does not expose the current step/),
+    page.getByText(/Withdrawal needs several wallet approvals/),
   ).toBeVisible();
   await page
-    .getByRole("button", { name: "Continue to wallet signature", exact: true })
+    .getByRole("button", { name: "Approve in wallet", exact: true })
     .click();
   await expect(
     page.getByRole("button", {
-      name: "Continue to wallet signature",
+      name: "Approve in wallet",
       exact: true,
     }),
   ).toHaveCount(0);
@@ -790,10 +773,10 @@ test("withdrawal explains multiple approvals and separates signing from saved tr
     page.getByText("Expired setup recovery", { exact: true }),
   ).toHaveCount(0);
   await page
-    .getByRole("button", { name: "Check submitted transaction", exact: true })
+    .getByRole("button", { name: "Check transaction", exact: true })
     .click();
   await expect(
-    page.getByText("Withdrawal complete. This note no longer holds funds.", {
+    page.getByText("Withdrawal complete. Your funds are back in your wallet.", {
       exact: true,
     }),
   ).toBeVisible();

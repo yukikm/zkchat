@@ -22,29 +22,27 @@ export class PublicOnboardingError extends Error {}
 // Only the SDK's error class and allowlisted component labels reach the UI.
 // Never display an underlying response, exception message or endpoint here.
 const connectionCheckLabels: Readonly<Record<string, string>> = {
-  profile: "deployment profile",
+  profile: "service settings",
   compatibility: "app compatibility",
-  assets: "proof assets",
+  assets: "payment setup",
   models: "model configuration",
   rpc: "chain connection",
-  pool: "finalized Pool configuration",
-  control: "operator configuration",
+  pool: "payment pool",
+  control: "service configuration",
   catalog: "model catalog",
   snapshot: "finalized chain snapshot",
-  readiness: "live operator readiness",
+  readiness: "service status",
 };
 export function connectionCheckError(error: PublicProfileError) {
   const label = Object.hasOwn(connectionCheckLabels, error.component)
     ? connectionCheckLabels[error.component]
-    : "public deployment";
+    : "service";
   const guidance =
     error.component === "rpc"
-      ? "The public Devnet accepts localhost and HTTPS apps without origin registration. Check network/RPC availability; this error alone does not establish a CORS failure."
-      : error.component === "snapshot"
-        ? "The finalized chain snapshot could not be verified. Retry the connection check when the indexer is available; adding funds will not resolve this check."
-        : "Try Verify connection again when the operator is ready.";
+      ? "Check your internet connection, then try Check service again."
+      : "Try Check service later. Adding funds will not fix this.";
   return new PublicOnboardingError(
-    `Connection checks are unavailable: ${label}. No AUTH, inference, or transaction was submitted. ${guidance}`,
+    `Could not verify ${label}. ${guidance} No request or transaction was sent.`,
   );
 }
 
@@ -85,7 +83,7 @@ export async function inspectPublicDeployment(config: PublicAppConfig) {
   } catch (error) {
     if (error instanceof PublicProfileError) throw connectionCheckError(error);
     throw new PublicOnboardingError(
-      "Operator readiness is unavailable. Try the connection check again; no wallet or funds are needed.",
+      "Service unavailable. Try Check service later. No funds are needed.",
     );
   }
 }
@@ -242,7 +240,7 @@ export async function assertRuntimeCustody(account: string) {
       null || (await existingAppCustody(LEGACY_STORAGE_NAME, account));
   if (!RECOVERY_RUNTIME && original)
     throw new PublicOnboardingError(
-      "Existing SDK .3 storage detected. Open original wallet recovery with the same browser, URL origin and account. Keep its profile and browser data; automatic custody migration is not supported.",
+      "SDK .3 deposit found. Choose Recover an older deposit and use the original wallet. Keep this browser’s data.",
     );
   if (RECOVERY_RUNTIME && !original)
     throw new PublicOnboardingError(

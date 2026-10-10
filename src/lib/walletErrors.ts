@@ -24,23 +24,23 @@ export function walletConnectionError(walletName: string, error: unknown) {
   let message: string;
   switch (code) {
     case 4001:
-      message = `${walletName} connection was declined. Select the wallet again when you are ready.`;
+      message = `${walletName} connection was declined. Select it again to retry.`;
       break;
     case -32002:
-      message = `${walletName} already has a pending request. Open its window and approve or dismiss that request before trying again.`;
+      message = `${walletName} has a pending request. Open the wallet to approve or dismiss it.`;
       break;
     case 4100:
-      message = `${walletName} has not authorized this site or account. Open the wallet and review its connection permissions.`;
+      message = `${walletName} has not authorized this site. Open the wallet and allow this connection.`;
       break;
     case 4900:
-      message = `${walletName} could not connect to its network. Check the wallet's connection before trying again.`;
+      message = `${walletName} could not connect to its network. Check its network settings.`;
       break;
     default:
       message =
         code === -32603 ||
         (error instanceof Error && error.message === "Unexpected error")
-          ? `${walletName} returned an internal connection error${suffix}. Open and unlock the wallet, then reload this page before trying again.`
-          : `Could not connect to ${walletName}${suffix}. Open and unlock the wallet, then review its connection request.`;
+          ? `${walletName} returned an internal connection error${suffix}. Unlock the wallet, then reload this page.`
+          : `Could not connect to ${walletName}${suffix}. Unlock it and approve the connection.`;
   }
   return new WalletConnectionError(
     `${message} No transaction was requested.`,

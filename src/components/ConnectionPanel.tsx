@@ -101,8 +101,8 @@ export function ConnectionPanel({
   }, [status?.noteId, status?.wallet, busy]);
   async function action(
     fn: () => Promise<void>,
-    fallback = "The operation could not be completed. Check your balance and pending operations. Requests are not retried automatically.",
-    progress = "Checking the saved operation and public service. Proof assets may take a moment to load.",
+    fallback = "Could not complete this step. Refresh status, then follow the next action below.",
+    progress = "Checking your saved progress…",
   ) {
     if (busy || locked) return;
     setBusy(true);
@@ -123,9 +123,7 @@ export function ConnectionPanel({
       );
     } finally {
       await refresh().catch(() =>
-        setError(
-          "Status is unavailable. Reconnect with the same settings before sending anything new.",
-        ),
+        setError("Could not check progress. Reconnect with the same wallet."),
       );
       setBusy(false);
       onBusy(false);
@@ -141,12 +139,10 @@ export function ConnectionPanel({
         const available = await connectWallet(w);
         setAccounts(available);
         if (!available.length)
-          setError(
-            "No account supports Devnet and v0 transactions. Check your wallet settings.",
-          );
+          setError("Select a Solana Devnet account in your wallet.");
       },
-      "Wallet connection failed or was declined. Unlock the selected wallet and choose a Devnet-compatible account, then try again. No transaction was requested.",
-      "Waiting for your wallet. Unlock it and review the connection request in its window.",
+      "Unlock your wallet, select Devnet, and try again. No transaction was requested.",
+      "Open your wallet to approve the connection.",
     );
   }
   async function connect(initialize = false) {
@@ -165,13 +161,11 @@ export function ConnectionPanel({
         setInvitation("");
         onConnect(connected, selected.address);
         setStorageMissing(false);
-        setInfo("Deployment and wallet connection verified.");
+        setInfo("Wallet connected.");
       } catch (e) {
         if (e instanceof BrowserStorageMissing) {
           setStorageMissing(true);
-          setInfo(
-            "No storage exists for this account yet. Create it explicitly to continue.",
-          );
+          setInfo("First visit? Set up this wallet to continue.");
         } else {
           throw e;
         }
@@ -186,10 +180,8 @@ export function ConnectionPanel({
           <Wallet size={22} />
         </div>
         <div>
-          <h3>Chat with AI using your wallet.</h3>
-          <p>
-            Pay usage charges with USDC on Solana. Network fees require SOL.
-          </p>
+          <h3>Connect, deposit, chat.</h3>
+          <p>Pay for AI with USDC. Keep SOL for network fees.</p>
         </div>
       </div>
       <div className="connection-facts">
@@ -197,32 +189,33 @@ export function ConnectionPanel({
           <span className="status-dot" />
           Solana Devnet
         </span>
-        <span>
-          SDK {SDK_VERSION} ·{" "}
-          {RECOVERY_RUNTIME ? "original wallet recovery" : "preview artifact"}
-        </span>
+        <span>Test tokens only</span>
       </div>
       {RECOVERY_RUNTIME ? (
         <p className="small muted">
-          Original wallet recovery keeps SDK .3, its profile and saved deposits.
-          Keep this browser's data until all recovery and withdrawals are
-          complete.
+          Recover your older deposits here. Keep this browser’s data until all
+          withdrawals are complete.
         </p>
       ) : (
         !handle && (
-          <p className="small muted">
-            Existing deposits from SDK .3 use the original recovery app.{" "}
+          <details
+            className="connection-details"
+            open={error.includes("SDK .3")}
+          >
+            <summary>Have an older deposit?</summary>
             {import.meta.env.DEV ? (
-              <>
-                For local recovery, stop this server and run{" "}
-                <code>npm run dev:recovery</code>, then reopen the same URL.
-              </>
+              <p className="small muted">
+                Stop this server, run <code>npm run dev:recovery</code>, and
+                reopen the same URL with your original wallet.
+              </p>
             ) : (
-              <a href={`${import.meta.env.BASE_URL}recovery-v3/`}>
-                Open original wallet recovery
-              </a>
+              <p>
+                <a href={`${import.meta.env.BASE_URL}recovery-v3/`}>
+                  Recover an older deposit
+                </a>
+              </p>
             )}
-          </p>
+          </details>
         )
       )}
       {!config ? (
@@ -231,108 +224,41 @@ export function ConnectionPanel({
           <div>
             <h4>
               {configLoading
-                ? "Verifying public deployment assets…"
+                ? "Loading service…"
                 : configError
-                  ? "Connection settings are unavailable"
-                  : "An operator configuration is required"}
+                  ? "Service unavailable"
+                  : "Live chat is not set up"}
             </h4>
             <p>
               {configLoading
-                ? "Downloading and checking the published proof bundle. This can take a moment on the first visit."
+                ? "The first visit may take a moment."
                 : configError ||
-                  "The SDK alone does not select an operator or include its proof assets. The app administrator must install a reviewed deployment configuration before you can connect a wallet."}
+                  "Ask the app owner to configure the service. You can try the demo now."}
             </p>
             <a
               href="https://github.com/yukikm/solana-zkapi/blob/main/docs/sdk/public-devnet-preview.md"
               target="_blank"
               rel="noreferrer"
             >
-              Read the public documentation <ExternalLink size={13} />
+              Setup guide <ExternalLink size={13} />
             </a>
             {!configLoading && (
               <button className="secondary" onClick={onRetryConfig}>
-                Retry configuration
+                Reload settings
               </button>
             )}
           </div>
         </div>
       ) : (
         <>
-          <div className="config-summary">
-            <span>Deployment</span>
-            <strong>{config.label}</strong>
-            <span>Route</span>
-            <strong>
-              {configuredMode(config) === "proxy" ? "Proxy" : "Direct"}
-            </strong>
-          </div>
-          <details className="model-availability">
-            <summary>
-              Available models ({configuredModels(config).length})
-            </summary>
-            <p className="small muted">
-              This ZKAPI deployment enables{" "}
-              {configuredModels(config)
-                .map((model) => model.label || model.id)
-                .join(", ")}
-              . Model availability is set by the deployment operator.
-            </p>
-            {configuredMode(config) === "direct_openrouter" && (
-              <p className="small muted">
-                OpenRouter supports models from multiple providers. Additional
-                models must be enabled in the ZKAPI public profile before they
-                can be selected here.
-              </p>
-            )}
-          </details>
-          {config.schema === 2 && !handle && (
-            <div className="notice">
-              <strong>Public Devnet connection</strong>
-              <p>
-                Check the live service before connecting your wallet. This check
-                needs no funds or signatures.
-              </p>
-              <button
-                className="secondary"
-                disabled={disabled}
-                onClick={() =>
-                  void action(async () => {
-                    setPublicCheck(null);
-                    setPublicCheck(await inspectPublicDeployment(config));
-                  })
-                }
-              >
-                Check public connection
-              </button>
-              {publicCheck && (
-                <p role="status">
-                  {publicCheck.preflight.checks.length} SDK checks passed.{" "}
-                  {publicCheck.readiness.admission === "enabled" &&
-                  publicCheck.readiness.servicesAvailable &&
-                  publicCheck.preflight.chainAllowsNewOperations
-                    ? "New requests enabled."
-                    : "New requests unavailable."}{" "}
-                  {publicCheck.readiness.invitationRequired
-                    ? "Invitation required."
-                    : "No invitation required."}{" "}
-                  Provider credit is checked when you send. Checks run again
-                  before new work. Last checked:{" "}
-                  {new Date(
-                    publicCheck.readiness.checkedAt,
-                  ).toLocaleTimeString()}
-                  .
-                </p>
-              )}
-            </div>
-          )}
           {!handle ? (
             <>
               {config.schema === 2 && (
                 <details className="notice">
-                  <summary>Invitation for restricted deployments</summary>
+                  <summary>Have an invitation?</summary>
                   <div className="field">
                     <label htmlFor="admission-invitation">
-                      Invitation (only if required)
+                      Invitation code
                     </label>
                     <input
                       id="admission-invitation"
@@ -344,9 +270,8 @@ export function ConnectionPanel({
                       disabled={disabled}
                     />
                     <small>
-                      Leave empty for the current public Devnet. Used only if
-                      the operator requires it; kept in memory for this
-                      connection.
+                      Leave empty unless the service owner gave you a code. It
+                      is not saved.
                     </small>
                   </div>
                 </details>
@@ -369,8 +294,7 @@ export function ConnectionPanel({
                 </div>
               ) : (
                 <p className="notice">
-                  No supported wallet was found. Enable a Wallet Standard wallet
-                  such as{" "}
+                  Install or enable{" "}
                   <a
                     href="https://phantom.com/"
                     target="_blank"
@@ -386,7 +310,7 @@ export function ConnectionPanel({
                   >
                     Solflare
                   </a>
-                  . Newly available wallets appear here automatically.
+                  , then reload this page.
                 </p>
               )}
               {accounts.length > 0 && (
@@ -417,21 +341,21 @@ export function ConnectionPanel({
                   onClick={() => void connect()}
                 >
                   {busy && <LoaderCircle className="spin" size={16} />}
-                  Verify connection
+                  Connect account
                 </button>
               )}
               {storageMissing && (
                 <div className="notice">
                   <p>
-                    Private credits are managed in encrypted storage in this
-                    browser. Deleting browser data may make them unrecoverable.
+                    This browser saves your payment recovery data. Deleting it
+                    can lock you out of your funds.
                   </p>
                   <button
                     className="primary"
                     disabled={disabled}
                     onClick={() => void connect(true)}
                   >
-                    Create storage for this wallet
+                    Set up this wallet
                   </button>
                 </div>
               )}
@@ -440,38 +364,36 @@ export function ConnectionPanel({
             <>
               {handle.invalidated && (
                 <p className="error-message" role="alert">
-                  The wallet account changed or disconnected. Disconnect here
-                  and reconnect with the same account. Saved operations are
-                  retained.
+                  Wallet changed. Disconnect, then reconnect with the original
+                  account.
                 </p>
               )}
               <div className="balance-panel">
                 <div>
-                  <span className="eyebrow">Funded note balance</span>
+                  <span className="eyebrow">Deposit balance</span>
                   <p>
                     <strong>{formatUsdc(fundedNoteBalance(status))}</strong>{" "}
                     USDC
                   </p>
                   <small>
-                    Authorization cap{" "}
-                    {formatUsdc(status?.authorizationCapMicroUsdc)} USDC /
-                    request
+                    Minimum to chat:{" "}
+                    {formatUsdc(status?.authorizationCapMicroUsdc)} USDC
                   </small>
                 </div>
                 <ShieldCheck size={28} />
               </div>
               <p className="small muted">
                 {status?.wallet === "closed"
-                  ? "Withdrawal complete. This note no longer holds funds."
+                  ? "Withdrawal complete. Your funds are back in your wallet."
                   : status?.wallet === "unfunded" || status?.wallet === "empty"
-                    ? "No confirmed deposit yet. Preparing a deposit does not fund the note."
+                    ? "Enter an amount below, then approve the deposit in your wallet."
                     : reusableSession(status)
-                      ? "Ready to send using this session. Charges are deducted after it closes and settlement is verified."
+                      ? "Ready to chat. Settle charges before withdrawing."
                       : status?.session
-                        ? "A session is pending settlement. The displayed balance may not be available to spend."
+                        ? "Check payment below before sending again. Charges are not yet deducted."
                         : status?.canRequest
-                          ? "Ready to send. Each request charge is confirmed after settlement."
-                          : "Not ready to send. Check funding, pending operations, and expiry."}
+                          ? "Ready to chat."
+                          : "Complete the next step below to start chatting."}
               </p>
               <section
                 className="deposit-management"
@@ -488,11 +410,9 @@ export function ConnectionPanel({
                       void action(
                         async () => {
                           await handle.selectDeposit(id);
-                          setInfo(
-                            "Deposit selected. Balance and saved operations have been refreshed.",
-                          );
+                          setInfo("Deposit selected.");
                         },
-                        "The deposit could not be opened. Your current deposit and all saved records are retained.",
+                        "Could not open this deposit. Reconnect with the same wallet.",
                         "Opening the selected deposit…",
                       );
                     }}
@@ -508,23 +428,13 @@ export function ConnectionPanel({
                   </select>
                 </div>
                 <p className="small muted">
-                  Each deposit has its own balance. Select one to use or
-                  withdraw it; balances are not combined. Previous funds and
-                  history stay saved.
+                  Choose a deposit to spend or withdraw. Balances stay separate.
                 </p>
                 {hasLowBalance(status) && (
                   <p className="notice" role="status">
-                    This deposit is below the{" "}
-                    {formatUsdc(status?.authorizationCapMicroUsdc)} USDC needed
-                    to authorize a request. Add a new deposit or select another
-                    funded deposit to continue. You can still withdraw this
-                    balance.
-                  </p>
-                )}
-                {status?.wallet === "closed" && (
-                  <p className="small muted">
-                    Withdrawal complete. Add a new deposit to chat again with
-                    this wallet.
+                    At least {formatUsdc(status?.authorizationCapMicroUsdc)}{" "}
+                    USDC is needed to chat. Add or select another deposit. You
+                    can still withdraw this balance.
                   </p>
                 )}
                 <button
@@ -540,11 +450,11 @@ export function ConnectionPanel({
                         await handle.addDeposit();
                         focusNewDeposit.current = true;
                         setInfo(
-                          "New deposit selected. Enter an amount below, then prepare the deposit. No funds have moved.",
+                          "Enter an amount below. No funds have moved yet.",
                         );
                       },
-                      "A new deposit could not be opened. Your previous deposits are retained; reconnect to check the saved selection.",
-                      "Opening a new deposit and retaining your previous balances…",
+                      "Could not add a deposit. Reconnect to check your saved deposits.",
+                      "Opening a new deposit…",
                     )
                   }
                 >
@@ -553,15 +463,14 @@ export function ConnectionPanel({
                 </button>
                 {!canChangeDeposit(status) && (
                   <p className="small muted">
-                    Complete the pending operation or settlement below before
-                    adding or switching deposits.
+                    Finish the step below before adding or switching deposits.
                   </p>
                 )}
                 {(status?.wallet === "empty" ||
                   status?.wallet === "unfunded") &&
                   canChangeDeposit(status) && (
                     <p className="small muted">
-                      Use the deposit form below to fund this deposit first.
+                      Enter an amount below to fund this deposit.
                     </p>
                   )}
               </section>
@@ -570,47 +479,36 @@ export function ConnectionPanel({
                   {status.expiry.message}
                 </p>
               )}
-              {config.schema === 2 && (
+              {config.schema === 2 && !handle.publicAdmissionReady && (
                 <div className="notice" role="status">
-                  <strong>
-                    {handle.publicAdmissionReady
-                      ? "Last connection checks passed"
-                      : "New funding and requests are blocked"}
-                  </strong>
+                  <strong>Service unavailable</strong>
                   <p>
                     {handle.diagnostic?.preflight?.paused
-                      ? "The authenticated deployment is paused."
+                      ? "The service is paused. Check again later."
                       : handle.diagnostic?.unavailableComponent
-                        ? "A public readiness check is unavailable. Original-profile recovery remains available."
+                        ? "Could not check the service. You can still check existing payments."
                         : handle.diagnostic?.readiness?.admission ===
                             "suspended"
-                          ? "The operator has suspended new requests. Recovery and withdrawal keep their original state."
+                          ? "New requests are paused. Existing payments and withdrawals can still be checked."
                           : handle.diagnostic?.readiness?.invitationRequired
-                            ? "This operator requires an invitation for new work. Reconnect with the invitation; keep your existing browser data."
-                            : "No invitation is required. Checks refresh before each deposit or send. Provider credit and successful AUTH are not established by these checks."}
-                  </p>
-                  <p>
-                    Public profile binding is retained for recovery. Changing
-                    profiles never migrates existing custody.
+                            ? "Reconnect with an invitation code. Keep this browser’s data."
+                            : "Choose Refresh status to check again. Existing payments stay saved."}
                   </p>
                 </div>
               )}
               <div className="notice">
-                <strong>
-                  Browser storage:
-                  {handle.persistence === "persistent"
-                    ? "Persistence granted"
-                    : "May be automatically deleted"}
-                </strong>
+                <strong>Keep your recovery data</strong>
                 <p>
-                  This storage is not a backup. While funds remain, keep browser
-                  data and use the same URL and account.
+                  {handle.persistence !== "persistent" &&
+                    "Your browser may delete saved data automatically. "}
+                  Keep this browser’s data while funds remain. Return to this
+                  URL with the same wallet.
                 </p>
               </div>
               {(status?.wallet === "empty" ||
                 status?.wallet === "unfunded") && (
-                <div className="notice">
-                  <strong>Fund your Devnet wallet</strong>
+                <details className="notice">
+                  <summary>Need test tokens?</summary>
                   <p>
                     Get test USDC from{" "}
                     <a
@@ -632,10 +530,9 @@ export function ConnectionPanel({
                   </p>
                   <p className="small">
                     Send the faucet tokens to{" "}
-                    <code>{handle.account.address}</code>. The verified USDC
-                    mint is <code>{handle.deployment.mint}</code>.
+                    <code>{handle.account.address}</code>.
                   </p>
-                </div>
+                </details>
               )}
               {!status?.walletOperation &&
                 !status?.session &&
@@ -658,7 +555,7 @@ export function ConnectionPanel({
                         await handle.client.prepareDeposit(value);
                         setProgressState("");
                         setInfo(
-                          "Deposit prepared. Request the wallet signature when ready.",
+                          "Deposit ready. Choose Approve in wallet to continue.",
                         );
                       });
                     }}
@@ -673,10 +570,7 @@ export function ConnectionPanel({
                         value={amount}
                         onChange={(e) => setAmount(e.target.value)}
                       />
-                      <small>
-                        Deposit at least the authorization cap to chat. Keep SOL
-                        available for fees.
-                      </small>
+                      <small>Keep some SOL in your wallet for fees.</small>
                     </div>
                     <label className="check-label deposit-retention">
                       <input
@@ -684,7 +578,7 @@ export function ConnectionPanel({
                         checked={retentionAccepted}
                         onChange={(e) => setRetentionAccepted(e.target.checked)}
                       />
-                      I understand the storage limitations
+                      I will keep this browser’s data
                     </label>
                     <button
                       className="primary"
@@ -695,33 +589,32 @@ export function ConnectionPanel({
                       }
                     >
                       <ArrowDownLeft size={16} />
-                      Prepare deposit
+                      Review deposit
                     </button>
                   </form>
                 )}
               {status?.walletOperation && (
                 <div className="pending-card">
-                  <h4>Continue wallet operation</h4>
-                  <p>
+                  <h4>Next step</h4>
+                  <details className="connection-details">
+                    <summary>Transaction details</summary>
                     <code>
                       {status.walletOperation.kind} /{" "}
                       {status.walletOperation.phase}
                     </code>
-                  </p>
+                  </details>
                   <p className="small">
                     {status.walletOperation.signature
-                      ? "A signed transaction is saved. Check its confirmation before continuing. This normally needs no signature; an expired proof upload can require a renewed signature."
-                      : "The next step can open your wallet for a signature. Each transaction has its own network fee."}
+                      ? "Check whether the transaction completed. If an upload expired, your wallet may ask you to approve again."
+                      : "Approve the next step in your wallet. Each transaction costs a SOL fee."}
                   </p>
                   {["mutual_close", "initiate_escape"].includes(
                     status.walletOperation.kind,
                   ) && (
                     <p className="small">
-                      Withdrawal uses multiple approvals: create a proof buffer
-                      → upload proof chunks → seal → execute withdrawal. The SDK
-                      does not expose the current step or remaining approval
-                      count. An upload confirmation does not mean withdrawal is
-                      complete.
+                      Withdrawal needs several wallet approvals. Continue until
+                      “Withdrawal complete” appears. Funds return only after the
+                      final step.
                     </p>
                   )}
                   {status.walletOperation.signature && (
@@ -741,13 +634,17 @@ export function ConnectionPanel({
                         void action(async () => {
                           const p = await handle.client.advanceWallet();
                           setProgressState(p.state);
-                          setInfo(`Operation status: ${p.state}`);
+                          setInfo(
+                            p.state === "complete"
+                              ? "Step complete."
+                              : "Progress checked. Follow the next step below.",
+                          );
                         })
                       }
                     >
                       {status.walletOperation.signature
-                        ? "Check submitted transaction"
-                        : "Continue to wallet signature"}
+                        ? "Check transaction"
+                        : "Approve in wallet"}
                     </button>
                     {(progressState === "proof_required" ||
                       status.walletOperation.phase === "proving") && (
@@ -758,12 +655,12 @@ export function ConnectionPanel({
                           void action(async () => {
                             await handle.client.resumeWalletProof();
                             setInfo(
-                              "Proof resumed. Continue to the next step.",
+                              "Preparation resumed. Follow the next step below.",
                             );
                           })
                         }
                       >
-                        Resume proof
+                        Resume preparation
                       </button>
                     )}
                     {(progressState === "rejected" ||
@@ -779,7 +676,7 @@ export function ConnectionPanel({
                           )
                         }
                       >
-                        Prepare rejected operation again
+                        Try this step again
                       </button>
                     )}
                   </div>
@@ -789,10 +686,8 @@ export function ConnectionPanel({
                       <details className="notice">
                         <summary>Expired setup recovery</summary>
                         <p>
-                          Only an expired buffer-creation transaction can use
-                          this check. The SDK verifies finalized history and
-                          buffer absence. An unknown financial transaction stays
-                          pending.
+                          Check an expired setup step. Pending transfers will
+                          stay saved.
                         </p>
                         <button
                           className="secondary"
@@ -800,7 +695,7 @@ export function ConnectionPanel({
                           onClick={() =>
                             void action(
                               () => handle.client.recoverExpiredWalletSetup(),
-                              "Setup recovery is not available for this operation or its history is still unresolved. Keep the saved transaction and use Check status.",
+                              "Setup is still unresolved. Keep this browser’s data and check the transaction later.",
                             )
                           }
                         >
@@ -815,10 +710,9 @@ export function ConnectionPanel({
                       <details className="notice">
                         <summary>Blocked withdrawal options</summary>
                         <p>
-                          If mutual close is unavailable, prepare a
-                          challengeable exit to the saved destination. It
-                          requires an on-chain waiting period. The SDK refuses
-                          this switch if a withdrawal was already signed.
+                          Use a delayed withdrawal if normal withdrawal is
+                          blocked. A waiting period applies. This option is
+                          unavailable after signing the original withdrawal.
                         </p>
                         <button
                           className="secondary"
@@ -826,11 +720,11 @@ export function ConnectionPanel({
                           onClick={() =>
                             void action(
                               () => handle.client.fallbackToEscape(),
-                              "This withdrawal cannot switch to an escape. Continue checking the original saved operation.",
+                              "Continue the original withdrawal. This option is unavailable.",
                             )
                           }
                         >
-                          Switch unsigned withdrawal to escape
+                          Use delayed withdrawal
                         </button>
                       </details>
                     )}
@@ -840,15 +734,18 @@ export function ConnectionPanel({
                 <div className="pending-card">
                   <h4>
                     {reusableSession(status)
-                      ? "Reusable session"
-                      : "Pending session"}
+                      ? "Active session"
+                      : "Payment pending"}
                   </h4>
                   <p className="small">
                     {reusableSession(status)
-                      ? "This session can serve another request. Close and settle it before switching deposits or withdrawing. Requests within this session may be linked."
-                      : "Complete recovery or settlement before the next request. Recovery does not replay AI requests."}
+                      ? "You can keep chatting. Settle charges before switching deposits or withdrawing."
+                      : "Check the payment before sending again. This does not resend your message."}
                   </p>
-                  <code>{status.session.phase}</code>
+                  <details className="connection-details">
+                    <summary>Payment details</summary>
+                    <code>{status.session.phase}</code>
+                  </details>
                   <div className="button-row">
                     {reusableSession(status) && (
                       <button
@@ -858,12 +755,12 @@ export function ConnectionPanel({
                           void action(async () => {
                             await handle.client.settle();
                             setInfo(
-                              "Session close requested. Check the updated settlement status.",
+                              "Settlement requested. Follow the status below.",
                             );
                           })
                         }
                       >
-                        Close session / Settle
+                        Settle charges
                       </button>
                     )}
                     {status.session.phase === "prepared" &&
@@ -876,12 +773,12 @@ export function ConnectionPanel({
                             void action(async () => {
                               await handle.client.cancelUnsentAuthorization();
                               setInfo(
-                                "Unsent authorization cancelled. No AI request was replayed.",
+                                "Authorization cancelled. No message was sent.",
                               );
                             })
                           }
                         >
-                          Cancel unsent authorization
+                          Cancel unused authorization
                         </button>
                       )}
                     <button
@@ -890,14 +787,12 @@ export function ConnectionPanel({
                       onClick={() =>
                         void action(async () => {
                           await handle.client.recover();
-                          setInfo(
-                            "Recovery check completed. Check the updated status.",
-                          );
+                          setInfo("Payment checked. Follow the status below.");
                         })
                       }
                     >
                       <RefreshCw size={15} />
-                      Check settlement / Recover
+                      Check payment
                     </button>
                     {status.mode === "proxy" &&
                       status.session.operations.some(
@@ -910,12 +805,12 @@ export function ConnectionPanel({
                             void action(async () => {
                               await handle.client.reconcileAbsentOperations();
                               setInfo(
-                                "Unaccepted send reconciled. No AI request was replayed.",
+                                "Request checked. No message was resent.",
                               );
                             })
                           }
                         >
-                          Reconcile unaccepted send
+                          Check unsent request
                         </button>
                       )}
                     {status.canReconcileUnacceptedAuthorization && (
@@ -928,7 +823,7 @@ export function ConnectionPanel({
                           )
                         }
                       >
-                        Reconcile unaccepted authorization
+                        Check authorization
                       </button>
                     )}
                   </div>
@@ -938,8 +833,8 @@ export function ConnectionPanel({
                 <div className="pending-card">
                   <h4>Withdrawal waiting period</h4>
                   <p>
-                    After the on-chain deadline, you can prepare withdrawal
-                    finalization.
+                    Wait for the withdrawal deadline, then choose Finish
+                    withdrawal.
                   </p>
                   <button
                     className="secondary"
@@ -948,19 +843,18 @@ export function ConnectionPanel({
                       void action(() => handle.client.prepareFinalizeEscape())
                     }
                   >
-                    Prepare withdrawal finalization
+                    Finish withdrawal
                   </button>
                 </div>
               )}
               {(status?.canPrepareEmergencyEscape ||
                 status?.canReconcileChallengedEscape) && (
                 <details className="notice">
-                  <summary>Emergency withdrawal and challenge recovery</summary>
+                  <summary>Delayed withdrawal options</summary>
                   <p>
-                    Preserves the pending session and starts a challengeable
-                    exit to the connected wallet. It does not settle the AI
-                    request. Continue the saved wallet steps and wait for the
-                    on-chain deadline.
+                    Withdraw to this wallet after a waiting period. The payment
+                    stays pending. Follow each wallet step, then return after
+                    the deadline.
                   </p>
                   {status.canPrepareEmergencyEscape && (
                     <button
@@ -974,7 +868,7 @@ export function ConnectionPanel({
                         )
                       }
                     >
-                      Prepare emergency withdrawal to this wallet
+                      Start delayed withdrawal
                     </button>
                   )}
                   {status.canReconcileChallengedEscape && (
@@ -987,7 +881,7 @@ export function ConnectionPanel({
                         )
                       }
                     >
-                      Check challenged withdrawal
+                      Check withdrawal dispute
                     </button>
                   )}
                   {status.emergencyEscape && (
@@ -1001,16 +895,10 @@ export function ConnectionPanel({
                   <div className="withdraw-section">
                     {withdraw ? (
                       <div className="notice">
+                        <p>Withdraw this deposit to your connected wallet.</p>
                         <p>
-                          Prepare withdrawal to the connected wallet. This note
-                          will close after withdrawal.
-                        </p>
-                        <p>
-                          Expect multiple wallet approvals and network fees:
-                          create a proof buffer, upload proof chunks, seal them,
-                          then execute the withdrawal. Only the final
-                          transaction returns your USDC. The number of uploads
-                          depends on proof size.
+                          You will approve several transactions, each with a SOL
+                          fee. Your USDC returns after the final step.
                         </p>
                         <div className="button-row">
                           <button
@@ -1026,12 +914,12 @@ export function ConnectionPanel({
                                 setWithdraw(false);
                                 setProgressState("");
                                 setInfo(
-                                  "Withdrawal prepared. Each step may require a separate wallet signature.",
+                                  "Withdrawal ready. Approve each step in your wallet.",
                                 );
                               })
                             }
                           >
-                            Prepare withdrawal to this wallet
+                            Review withdrawal
                           </button>
                           <button
                             className="secondary"
@@ -1099,20 +987,90 @@ export function ConnectionPanel({
           {error}
         </p>
       )}
-      {error.includes("chain connection") && (
-        <p className="notice">
-          App origin: <code>{location.origin}</code>. The public Devnet supports
-          localhost and HTTPS apps with credential-free requests. Retry the
-          connection check before funding. A chain snapshot error is separate
-          from browser access.
-        </p>
-      )}
+      <details className="connection-details">
+        <summary>Connection details</summary>
+        <p className="small muted">SDK {SDK_VERSION} · Solana Devnet</p>
+        {config && (
+          <>
+            <div className="config-summary">
+              <span>Deployment</span>
+              <strong>{config.label}</strong>
+              <span>Route</span>
+              <strong>
+                {configuredMode(config) === "proxy" ? "Proxy" : "Direct"}
+              </strong>
+            </div>
+            <details className="model-availability">
+              <summary>
+                Available models ({configuredModels(config).length})
+              </summary>
+              <p className="small muted">
+                Enabled models:{" "}
+                {configuredModels(config)
+                  .map((model) => model.label || model.id)
+                  .join(", ")}
+                .
+              </p>
+              {configuredMode(config) === "direct_openrouter" && (
+                <p className="small muted">
+                  The service owner controls this model list.
+                </p>
+              )}
+            </details>
+          </>
+        )}
+        {config?.schema === 2 && !handle && (
+          <div className="notice">
+            <strong>Check the service</strong>
+            <p>No wallet, funds, or signatures needed.</p>
+            <button
+              className="secondary"
+              disabled={disabled}
+              onClick={() =>
+                void action(async () => {
+                  setPublicCheck(null);
+                  setPublicCheck(await inspectPublicDeployment(config));
+                })
+              }
+            >
+              Check service
+            </button>
+            {publicCheck && (
+              <p role="status">
+                {publicCheck.readiness.admission === "enabled" &&
+                publicCheck.readiness.servicesAvailable &&
+                publicCheck.preflight.chainAllowsNewOperations
+                  ? "Service ready. Select a wallet to connect."
+                  : "Service unavailable. Check again later."}
+                {publicCheck.readiness.invitationRequired &&
+                  " An invitation code is required."}
+              </p>
+            )}
+          </div>
+        )}
+        {handle && (
+          <p className="small muted">
+            Browser storage:{" "}
+            {handle.persistence === "persistent"
+              ? "persistence granted"
+              : "may be automatically deleted"}
+            . This is not a backup.
+            <br />
+            USDC mint: <code>{handle.deployment.mint}</code>
+          </p>
+        )}
+        {error.includes("chain connection") && (
+          <p className="small muted">
+            App URL: <code>{location.origin}</code>. HTTPS and localhost are
+            supported.
+          </p>
+        )}
+      </details>
       <div className="privacy-note">
         <ShieldCheck size={17} />
         <p>
-          Prompts are sent to the AI provider. In proxy mode, the operator can
-          also read them. ZK proofs do not guarantee response accuracy or
-          network anonymity.
+          Your messages go to the AI provider. A proxy operator can also read
+          them.
         </p>
       </div>
     </div>

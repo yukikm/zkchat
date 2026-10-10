@@ -69,25 +69,25 @@ const suggestions = [
   {
     icon: Feather,
     title: "Polish your writing",
-    detail: "Find the right words together.",
+    detail: "Draft or improve a message.",
     prompt: "Help me write a clear and polite email.",
   },
   {
     icon: Code2,
     title: "Write code",
-    detail: "From a question to working code.",
+    detail: "Solve a coding problem.",
     prompt: "Write TypeScript code that removes duplicates from an array.",
   },
   {
     icon: Lightbulb,
     title: "Explore ideas",
-    detail: "Discover another possibility.",
+    detail: "Brainstorm your next project.",
     prompt: "Help me brainstorm ideas for a new project.",
   },
   {
     icon: ShieldCheck,
-    title: "Understand how it works",
-    detail: "An introduction to Solana and ZKAPI.",
+    title: "Learn about ZKAPI",
+    detail: "Understand wallet payments.",
     prompt: "Explain how Solana ZKAPI works for a beginner.",
   },
 ];
@@ -181,7 +181,7 @@ export default function App() {
       setConfig(await loadConfig());
     } catch {
       setConfigError(
-        "Public deployment settings could not be verified. Retry when the service is available.",
+        "Could not load the service. Open Connection settings and try Reload settings.",
       );
     } finally {
       setConfigLoading(false);
@@ -196,7 +196,7 @@ export default function App() {
       .catch(() => {
         if (alive)
           setConfigError(
-            "The configuration is invalid or unavailable. The operator should check the public URL, hash, and model configuration.",
+            "Could not load the service. Try Reload settings or use the demo.",
           );
       })
       .finally(() => {
@@ -461,7 +461,7 @@ export default function App() {
                 error: stopped
                   ? selectedMode === "demo"
                     ? "Display stopped."
-                    : "Display stopped. Charges may still apply. Check the pending settlement."
+                    : "Stopped. Charges may still apply. Choose Review payment."
                   : error instanceof PublicOnboardingError ||
                       error instanceof DepositError
                     ? error.message
@@ -469,7 +469,7 @@ export default function App() {
                       status?.mode === "direct_openrouter"
                         ? providerResponseError(response)
                         : undefined) ??
-                      "The response could not be completed. Check pending operations in Connection settings. Requests are not retried automatically."),
+                      "Reply interrupted. Choose Review payment before sending again. Nothing is resent automatically."),
               }
             : m,
         ),
@@ -484,7 +484,7 @@ export default function App() {
         } catch {
           setStatus(null);
           setToast(
-            "Settlement could not be verified. Check the status in Connection settings.",
+            "Could not check payment. Open Connection settings and refresh status.",
           );
         }
       }
@@ -715,7 +715,7 @@ export default function App() {
             </div>
             <span className="topbar-status">
               {selectedMode === "demo"
-                ? "Interactive demo"
+                ? "Demo"
                 : handle
                   ? "ZKAPI"
                   : "Disconnected"}
@@ -784,23 +784,22 @@ export default function App() {
         </header>
         {!online && (
           <div className="top-notice error-message" role="alert">
-            You are offline. Check your connection. Your draft is retained.
+            You’re offline. Reconnect to send. Your draft is saved.
           </div>
         )}
         {storageError && (
           <div className="top-notice error-message" role="alert">
-            Conversations cannot be saved in this browser. Export any needed
-            conversations as Markdown.
+            Chat history cannot be saved. Use Save as Markdown to keep a copy.
           </div>
         )}
         {selectedMode === "demo" && (
           <div className="demo-banner">
             <span>
               <FlaskConical size={14} />
-              Interactive demo · Not connected to AI or Solana
+              Demo · Sample replies, no AI or payments
             </span>
             <button disabled={sending} onClick={() => changeMode("live")}>
-              Return to live mode <ArrowUp size={13} />
+              Use AI chat <ArrowUp size={13} />
             </button>
           </div>
         )}
@@ -809,17 +808,17 @@ export default function App() {
             <span>
               <RefreshCw size={14} />
               {reusableSession(status)
-                ? "Session ready for reuse · charges settle when closed"
-                : "Settlement needs attention"}
+                ? "Chat ready · Charges not yet settled"
+                : "Check payment before sending again"}
             </span>
             <button onClick={() => setDialog("connection")}>
-              {reusableSession(status) ? "Manage session" : "Check recovery"}
+              {reusableSession(status) ? "Manage session" : "Review payment"}
             </button>
           </div>
         )}
         {selectedMode === "live" && hasLowBalance(status) && (
           <div className="settlement-banner">
-            <span>Low balance · Add a deposit to continue chatting</span>
+            <span>Low balance · Add funds to chat</span>
             <button
               disabled={sending || connectionBusy}
               onClick={() => setDialog("connection")}
@@ -840,22 +839,16 @@ export default function App() {
         >
           {!current?.messages.length ? (
             <div className="welcome">
-              <div className="welcome-eyebrow">
-                <span className="tiny-line" /> A LITTLE CURIOSITY GOES A LONG
-                WAY
-              </div>
               <div className="welcome-logo">
                 <Brand />
               </div>
-              <h1>
-                Start with an idea.
-                <br className="mobile-break" />
-                Make it a conversation.
-              </h1>
+              <h1>Start a conversation.</h1>
               <p className="welcome-description">
-                Write, build, and explore.
-                <br className="mobile-break" />
-                Take your next step here.
+                {selectedMode === "demo"
+                  ? "Try a sample chat. No wallet needed."
+                  : handle
+                    ? "Choose a prompt or type your message below."
+                    : "Connect your wallet, add test USDC, then send a message."}
               </p>
               <div className="suggestions">
                 {suggestions.map(({ icon: Icon, title, detail, prompt }) => (
@@ -874,38 +867,36 @@ export default function App() {
                   </button>
                 ))}
               </div>
-              <div className="welcome-connection">
-                {configLoading ? (
-                  <span className="inline-status">
-                    <LoaderCircle size={14} className="spin" />
-                    Loading connection settings
-                  </span>
-                ) : selectedMode === "demo" ? (
-                  <span>
-                    <FlaskConical size={14} />
-                    Explore the chat using sample responses
-                  </span>
-                ) : handle ? (
-                  <span>
-                    <Check size={14} />
-                    {status?.canRequest
-                      ? "Ready. Send your first message."
-                      : "Prepare credits in Connection settings."}
-                  </span>
-                ) : (
-                  <>
-                    <span>
-                      <ShieldCheck size={15} />
-                      {config
-                        ? "Connect your wallet to chat with ZKAPI."
-                        : "Live mode requires an operator configuration."}
+              {selectedMode === "live" && (
+                <div className="welcome-connection">
+                  {configLoading ? (
+                    <span className="inline-status">
+                      <LoaderCircle size={14} className="spin" />
+                      Loading service…
                     </span>
-                    <button onClick={() => changeMode("demo")}>
-                      Try the demo <ArrowUp size={13} />
-                    </button>
-                  </>
-                )}
-              </div>
+                  ) : handle ? (
+                    <span>
+                      <Check size={14} />
+                      {status?.canRequest
+                        ? "Ready. Type a message below."
+                        : "Open Deposit to continue setup."}
+                    </span>
+                  ) : (
+                    <>
+                      {config ? (
+                        <button onClick={() => setDialog("connection")}>
+                          <Wallet size={15} /> Connect wallet
+                        </button>
+                      ) : (
+                        <span>Live chat is unavailable.</span>
+                      )}
+                      <button onClick={() => changeMode("demo")}>
+                        Try the demo <ArrowUp size={13} />
+                      </button>
+                    </>
+                  )}
+                </div>
+              )}
             </div>
           ) : (
             <div
@@ -930,7 +921,7 @@ export default function App() {
                       {message.role === "assistant" && (
                         <span>
                           {current.mode === "demo"
-                            ? "Interactive demo"
+                            ? "Demo"
                             : models.find((m) => m.id === current.model)
                                 ?.label || current.model}
                         </span>
@@ -986,7 +977,7 @@ export default function App() {
                                   }
                                 >
                                   <RefreshCw size={14} />
-                                  Retry as a new request
+                                  Send again
                                 </button>
                               )}
                             {message.state === "complete" &&
@@ -999,7 +990,7 @@ export default function App() {
                                         .length > 1
                                       ? `Session settled · ${formatUsdc(status.lastSettlement.chargeMicroUsdc)} USDC total`
                                       : `Settled · ${formatUsdc(status.lastSettlement.chargeMicroUsdc)} USDC`
-                                    : "Check settlement in Connection settings"}
+                                    : "Payment not yet verified"}
                                 </span>
                               )}
                           </div>
@@ -1062,9 +1053,7 @@ export default function App() {
             <div className="composer-bottom">
               <span className="composer-label">
                 <ShieldCheck size={14} />
-                {selectedMode === "demo"
-                  ? "Interactive demo"
-                  : "Powered by ZKAPI"}
+                {selectedMode === "demo" ? "Demo" : "Powered by ZKAPI"}
                 {draft.length > 12000 && (
                   <span>
                     {draft.length.toLocaleString()} /{" "}
@@ -1096,7 +1085,7 @@ export default function App() {
                     disabled={!canSend}
                     title={
                       selectedMode === "live" && !status?.canRequest
-                        ? "Prepare to send in Connection settings"
+                        ? "Open Connection settings to finish setup"
                         : "Send message"
                     }
                   >
@@ -1108,8 +1097,8 @@ export default function App() {
           </form>
           <p className="composer-footnote">
             {selectedMode === "demo"
-              ? "Demo responses are samples. No usage charges apply."
-              : "AI responses can be inaccurate. Verify important information."}
+              ? "Sample replies. No usage charges."
+              : "AI can make mistakes. Check important facts."}
             <button onClick={() => setDialog("about")}>Privacy</button>
           </p>
         </div>
@@ -1118,7 +1107,6 @@ export default function App() {
             <span className="status-dot" />
             SOLANA DEVNET
           </span>
-          <span>YOUR IDEAS. YOUR CONVERSATIONS.</span>
         </footer>
       </main>
       {toast && (
@@ -1133,7 +1121,7 @@ export default function App() {
           onClose={() => {
             if (connectionBusy)
               setToast(
-                "An operation is in progress. Wait for it to finish or cancel it in your wallet.",
+                "Wait for this step to finish, or cancel in your wallet.",
               );
             else setDialog(null);
           }}
@@ -1159,16 +1147,14 @@ export default function App() {
                 .then(setStatus)
                 .catch(() => {
                   setStatus(null);
-                  setToast(
-                    "Status is unavailable. Refresh it in Connection settings.",
-                  );
+                  setToast("Open Connection settings and refresh status.");
                 });
             }}
             onDisconnect={disconnect}
           />
           {!handle && (
             <div className="modal-demo">
-              <span>Explore the interface first</span>
+              <span>No wallet? Try a sample chat.</span>
               <button
                 className="secondary"
                 onClick={() => changeMode("demo")}
@@ -1202,7 +1188,7 @@ export default function App() {
           </div>
           <div className="field">
             <label htmlFor="max-tokens">
-              Maximum response tokens{" "}
+              Response length (tokens){" "}
               <strong>{maxOutputTokens.toLocaleString()}</strong>
             </label>
             <input
@@ -1221,8 +1207,8 @@ export default function App() {
             />
             <small>
               {config?.schema === 2
-                ? "This public Devnet preview limits each response to 128 output tokens."
-                : "Higher limits allow longer responses and affect usage charges and authorization limits."}
+                ? "Limited to 128 tokens during this preview."
+                : "Longer replies can cost more."}
             </small>
           </div>
           <label className="toggle-row" htmlFor="stream">
@@ -1241,30 +1227,28 @@ export default function App() {
               }
             />
           </label>
-          <p className="small muted">
-            {!streamingSupported
-              ? "Streaming is unavailable in the authenticated profile for this model. Responses use JSON."
-              : "Streaming support depends on the configured provider."}
-          </p>
-          <div className="preferences-mode">
-            <strong>Connection mode</strong>
+          {!streamingSupported && (
             <p className="small muted">
-              Demo and live conversations are saved separately.
+              This model shows replies when complete.
             </p>
+          )}
+          <div className="preferences-mode">
+            <strong>Chat mode</strong>
+            <p className="small muted">Choose real AI or sample replies.</p>
             <div className="segmented">
               <button
                 className={selectedMode === "live" ? "selected" : ""}
                 disabled={sending}
                 onClick={() => changeMode("live")}
               >
-                ZKAPI live mode
+                AI chat
               </button>
               <button
                 className={selectedMode === "demo" ? "selected" : ""}
                 disabled={sending}
                 onClick={() => changeMode("demo")}
               >
-                Interactive demo
+                Demo
               </button>
             </div>
           </div>
@@ -1278,38 +1262,39 @@ export default function App() {
               zkchat<span>.</span>
             </strong>
           </div>
-          <p>
-            An independent text chat application built with the public Solana
-            zkAPI SDK. The upstream SDK is used without modification.
-          </p>
+          <p>Chat with AI. Pay with USDC on Solana Devnet.</p>
           <div className="about-item">
-            <h3>Conversations stay in this browser</h3>
+            <h3>Saved on this browser</h3>
             <p>
-              Chat history is stored as plain text in localStorage. Take care on
-              shared devices. Deleting a conversation does not delete encrypted
-              wallet transaction records.
+              Chat history is not encrypted. Deleting a chat keeps your payment
+              recovery data.
             </p>
           </div>
           <div className="about-item">
-            <h3>Where prompts are sent</h3>
+            <h3>Who sees your messages</h3>
             <p>
-              Live requests go to the AI provider. In proxy mode, the operator
-              can also read their content.{" "}
+              Your messages go to the AI provider. A proxy operator can also
+              read them.{" "}
               {RECOVERY_RUNTIME
-                ? "Sent conversations may remain in the original encrypted recovery journal."
-                : "Direct OpenRouter requests require zero data retention and denied data collection. The SDK omits sent request bodies from its journal, while fingerprints and financial recovery records remain. This does not verify provider deletion or hide your IP address. Requests within a reused session may be linked."}
+                ? "Older payment records may also contain sent messages."
+                : "OpenRouter requests require zero data retention. This does not prove deletion or hide your IP. Requests in one session may be linked."}
             </p>
           </div>
           <div className="about-item">
-            <h3>Development preview</h3>
-            <p>
-              This app uses the pinned SDK {SDK_VERSION} preview artifact. Real
-              use requires an independently authenticated public profile and a
-              complete proof bundle. Operator selection comes from the app's
-              installed deployment configuration. Demo responses remain local
-              samples.
-            </p>
+            <h3>Test network</h3>
+            <p>Use test USDC and SOL only. Provider availability can change.</p>
           </div>
+          <details className="connection-details">
+            <summary>Payment data details</summary>
+            <p>
+              SDK {SDK_VERSION}. Payment records are encrypted in this browser.{" "}
+              {RECOVERY_RUNTIME
+                ? "Older records can include sent messages."
+                : "Sent message bodies are omitted from new SDK records. Request fingerprints and payment records remain."}{" "}
+              Chat history, older records, and external backups are not
+              automatically erased.
+            </p>
+          </details>
           <a
             className="source-link"
             href={`https://github.com/yukikm/solana-zkapi/releases/tag/v${SDK_VERSION}`}
@@ -1358,7 +1343,7 @@ export default function App() {
         >
           <p>Remove “{current.title}” from chat history in this browser.</p>
           <p className="small muted">
-            Wallet and SDK recovery records are retained.
+            Your funds and payment recovery data stay saved.
           </p>
           <div className="button-row align-end">
             <button className="secondary" onClick={() => setDialog(null)}>

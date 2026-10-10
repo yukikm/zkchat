@@ -24,10 +24,10 @@ describe("SDK .8 session and error presentation", () => {
   });
   it.each([
     ["zdr_endpoint_unavailable", "zero data retention"],
-    ["model_endpoint_unavailable", "no available endpoint"],
+    ["model_endpoint_unavailable", "currently unavailable"],
     ["provider_access_denied", "denied access"],
     ["provider_budget_unavailable", "Adding a deposit will not resolve"],
-    ["provider_rate_limited", "rate limiting"],
+    ["provider_rate_limited", "Wait before trying again"],
     ["provider_unavailable", "temporarily unavailable"],
     ["provider_request_rejected", "rejected this request"],
   ])("maps %s without echoing provider details", (code, expected) => {

@@ -16,7 +16,7 @@ npm run verify:sdk
 npm run dev
 ```
 
-[localhostのアプリ](http://localhost:5173/)を開きます。`Connection settings` → `Check public connection`で、資金や署名なしで公開サービスを確認できます。公開APIは現在、localhostおよびHTTPSのorigin登録を必要としません。通信は`credentials: "omit"`です。`Try the demo`はローカルのサンプル応答です。
+[localhostのアプリ](http://localhost:5173/)を開きます。`Connection settings` → `Connection details` → `Check service`で、資金や署名なしで公開サービスを確認できます。公開APIは現在、localhostおよびHTTPSのorigin登録を必要としません。通信は`credentials: "omit"`です。`Try the demo`はローカルのサンプル応答です。
 
 **保存先のoriginを固定してください。** `localhost:5173`と`127.0.0.1:5173`は別の保存領域です。今回のSolflare実検証は`http://localhost:5173`を使用しました。残高や未完了操作がある場合は、同じURL・ブラウザprofile・アカウントを使います。
 
@@ -25,19 +25,19 @@ npm run dev
 元のSDK・profile・note ID・暗号化journalを置き換えません。`.8` 側は同じアカウントの `.3` profile binding / custodyを検出すると初期化を止めます。
 
 - ローカル: 開いている開発サーバーを停止して `npm run dev:recovery` を実行し、**元と同じURL・ポート・ブラウザ・アカウント**で再接続します。カスタムポートを使っていた場合は `-- --port 元のポート` を付けます。
-- 本番ビルド: `Connection settings` → `Open original wallet recovery` を開きます。`/recovery-v3/`（サブパス配信ならその下）に元の `.3` SDKとprofileを同梱します。同じoriginなので元の保存データを参照できます。
+- 本番ビルド: `Connection settings` → `Have an older deposit?` → `Recover an older deposit` を開きます。`/recovery-v3/`（サブパス配信ならその下）に元の `.3` SDKとprofileを同梱します。同じoriginなので元の保存データを参照できます。
 - 既存アカウントはこのoriginでは復旧版を使用します。新しいprofileへの付け替えや、旧データの削除で更新しないでください。新環境への移行前には[上流の更新ガイド](https://github.com/yukikm/solana-zkapi/blob/v0.2.0-devnet.8/docs/releases/usability-preview.md)に従い、すべての元のnoteの復旧・精算・出金/閉鎖を元のSDKで完了し、復旧資料を保持します。
 
 ## 実際の使い方
 
-1. `Connection settings`でウォレットとアカウントを選択し、`Verify connection`。初回だけ`Create storage for this wallet`を選びます。接続・保存領域作成は送金しません。
+1. `Connection settings`でウォレットとアカウントを選択し、`Connect account`。初回だけ`Set up this wallet`を選びます。接続・保存領域作成は送金しません。
 2. [Circle faucet](https://faucet.circle.com/)でUSDC / Solana Devnet、[Solana faucet](https://faucet.solana.com/)でDevnet SOLを用意します。認証済みUSDC mintは`4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU`。SOLは手数料・rent用です。
-3. 保存領域の注意事項を読み、例として2 Devnet USDCを`Prepare deposit`で準備します。`Continue to wallet signature`でウォレットに進み、内容を確認して署名します。送信後は`Check submitted transaction`で保存済み取引を確認します。`pending`は未確定です。
-4. 「Ready to send」になったら送信します。モデルは固定profileの許可リストから選択します。direct OpenRouter、アプリの上限は128 output tokensです。Streaming設定は認証済みprofileに従います。
-5. `.8` のdirect sessionは標準で300秒のleaseを再利用し、残り90秒で更新対象になります。同じ会話は同じsession IDを使い、新しい会話では分離します。`Manage session` → `Close session / Settle`で明示的に閉じ、精算後にDeposit切替・出金へ進みます。応答後も復旧が必要なら`Check recovery` → `Check settlement / Recover`。推論は再送しません。新しい送信は新しいUUIDを使う別の操作です。
-6. 精算後に`Withdraw balance` → `Prepare withdrawal to this wallet`で準備します。**現行SDKの出金は複数回の署名が必要**です。証明buffer作成 → 分割アップロード → 封印 → 出金実行の各取引に署名とネットワーク手数料が発生します。アップロード回数はpayload量次第で、公開APIには総数・現在段階がありません。署名ボタンと送信済み確認ボタンを使って一段ずつ進め、`Withdrawal complete`まで同じnoteを保持します。
+3. 保存領域の注意事項を読み、例として2 Devnet USDCを`Review deposit`で準備します。`Approve in wallet`でウォレットに進み、内容を確認して署名します。送信後は`Check transaction`で保存済み取引を確認します。`pending`は未確定です。
+4. 「Ready to chat」になったら送信します。モデルは固定profileの許可リストから選択します。direct OpenRouter、アプリの上限は128 output tokensです。Streaming設定は認証済みprofileに従います。
+5. `.8` のdirect sessionは標準で300秒のleaseを再利用し、残り90秒で更新対象になります。同じ会話は同じsession IDを使い、新しい会話では分離します。`Manage session` → `Settle charges`で明示的に閉じ、精算後にDeposit切替・出金へ進みます。応答後も復旧が必要なら`Review payment` → `Check payment`。推論は再送しません。新しい送信は新しいUUIDを使う別の操作です。
+6. 精算後に`Withdraw balance` → `Review withdrawal`で準備します。**現行SDKの出金は複数回の署名が必要**です。証明buffer作成 → 分割アップロード → 封印 → 出金実行の各取引に署名とネットワーク手数料が発生します。アップロード回数はpayload量次第で、公開APIには総数・現在段階がありません。署名ボタンと送信済み確認ボタンを使って一段ずつ進め、`Withdrawal complete`まで同じnoteを保持します。
 
-**追加のDeposit / 出金後の再入金:** 画面上部の`Deposit` → `Add deposit`で新しい入金先を作成し、金額入力 → `Prepare deposit` → ウォレット署名 → 送信済み取引確認と進みます。同じウォレットで繰り返し利用できます。SDKは既存noteへの継ぎ足し・残高合算に対応しないため、各入金は独立したnoteです。`Saved deposits`で利用・出金する入金を選択します。前の残高と履歴は保持され、出金済みnoteも削除しません。未確定取引・未精算セッション・緊急出金がある間は追加と切替を止め、元の操作を完了します。残高が認証上限を下回ったら`Add funds`の案内から追加できます。
+**追加のDeposit / 出金後の再入金:** 画面上部の`Deposit` → `Add deposit`で新しい入金先を作成し、金額入力 → `Review deposit` → ウォレット署名 → 送信済み取引確認と進みます。同じウォレットで繰り返し利用できます。SDKは既存noteへの継ぎ足し・残高合算に対応しないため、各入金は独立したnoteです。`Saved deposits`で利用・出金する入金を選択します。前の残高と履歴は保持され、出金済みnoteも削除しません。未確定取引・未精算セッション・緊急出金がある間は追加と切替を止め、元の操作を完了します。残高が認証上限を下回ったら`Add funds`の案内から追加できます。
 
 **モデル:** OpenRouter自体は複数providerのモデルを提供します。zkchatは認証済みZKAPI公開profileのモデル一覧・capabilityを使い、新規 `.8` 用profileには21モデルとstreaming capabilityが含まれます。元の `.3` profileは`openai/gpt-4o-mini`だけです。公開catalogの整合性検査に失敗している間は送信できません。ZDR catalogへの掲載だけでも、providerの権限・予算・推論成功は保証されません。追加モデルはoperatorが公開profileと対応catalogを更新する必要があります。アプリ側で未許可のモデル名を追加して制限を回避しません。
 

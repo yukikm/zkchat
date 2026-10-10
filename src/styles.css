@@ -2210,3 +2210,22 @@ textarea {
   overflow-wrap: anywhere;
   user-select: all;
 }
+
+.connection-details {
+  margin: 12px 0;
+  font-size: 12px;
+  color: var(--muted);
+}
+.connection-details > summary {
+  cursor: pointer;
+  min-height: 40px;
+  padding: 10px 0;
+  color: var(--text);
+}
+.connection-details > p {
+  margin: 8px 0;
+  line-height: 1.6;
+}
+.connection-details code {
+  overflow-wrap: anywhere;
+}

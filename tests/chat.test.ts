@@ -232,9 +232,7 @@ describe("local behavior", () => {
       ...conversation([message("assistant", "one", "stopped", "途中")]),
       mode: "demo" as const,
     };
-    expect(demoAnswer("こんにちは", [])).toContain(
-      "not connected to AI or Solana",
-    );
+    expect(demoAnswer("こんにちは", [])).toContain("No AI request or payment");
     expect(conversationMarkdown(c)).toContain(
       "This is an interactive demo. It is not connected to AI or Solana",
     );

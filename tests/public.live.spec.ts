@@ -63,8 +63,9 @@ test("public browser preflight without custody or financial actions", async ({
   await page
     .getByRole("button", { name: "Connection settings", exact: true })
     .click();
+  await page.getByText("Connection details", { exact: true }).click();
   const button = page.getByRole("button", {
-    name: "Check public connection",
+    name: "Check service",
     exact: true,
   });
   await expect(button).toBeEnabled({ timeout: 180_000 });
@@ -93,8 +94,7 @@ test("public browser preflight without custody or financial actions", async ({
     path: testInfo.outputPath("public-browser-check.png"),
     fullPage: true,
   });
-  expect(visibleResult).toContain("10 SDK checks passed.");
-  expect(visibleResult).toContain("No invitation required.");
+  expect(visibleResult).toContain("Service ready. Select a wallet to connect.");
   expect(failures).toEqual([]);
 });
 
@@ -149,27 +149,27 @@ test("public SDK browser factory creates and reopens unfunded custody with no si
     .getByLabel("2. Select an account")
     .selectOption("11111111111111111111111111111111");
   await page
-    .getByRole("button", { name: "Verify connection", exact: true })
+    .getByRole("button", { name: "Connect account", exact: true })
     .click();
   await expect(
     page.getByRole("button", {
-      name: "Create storage for this wallet",
+      name: "Set up this wallet",
       exact: true,
     }),
   ).toBeEnabled({ timeout: 90_000 });
   await page
     .getByRole("button", {
-      name: "Create storage for this wallet",
+      name: "Set up this wallet",
       exact: true,
     })
     .click();
   await expect(
-    page.getByText("Deployment and wallet connection verified.", {
+    page.getByText("Wallet connected.", {
       exact: true,
     }),
   ).toBeVisible({ timeout: 90_000 });
   await expect(
-    page.getByRole("button", { name: "Prepare deposit", exact: true }),
+    page.getByRole("button", { name: "Review deposit", exact: true }),
   ).toBeDisabled();
   await page.getByRole("button", { name: "Disconnect", exact: true }).click();
   await page
@@ -179,16 +179,16 @@ test("public SDK browser factory creates and reopens unfunded custody with no si
     .getByLabel("2. Select an account")
     .selectOption("11111111111111111111111111111111");
   await page
-    .getByRole("button", { name: "Verify connection", exact: true })
+    .getByRole("button", { name: "Connect account", exact: true })
     .click();
   await expect(
-    page.getByText("Deployment and wallet connection verified.", {
+    page.getByText("Wallet connected.", {
       exact: true,
     }),
   ).toBeVisible({ timeout: 90_000 });
   await expect(
     page.getByRole("button", {
-      name: "Create storage for this wallet",
+      name: "Set up this wallet",
       exact: true,
     }),
   ).toHaveCount(0);

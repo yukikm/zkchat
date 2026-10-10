@@ -45,7 +45,7 @@ test.beforeEach(async ({ page }) => {
     .getByLabel("2. Select an account")
     .selectOption("11111111111111111111111111111111");
   await page
-    .getByRole("button", { name: "Verify connection", exact: true })
+    .getByRole("button", { name: "Connect account", exact: true })
     .click();
   await expect(page.getByLabel("Saved deposits")).toBeVisible();
   await page.getByRole("button", { name: "Close", exact: true }).click();
@@ -76,7 +76,7 @@ test("reuses one conversation scope, separates a new chat, and explicitly settle
     .getByRole("button", { name: "Manage session", exact: true })
     .click();
   await page
-    .getByRole("button", { name: "Close session / Settle", exact: true })
+    .getByRole("button", { name: "Settle charges", exact: true })
     .click();
   await page.getByRole("button", { name: "Close", exact: true }).click();
   await expect(page.locator(".billing-note")).toHaveText([
@@ -109,13 +109,13 @@ test("reuses one conversation scope, separates a new chat, and explicitly settle
     .getByRole("button", { name: "Manage session", exact: true })
     .click();
   await expect(
-    page.getByRole("heading", { name: "Reusable session", exact: true }),
+    page.getByRole("heading", { name: "Active session", exact: true }),
   ).toBeVisible();
   await page
-    .getByRole("button", { name: "Close session / Settle", exact: true })
+    .getByRole("button", { name: "Settle charges", exact: true })
     .click();
   await expect(
-    page.getByRole("heading", { name: "Reusable session", exact: true }),
+    page.getByRole("heading", { name: "Active session", exact: true }),
   ).toHaveCount(0);
   expect(
     await page.evaluate(() => localStorage.getItem("fixture:settled")),
@@ -141,7 +141,7 @@ test("provider budget errors stay redacted and do not invite more deposits or re
     "private provider message",
   );
   await expect(
-    page.getByRole("button", { name: "Check recovery", exact: true }),
+    page.getByRole("button", { name: "Review payment", exact: true }),
   ).toBeVisible();
   expect(
     await page.evaluate(

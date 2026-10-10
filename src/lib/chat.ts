@@ -168,8 +168,7 @@ export function conversationMarkdown(c: Conversation) {
   return `# ${c.title}\n\n${c.mode === "demo" ? "> This is an interactive demo. It is not connected to AI or Solana.\n\n" : ""}${c.messages.map((m) => `## ${m.role === "user" ? "You" : "zkchat"}${m.state !== "complete" ? " (incomplete)" : ""}\n\n${m.content}`).join("\n\n---\n\n")}`;
 }
 export function demoAnswer(input: string, messages: Message[]): string {
-  const intro =
-    "> Interactive demo · This response is a locally generated sample. It is not connected to AI or Solana.\n\n";
+  const intro = "> Demo reply · No AI request or payment.\n\n";
   if (/コード|code|プログラ|typescript/i.test(input))
     return (
       intro +
@@ -193,7 +192,7 @@ export function demoAnswer(input: string, messages: Message[]): string {
   const turns = contextMessages(messages).length / 2;
   return (
     intro +
-    `Received: “${input.slice(0, 100)}${input.length > 100 ? "…" : ""}”.\n\n${turns > 0 ? `This conversation contains ${turns} completed exchanges.` : "Here you can try sending, stopping the display, Markdown, and conversation history."}\n\nTo chat with an AI, connect a reviewed operator deployment and wallet in **Connection settings**. The public SDK does not include a default operator.`
+    `Received: “${input.slice(0, 100)}${input.length > 100 ? "…" : ""}”.\n\n${turns > 0 ? `This conversation contains ${turns} completed exchanges.` : "Here you can try sending, stopping the display, Markdown, and conversation history."}\n\nTo use AI, connect your wallet in **Connection settings**.`
   );
 }
 export async function streamDemo(
