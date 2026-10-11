@@ -996,7 +996,7 @@ test("unsigned withdrawal fallback and signed setup recovery use separate explic
     page.getByText("Expired setup recovery", { exact: true }),
   ).toHaveCount(0);
   await page
-    .getByRole("button", { name: "Check transaction", exact: true })
+    .getByRole("button", { name: "Check withdrawal step", exact: true })
     .click();
   await page.getByText("Expired setup recovery", { exact: true }).click();
   await page
@@ -1049,8 +1049,8 @@ test("withdrawal explains multiple approvals and separates signing from saved tr
     advanceWallet: async () => {
       const n = Number(localStorage.getItem('zkchat:test-advances') || 0) + 1;
       localStorage.setItem('zkchat:test-advances',String(n));
-      update(n === 1 ? {walletOperation:{kind:'mutual_close',phase:'ready',signature:'saved-signature'}} : {walletOperation:null,wallet:'closed'});
-      return {state:n === 1 ? 'pending' : 'complete'};
+      update(n === 4 ? {walletOperation:null,wallet:'closed'} : {walletOperation:{kind:'mutual_close',phase:'ready',signature:n % 2 ? 'saved-signature' : null}});
+      return {state:n === 4 ? 'complete' : n % 2 ? 'pending' : 'ready'};
     },`,
   );
   await connectFixture(page, source);
@@ -1069,12 +1069,22 @@ test("withdrawal explains multiple approvals and separates signing from saved tr
   await expect(
     page.getByText(/Withdrawal needs several wallet approvals/),
   ).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Withdrawal in progress", exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByText(/Chat, adding deposits, and switching deposits are paused/),
+  ).toBeVisible();
+  await expect(page.getByLabel("Saved deposits")).toBeDisabled();
+  await expect(
+    page.getByRole("button", { name: "Add deposit", exact: true }),
+  ).toBeDisabled();
   await page
-    .getByRole("button", { name: "Approve in wallet", exact: true })
+    .getByRole("button", { name: "Approve next withdrawal step", exact: true })
     .click();
   await expect(
     page.getByRole("button", {
-      name: "Approve in wallet",
+      name: "Approve next withdrawal step",
       exact: true,
     }),
   ).toHaveCount(0);
@@ -1082,7 +1092,24 @@ test("withdrawal explains multiple approvals and separates signing from saved tr
     page.getByText("Expired setup recovery", { exact: true }),
   ).toHaveCount(0);
   await page
-    .getByRole("button", { name: "Check transaction", exact: true })
+    .getByRole("button", { name: "Check withdrawal step", exact: true })
+    .click();
+  // A confirmed upload step keeps the withdrawal locked and needs another
+  // explicit approval; it must not be presented as a completed withdrawal.
+  await expect(
+    page.getByRole("heading", { name: "Withdrawal in progress", exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Add deposit", exact: true }),
+  ).toBeDisabled();
+  expect(
+    await page.evaluate(() => localStorage.getItem("zkchat:test-advances")),
+  ).toBe("2");
+  await page
+    .getByRole("button", { name: "Approve next withdrawal step", exact: true })
+    .click();
+  await page
+    .getByRole("button", { name: "Check withdrawal step", exact: true })
     .click();
   await expect(
     page.getByText("Withdrawal complete. Your funds are back in your wallet.", {
@@ -1091,7 +1118,10 @@ test("withdrawal explains multiple approvals and separates signing from saved tr
   ).toBeVisible();
   await expect(page.locator(".balance-panel strong")).toHaveText("0.00");
   await expect(page.locator(".credit-line strong")).toHaveText("0.00");
+  await expect(
+    page.getByRole("heading", { name: "Withdrawal in progress", exact: true }),
+  ).toHaveCount(0);
   expect(
     await page.evaluate(() => localStorage.getItem("zkchat:test-advances")),
-  ).toBe("2");
+  ).toBe("4");
 });

@@ -207,6 +207,11 @@ export function ConnectionPanel({
     }
   }
   const disabled = busy || locked || configLoading || !!status?.busy;
+  const withdrawalInProgress =
+    !!status?.walletOperation &&
+    ["mutual_close", "initiate_escape", "finalize_escape"].includes(
+      status.walletOperation.kind,
+    );
   return (
     <div className="connection-panel" aria-busy={busy || configLoading}>
       <div className="connection-intro">
@@ -472,7 +477,9 @@ export function ConnectionPanel({
                 </button>
                 {!canChangeDeposit(status) && (
                   <p className="small muted">
-                    Finish the step below before adding or switching deposits.
+                    {withdrawalInProgress
+                      ? "Complete the withdrawal below before adding or switching deposits."
+                      : "Finish the step below before adding or switching deposits."}
                   </p>
                 )}
                 {(status?.wallet === "empty" ||
@@ -592,7 +599,18 @@ export function ConnectionPanel({
                 )}
               {status?.walletOperation && (
                 <div className="pending-card">
-                  <h4>Next step</h4>
+                  <h4>
+                    {withdrawalInProgress
+                      ? "Withdrawal in progress"
+                      : "Next step"}
+                  </h4>
+                  {withdrawalInProgress && (
+                    <p className="small">
+                      Chat, adding deposits, and switching deposits are paused
+                      until this withdrawal completes. Follow the steps below,
+                      then add a new deposit to chat again.
+                    </p>
+                  )}
                   <details className="connection-details">
                     <summary>Transaction details</summary>
                     <code>
@@ -643,9 +661,13 @@ export function ConnectionPanel({
                         })
                       }
                     >
-                      {status.walletOperation.signature
-                        ? "Check transaction"
-                        : "Approve in wallet"}
+                      {withdrawalInProgress
+                        ? status.walletOperation.signature
+                          ? "Check withdrawal step"
+                          : "Approve next withdrawal step"
+                        : status.walletOperation.signature
+                          ? "Check transaction"
+                          : "Approve in wallet"}
                     </button>
                     {(progressState === "proof_required" ||
                       status.walletOperation.phase === "proving") && (

@@ -253,7 +253,7 @@ describe("live readiness contract", () => {
     },
   );
 
-  it.each([429, 502, 503, 504])("retries HTTP %i once", async (status) => {
+  it.each([429, 502, 504])("retries HTTP %i once", async (status) => {
     const { relay, readiness } = fixtures();
     const fetcher = vi
       .fn()
@@ -266,9 +266,70 @@ describe("live readiness contract", () => {
     expect(fetcher).toHaveBeenCalledTimes(3);
   });
 
+  it("waits past a cached readiness 503 before its single fresh recheck", async () => {
+    vi.useFakeTimers();
+    const cachedAt = Date.now();
+    const fetcher = vi.fn(async (url: RequestInfo | URL) => {
+      if (String(url).endsWith("/relay-status"))
+        return Response.json(fixtures().relay);
+      if (Date.now() - cachedAt <= 5000)
+        return new Response("cached unavailable observation", { status: 503 });
+      return Response.json(fixtures().readiness);
+    });
+    const result = checkServiceReadiness(deployment, fetcher);
+    await vi.advanceTimersByTimeAsync(0);
+    expect(fetcher).toHaveBeenCalledTimes(2);
+    await vi.advanceTimersByTimeAsync(5249);
+    expect(fetcher).toHaveBeenCalledTimes(2);
+    await vi.advanceTimersByTimeAsync(1);
+    expect(await result).toMatchObject({ servicesAvailable: true });
+    expect(fetcher.mock.calls.map(([url]) => url)).toEqual([
+      deployment.origin + "/relay-status",
+      deployment.origin + "/zkapi/v1/readiness",
+      deployment.origin + "/zkapi/v1/readiness",
+    ]);
+  });
+
+  it("cancels the readiness 503 delay without a second readiness fetch", async () => {
+    vi.useFakeTimers();
+    const controller = new AbortController();
+    const fetcher = vi
+      .fn()
+      .mockResolvedValueOnce(Response.json(fixtures().relay))
+      .mockResolvedValueOnce(new Response(null, { status: 503 }))
+      .mockImplementation(async () => Response.json(fixtures().readiness));
+    const result = checkServiceReadiness(
+      deployment,
+      fetcher,
+      controller.signal,
+    );
+    const assertion = expect(result).rejects.toThrow("User stopped");
+    await vi.advanceTimersByTimeAsync(1000);
+    expect(fetcher).toHaveBeenCalledTimes(2);
+    controller.abort(new Error("User stopped"));
+    await assertion;
+    await vi.advanceTimersByTimeAsync(6000);
+    expect(fetcher).toHaveBeenCalledTimes(2);
+  });
+
+  it("keeps the relay-status 503 retry immediate", async () => {
+    vi.useFakeTimers();
+    const { relay, readiness } = fixtures();
+    const fetcher = vi
+      .fn()
+      .mockResolvedValueOnce(new Response(null, { status: 503 }))
+      .mockResolvedValueOnce(Response.json(relay))
+      .mockResolvedValueOnce(Response.json(readiness));
+    expect(await checkServiceReadiness(deployment, fetcher)).toMatchObject({
+      servicesAvailable: true,
+    });
+    expect(fetcher).toHaveBeenCalledTimes(3);
+  });
+
   it.each(["stale", "network", "http"] as const)(
     "fails closed after exhausting the %s retry",
     async (failure) => {
+      vi.useFakeTimers();
       const { relay, readiness } = fixtures();
       const fetcher = vi.fn().mockResolvedValueOnce(Response.json(relay));
       if (failure === "stale") {
@@ -285,9 +346,13 @@ describe("live readiness contract", () => {
           async () => new Response("private body", { status: 503 }),
         );
       }
-      await expect(checkServiceReadiness(deployment, fetcher)).rejects.toThrow(
+      const assertion = expect(
+        checkServiceReadiness(deployment, fetcher),
+      ).rejects.toThrow(
         /^(Expired service readiness\.|Service readiness is unavailable\.)$/,
       );
+      await vi.advanceTimersByTimeAsync(failure === "http" ? 5250 : 0);
+      await assertion;
       expect(fetcher).toHaveBeenCalledTimes(3);
     },
   );

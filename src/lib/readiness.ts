@@ -9,11 +9,35 @@ export interface ServiceReadiness {
   checkedAt: number;
 }
 
-class RetryableReadinessError extends Error {}
+class RetryableReadinessError extends Error {
+  readonly retryDelayMs: number;
+  constructor(message: string, retryDelayMs = 0) {
+    super(message);
+    this.retryDelayMs = retryDelayMs;
+  }
+}
 
 // Control probes may take 45s and the public relay allows 48s. Leave room
 // for transport without changing the observation's five-second validity.
 const READINESS_TIMEOUT_MS = 60_000;
+// The service caches unavailable readiness observations for five seconds too.
+// Let that observation expire before the existing single read-only retry.
+const READINESS_RETRY_DELAY_MS = 5_250;
+
+async function waitForRetry(delayMs: number, signal?: AbortSignal) {
+  signal?.throwIfAborted();
+  await new Promise<void>((resolve, reject) => {
+    const abort = () => {
+      clearTimeout(timer);
+      reject(signal!.reason);
+    };
+    const timer = setTimeout(() => {
+      signal?.removeEventListener("abort", abort);
+      resolve();
+    }, delayMs);
+    signal?.addEventListener("abort", abort, { once: true });
+  });
+}
 
 /** HTTPS observations, not a proof of provider credit or successful AUTH. */
 export async function checkServiceReadiness(
@@ -46,7 +70,12 @@ export async function checkServiceReadiness(
     if (!response.ok) {
       await response.body?.cancel().catch(() => {});
       if ([429, 502, 503, 504].includes(response.status))
-        throw new RetryableReadinessError("Service readiness is unavailable.");
+        throw new RetryableReadinessError(
+          "Service readiness is unavailable.",
+          path === "/zkapi/v1/readiness" && response.status === 503
+            ? READINESS_RETRY_DELAY_MS
+            : 0,
+        );
       throw new Error("Service readiness is unavailable.");
     }
     if (!response.body) throw new Error("Invalid readiness response.");
@@ -103,6 +132,7 @@ export async function checkServiceReadiness(
           !(error instanceof RetryableReadinessError)
         )
           throw error;
+        if (error.retryDelayMs) await waitForRetry(error.retryDelayMs, signal);
       }
     }
   }
