@@ -37,8 +37,9 @@ npm run dev
 3. 保存領域の注意事項を読み、例として2 Devnet USDCを`Review deposit`で準備します。`Approve in wallet`でウォレットに進み、内容を確認して署名します。送信後は`Check transaction`で保存済み取引を確認します。`pending`は未確定です。
 4. 「Ready to chat」になったら送信します。モデルは固定profileの許可リストから選択します。direct OpenRouter、アプリの上限は128 output tokensです。Streaming設定は認証済みprofileに従います。
 5. 公開profileを使う `.8` のdirect OpenRouter sessionは、Gatewayが受け付ける60秒のleaseを明示指定します（SDK標準の300秒はこのGatewayに拒否されます）。同じ会話は同じsession IDを使い、新しい会話では分離します。別の会話へ送信する前には、前の会話のsessionを`Manage session`（別会話では`Review settlement`）→ `Settle charges`で明示的に閉じます。下書きは保持され、精算後に改めて送信します。Deposit切替・出金も精算後に進みます。応答が中断したら`Check status`で接続画面を開き、`Refresh status`と表示された次の操作で確認します。確認待ちのsessionがあれば`Check payment`で復旧します。推論は再送しません。新しい送信は新しいUUIDを使う別の操作です。
+6. 精算後に`Withdraw balance` → `Review withdrawal`で準備します。**現行SDKの出金は複数回の署名が必要**です。証明buffer作成 → 分割アップロード → 封印 → 出金実行の各取引に署名とネットワーク手数料が発生します。アップロード回数はpayload量次第で、公開APIには総数・現在段階がありません。署名ボタンと送信済み確認ボタンを使って一段ずつ進め、`Withdrawal complete`まで同じnoteを保持します。
 
-新しい会話では、固定profileに含まれる場合に `openai/gpt-6.1-sol` を初期選択します。選択済み・保存済みの会話モデルは自動変更しません。モデル一覧は利用成功の保証ではありません。送信前の読み取りチェックは通信障害時のみ一度再確認し、検証できない状態では新規送信を止めます。招待が必要という案内は、サービスが実際に招待を要求している場合に限ります。6. 精算後に`Withdraw balance` → `Review withdrawal`で準備します。**現行SDKの出金は複数回の署名が必要**です。証明buffer作成 → 分割アップロード → 封印 → 出金実行の各取引に署名とネットワーク手数料が発生します。アップロード回数はpayload量次第で、公開APIには総数・現在段階がありません。署名ボタンと送信済み確認ボタンを使って一段ずつ進め、`Withdrawal complete`まで同じnoteを保持します。
+新しい会話では、固定profileに含まれる場合に `openai/gpt-6.1-sol` を初期選択します。選択済み・保存済みの会話モデルは自動変更しません。モデル一覧は利用成功の保証ではありません。送信前の読み取りチェックは通信障害時のみ一度再確認し、検証できない状態では新規送信を止めます。
 
 **追加のDeposit / 出金後の再入金:** 画面上部の`Deposit` → `Add deposit`で新しい入金先を作成し、金額入力 → `Review deposit` → ウォレット署名 → 送信済み取引確認と進みます。同じウォレットで繰り返し利用できます。SDKは既存noteへの継ぎ足し・残高合算に対応しないため、各入金は独立したnoteです。`Saved deposits`で利用・出金する入金を選択します。前の残高と履歴は保持され、出金済みnoteも削除しません。未確定取引・未精算セッション・緊急出金がある間は追加と切替を止め、元の操作を完了します。残高が認証上限を下回ったら`Add funds`の案内から追加できます。
 
@@ -90,7 +91,7 @@ npm run check:browser
 
 会話表示はlocalStorageに平文で保存します。`.8` はdirectの送信本文をSDK journalに保存せず、proxy本文も送信後に削減しますが、request fingerprintと資金の復旧情報は保持します。旧journalの本文・外部バックアップ・画面の会話履歴は自動消去されません。会話の削除とjournalの削除は別です。OpenRouterにはZDRとdata collection denyを要求し、自動的に緩和しません。これはprovider側の削除やIP秘匿の証明ではありません。directではproviderが、proxyではoperatorも内容を受け取ります。ブラウザ保存はポータブルバックアップではありません。
 
-招待は現行公開APIでは不要です。別の制限付きoperatorで必要な場合は詳細欄に入力し、メモリ中だけで保持します。認証済みcontrol originの正確なsession POST以外には送信しません。provider管理キー、秘密鍵、招待を公開設定へ記載しません。
+公開APIに招待コードは不要なため、入力・保持・送信する機能はありません。サーバーが新規受付を停止・制限した場合は新しい操作を止め、既存の支払い確認・復旧を維持します。provider管理キーや秘密鍵を公開設定へ記載しません。
 
 ## 公開ビルド
 

@@ -22,11 +22,7 @@ const indexer = loaded.profile.indexerOrigin;
 const routes = [
   [loaded.profile.rpcUrl, "POST", ["content-type"]],
   [control + "/zkapi/v1/quotes", "POST", ["content-type"]],
-  [
-    control + "/zkapi/v1/sessions",
-    "POST",
-    ["content-type", "x-zkapi-admission"],
-  ],
+  [control + "/zkapi/v1/sessions", "POST", ["authorization", "content-type"]],
   [control + `/zkapi/v1/sessions/${session}`, "GET", ["authorization"]],
   [
     control + `/zkapi/v1/sessions/${session}/close`,

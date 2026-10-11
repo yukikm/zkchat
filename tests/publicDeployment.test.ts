@@ -46,7 +46,6 @@ import { PublicProfileError } from "@zkapi/solana-sdk/public-profile";
 import {
   connectPublicDeployment,
   PublicOnboardingError,
-  invitationTransport,
   retainProfileBinding,
   profileBindingKey,
   connectionCheckError,
@@ -138,104 +137,6 @@ beforeEach(async () => {
   });
 });
 afterEach(() => vi.unstubAllGlobals());
-describe("in-memory invitation transport", () => {
-  it("sends only exact authenticated session POST and strips caller spoofing elsewhere", async () => {
-    const fetcher = vi.fn(async () => new Response(null));
-    const transport = invitationTransport(token, fetcher);
-    await transport.fetch(origin + "/zkapi/v1/sessions", {
-      method: "POST",
-      headers: { "X-Zkapi-Admission": "spoof" },
-    });
-    expect(
-      new Headers(fetcher.mock.calls.at(-1)![1]?.headers).has(
-        "x-zkapi-admission",
-      ),
-    ).toBe(false);
-    transport.setAuthenticatedOrigin(origin);
-    for (const [url, method] of [
-      [origin + "/zkapi/v1/config", "POST"],
-      [origin + "/zkapi/v1/sessions?x=1", "POST"],
-      [origin + "/zkapi/v1/sessions/", "POST"],
-      ["https://other.example/zkapi/v1/sessions", "POST"],
-      [origin + "/zkapi/v1/sessions", "GET"],
-    ]) {
-      await transport.fetch(url, {
-        method,
-        headers: { "x-zkapi-admission": "spoof" },
-      });
-      expect(
-        new Headers(fetcher.mock.calls.at(-1)![1]?.headers).has(
-          "x-zkapi-admission",
-        ),
-      ).toBe(false);
-    }
-    const controller = new AbortController();
-    const request = new Request(origin + "/zkapi/v1/sessions", {
-      method: "POST",
-      body: "exact AUTH",
-      signal: controller.signal,
-      headers: {
-        "content-type": "application/json",
-        "x-zkapi-admission": "spoof",
-      },
-    });
-    await transport.fetch(request);
-    const [input, init] = fetcher.mock.calls.at(-1)!;
-    expect(input).toBe(request);
-    expect(await request.text()).toBe("exact AUTH");
-    expect(new Headers(init.headers).get("x-zkapi-admission")).toBe(token);
-    expect(new Headers(init.headers).get("content-type")).toBe(
-      "application/json",
-    );
-    expect(init).toMatchObject({
-      credentials: "omit",
-      redirect: "error",
-      cache: "no-store",
-    });
-    transport.clear();
-    await transport.fetch(origin + "/zkapi/v1/sessions", { method: "POST" });
-    expect(
-      new Headers(fetcher.mock.calls.at(-1)![1]?.headers).has(
-        "x-zkapi-admission",
-      ),
-    ).toBe(false);
-    expect(storage.size).toBe(0);
-  });
-  it("rejects noncanonical invitation and origin without exposing their values", () => {
-    for (const input of [
-      token + "=",
-      token + "\n",
-      "A".repeat(42) + "B",
-      "secret",
-    ])
-      expect(() => invitationTransport(input)).toThrow(
-        /^Invalid invitation format\.$/,
-      );
-    for (const input of [
-      "http://control.example",
-      origin + "/",
-      origin + "?key=private",
-      "https://private@control.example",
-    ])
-      expect(() =>
-        invitationTransport(token).setAuthenticatedOrigin(input),
-      ).toThrow();
-  });
-  it("does not replay an aborted or failed AUTH", async () => {
-    const fetcher = vi.fn(async () => {
-      throw new DOMException("Aborted", "AbortError");
-    });
-    const transport = invitationTransport(token, fetcher);
-    transport.setAuthenticatedOrigin(origin);
-    await expect(
-      transport.fetch(origin + "/zkapi/v1/sessions", {
-        method: "POST",
-        signal: AbortSignal.abort(),
-      }),
-    ).rejects.toThrow();
-    expect(fetcher).toHaveBeenCalledTimes(1);
-  });
-});
 describe("profile and original custody binding", () => {
   it("requires explicit initialization and refuses existing unbound custody even with initialize", async () => {
     await expect(
@@ -316,7 +217,7 @@ describe("profile and original custody binding", () => {
     expect(configuredStreaming(config, "model")).toBe(false);
     sdk.load.mockRejectedValueOnce(new PublicProfileError("profile"));
     await expect(
-      connectPublicDeployment(config, "zkchat-v1", "account", true, token),
+      connectPublicDeployment(config, "zkchat-v1", "account", true),
     ).rejects.toMatchObject({
       message: expect.stringContaining("Could not verify service settings."),
     });
@@ -333,7 +234,6 @@ describe("profile and original custody binding", () => {
       "zkchat-v1",
       "account",
       false,
-      token,
     );
     expect(connection.canAdmit).toBe(false);
     expect(connection.diagnostic.unavailableComponent).toBe("catalog");
@@ -351,7 +251,7 @@ describe("profile and original custody binding", () => {
       return { chainAllowsNewOperations: true };
     });
     await expect(
-      connectPublicDeployment(config, "zkchat-v1", "account", true, token),
+      connectPublicDeployment(config, "zkchat-v1", "account", true),
     ).rejects.toThrow(/Profile changed/);
     expect(sdk.browser).not.toHaveBeenCalled();
     expect(storage.get(profileBindingKey("zkchat-v1", "account"))).toBe(
@@ -361,7 +261,7 @@ describe("profile and original custody binding", () => {
   it("preflight failure before new initialization creates no binding or custody", async () => {
     sdk.preflight.mockRejectedValueOnce(new PublicProfileError("pool"));
     await expect(
-      connectPublicDeployment(config, "zkchat-v1", "account", true, token),
+      connectPublicDeployment(config, "zkchat-v1", "account", true),
     ).rejects.toThrow();
     expect(storage.size).toBe(0);
     expect(sdk.browser).not.toHaveBeenCalled();
@@ -372,7 +272,6 @@ describe("profile and original custody binding", () => {
       "zkchat-v1",
       "account",
       true,
-      token,
     );
     expect(storage.get(profileBindingKey("zkchat-v1", "account"))).toBe(
       config.profileSha256,
@@ -612,7 +511,6 @@ describe("existing application adapter with public profile", () => {
         wallet as any,
         account as any,
         initialize,
-        token,
       ).catch((error: unknown) => error);
       expect(error).toBeInstanceOf(PublicOnboardingError);
       expect((error as Error).message).toBe(
@@ -643,7 +541,7 @@ describe("existing application adapter with public profile", () => {
     });
     sdk.preflight.mockRejectedValueOnce(error);
     await expect(
-      connectZkapi(config, wallet as any, account as any, true, token),
+      connectZkapi(config, wallet as any, account as any, true),
     ).rejects.toBe(error);
     expect(storage.size).toBe(0);
     expect(sdk.browser).not.toHaveBeenCalled();
@@ -658,7 +556,6 @@ describe("existing application adapter with public profile", () => {
         wallet as any,
         account as any,
         initialize,
-        token,
       );
       sdk.preflight.mockRejectedValue(new PublicProfileError("catalog"));
       await expect(handle.client.prepareDeposit(2000000n)).rejects.toThrow(
@@ -688,7 +585,6 @@ describe("existing application adapter with public profile", () => {
       wallet as any,
       account as any,
       false,
-      token,
     );
     await expect(
       handle.client.chat({
@@ -768,7 +664,7 @@ describe("existing application adapter with public profile", () => {
     }
     handle.dispose();
   });
-  it("permits recovery without an invitation but rejects new funding when required", async () => {
+  it("preserves recovery but refuses new work for restricted deployments", async () => {
     sdk.readiness.mockResolvedValue({
       admission: "enabled",
       invitationRequired: true,
@@ -783,7 +679,7 @@ describe("existing application adapter with public profile", () => {
       false,
     );
     await expect(handle.client.prepareDeposit(2000000n)).rejects.toThrow(
-      /invitation/,
+      /restricted/,
     );
     await handle.client.recover();
     expect(client.recover).toHaveBeenCalledTimes(1);
@@ -873,7 +769,7 @@ describe("existing application adapter with public profile", () => {
       return { chainAllowsNewOperations: true };
     });
     await expect(
-      connectZkapi(config, wallet as any, account as any, false, token),
+      connectZkapi(config, wallet as any, account as any, false),
     ).rejects.toThrow(/account changed/);
     expect(sdk.browser).not.toHaveBeenCalled();
   });

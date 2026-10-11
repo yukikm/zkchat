@@ -139,69 +139,6 @@ function serviceReadiness(
   );
 }
 
-/** A user-entered invitation is never persisted or copied from caller headers. */
-export function invitationTransport(
-  token?: string,
-  fetcher: typeof fetch = globalThis.fetch,
-) {
-  let invitation = token,
-    destination: string | undefined;
-  if (invitation !== undefined && invitation !== "") {
-    if (!/^[A-Za-z0-9_-]{43}$/.test(invitation))
-      throw new PublicOnboardingError("Invalid invitation format.");
-    const decoded = atob(
-      invitation.replace(/-/g, "+").replace(/_/g, "/") + "=",
-    );
-    if (
-      decoded.length !== 32 ||
-      btoa(decoded)
-        .replace(/\+/g, "-")
-        .replace(/\//g, "_")
-        .replace(/=+$/, "") !== invitation
-    )
-      throw new PublicOnboardingError("Invalid invitation format.");
-  } else invitation = undefined;
-  const scopedFetch: typeof fetch = (input, init) => {
-    const request = input instanceof Request ? input : undefined;
-    const url = request?.url ?? String(input),
-      method = (init?.method ?? request?.method ?? "GET").toUpperCase();
-    const headers = new Headers(init?.headers ?? request?.headers);
-    headers.delete("x-zkapi-admission");
-    if (invitation && destination && url === destination && method === "POST")
-      headers.set("x-zkapi-admission", invitation);
-    return fetcher(input, {
-      ...init,
-      headers,
-      credentials: "omit",
-      redirect: "error",
-      cache: "no-store",
-    });
-  };
-  return {
-    fetch: scopedFetch,
-    setAuthenticatedOrigin(origin: string) {
-      const url = new URL(origin);
-      if (
-        url.protocol !== "https:" ||
-        url.origin !== origin ||
-        url.username ||
-        url.password
-      )
-        throw new PublicOnboardingError(
-          "Invalid authenticated control origin.",
-        );
-      destination = origin + "/zkapi/v1/sessions";
-    },
-    clear() {
-      invitation = undefined;
-      destination = undefined;
-    },
-    get available() {
-      return invitation !== undefined;
-    },
-  };
-}
-
 export function profileBindingKey(storageName: string, account: string) {
   return JSON.stringify(["zkchat-public-profile-v1", storageName, account]);
 }
@@ -317,9 +254,8 @@ export async function connectPublicDeployment(
   storageName: string,
   account: string,
   initialize: boolean,
-  token?: string,
 ) {
-  const transport = invitationTransport(token);
+  const fetcher = globalThis.fetch;
   try {
     const installed = localStorage.getItem(
       profileBindingKey(storageName, account),
@@ -331,11 +267,8 @@ export async function connectPublicDeployment(
     const loaded = await loadPublicDeploymentProfile(config.profileUrl, {
       profileSha256: config.profileSha256,
       installedProfileSha256: installed ?? undefined,
-      fetch: transport.fetch,
+      fetch: fetcher,
     });
-    transport.setAuthenticatedOrigin(
-      loaded.assets.verifiedManifest.control_api_origin,
-    );
     let preflight: PublicPreflightResult | null = null,
       readiness: ServiceReadiness | null = null,
       closed = false,
@@ -344,7 +277,7 @@ export async function connectPublicDeployment(
     const refreshPreflight = async (signal?: AbortSignal) => {
       readiness = null;
       try {
-        preflight = await checkPreflight(loaded, transport.fetch, signal);
+        preflight = await checkPreflight(loaded, fetcher, signal);
         unavailableComponent = null;
       } catch (error) {
         preflight = null;
@@ -354,7 +287,7 @@ export async function connectPublicDeployment(
       }
       if (preflight) {
         try {
-          readiness = await serviceReadiness(loaded, transport.fetch);
+          readiness = await serviceReadiness(loaded, fetcher);
         } catch {
           unavailableComponent = "readiness";
         }
@@ -369,7 +302,7 @@ export async function connectPublicDeployment(
       preflight?.chainAllowsNewOperations === true &&
       readiness?.servicesAvailable === true &&
       readiness.admission === "enabled" &&
-      (!readiness.invitationRequired || transport.available);
+      !readiness.invitationRequired;
     return {
       options: publicProfileClientOptions(loaded),
       assets: loaded.assets,
@@ -401,9 +334,9 @@ export async function connectPublicDeployment(
         else if (readiness && !readiness.servicesAvailable)
           reason =
             "A payment service is unavailable. Choose Refresh status to check again.";
-        else if (readiness?.invitationRequired && !transport.available)
+        else if (readiness?.invitationRequired)
           reason =
-            "This deployment requires an invitation. Reconnect with an invitation code.";
+            "The operator has restricted new requests. Check again later.";
         else if (readiness && readiness.expiresAt <= Date.now())
           reason =
             "The service check expired. Choose Refresh status to check again.";
@@ -413,11 +346,9 @@ export async function connectPublicDeployment(
       },
       clear() {
         closed = true;
-        transport.clear();
       },
     };
   } catch (error) {
-    transport.clear();
     if (error instanceof PublicProfileError) throw connectionCheckError(error);
     throw error;
   }

@@ -452,10 +452,9 @@ test("unknown proxy send has explicit absence reconciliation without replay", as
   ).toBeNull();
 });
 
-test("public onboarding invitation stays in memory and clears after disconnect", async ({
+test("public onboarding connects without invitation controls or a token argument", async ({
   page,
 }) => {
-  const invitation = "A".repeat(43);
   const publicStub = liveStub
     .replace(
       "label: 'Test Operator', mode:",
@@ -463,9 +462,7 @@ test("public onboarding invitation stays in memory and clears after disconnect",
     )
     .replace(
       "async () => ({ account, persistence:",
-      "async (_config, _wallet, _account, _initialize, token) => { window.testInvitationWasPassed = token === '" +
-        invitation +
-        "'; return ({ account, persistence:",
+      "async (...args) => { window.testConnectArgumentCount = args.length; return ({ account, persistence:",
     )
     .replace(
       "publicAdmissionReady: true,",
@@ -479,8 +476,10 @@ test("public onboarding invitation stays in memory and clears after disconnect",
   await page
     .getByRole("button", { name: "Connection settings", exact: true })
     .click();
-  await page.getByText("Have an invitation?", { exact: true }).click();
-  await page.getByLabel("Invitation code").fill(invitation);
+  await expect(
+    page.getByText("Have an invitation?", { exact: true }),
+  ).toHaveCount(0);
+  await expect(page.getByLabel("Invitation code")).toHaveCount(0);
   await page
     .getByRole("dialog", { name: "Connection settings" })
     .getByRole("button", { name: "Connect wallet", exact: true })
@@ -489,23 +488,15 @@ test("public onboarding invitation stays in memory and clears after disconnect",
     page.getByText("Wallet connected.", { exact: true }),
   ).toBeVisible();
   expect(
-    await page.evaluate(() => (window as any).testInvitationWasPassed),
-  ).toBe(true);
-  expect(
-    await page.evaluate(() =>
-      JSON.stringify({
-        local: { ...localStorage },
-        session: { ...sessionStorage },
-      }),
-    ),
-  ).not.toContain(invitation);
+    await page.evaluate(() => (window as any).testConnectArgumentCount),
+  ).toBe(4);
   await page.getByRole("button", { name: "Disconnect", exact: true }).click();
-  await expect(page.getByLabel("Invitation code")).toHaveValue("");
+  await expect(page.getByLabel("Invitation code")).toHaveCount(0);
   await page.reload();
   await page
     .getByRole("button", { name: "Connection settings", exact: true })
     .click();
-  await expect(page.getByLabel("Invitation code")).toHaveValue("");
+  await expect(page.getByLabel("Invitation code")).toHaveCount(0);
 });
 
 test("Kit wallet connector discovers, automatically selects and disconnects the exact Wallet Standard account", async ({

@@ -82,7 +82,6 @@ export function ConnectionPanel({
   locked: boolean;
   onBusy: (busy: boolean) => void;
 }) {
-  const [invitation, setInvitation] = useState("");
   const [wallets, setWallets] = useState<AppWallet[]>(listWallets);
   const [selectedWallet, setSelectedWallet] = useState<AppWallet | null>(null);
   const wallet =
@@ -163,9 +162,7 @@ export function ConnectionPanel({
         connectedWallet.wallet,
         connectedWallet.account,
         initialize,
-        invitation || undefined,
       );
-      setInvitation("");
       onWalletConnect({
         wallet: connectedWallet.wallet,
         account: connectedWallet.account,
@@ -258,10 +255,7 @@ export function ConnectionPanel({
             aria-label="Disconnect"
             title="Disconnect"
             disabled={disabled}
-            onClick={() => {
-              setInvitation("");
-              onDisconnect();
-            }}
+            onClick={onDisconnect}
           >
             <Unplug size={17} />
           </button>
@@ -358,29 +352,6 @@ export function ConnectionPanel({
                   {busy && <LoaderCircle className="spin" size={16} />}
                   {busy ? "Opening your deposits…" : "Continue to deposits"}
                 </button>
-              )}
-              {config.schema === 2 && (
-                <details className="notice">
-                  <summary>Have an invitation?</summary>
-                  <div className="field">
-                    <label htmlFor="admission-invitation">
-                      Invitation code
-                    </label>
-                    <input
-                      id="admission-invitation"
-                      type="password"
-                      autoComplete="off"
-                      spellCheck={false}
-                      value={invitation}
-                      onChange={(e) => setInvitation(e.target.value)}
-                      disabled={disabled}
-                    />
-                    <small>
-                      Leave empty unless the service owner gave you a code. It
-                      is not saved.
-                    </small>
-                  </div>
-                </details>
               )}
               {storageMissing && (
                 <div className="notice">
@@ -529,7 +500,7 @@ export function ConnectionPanel({
                             "suspended"
                           ? "New requests are paused. Existing payments and withdrawals can still be checked."
                           : handle.diagnostic?.readiness?.invitationRequired
-                            ? "Reconnect with an invitation code. Keep this browser’s data."
+                            ? "The operator has restricted new requests. Existing payments can still be checked."
                             : "Choose Refresh status to check again. Existing payments stay saved."}
                   </p>
                 </div>
@@ -1104,12 +1075,11 @@ export function ConnectionPanel({
             {publicCheck && (
               <p role="status">
                 {publicCheck.readiness.admission === "enabled" &&
+                !publicCheck.readiness.invitationRequired &&
                 publicCheck.readiness.servicesAvailable &&
                 publicCheck.preflight.chainAllowsNewOperations
                   ? "Service ready. Select a wallet to connect."
                   : "Service unavailable. Check again later."}
-                {publicCheck.readiness.invitationRequired &&
-                  " An invitation code is required."}
               </p>
             )}
           </div>

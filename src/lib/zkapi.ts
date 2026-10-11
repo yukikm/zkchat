@@ -415,7 +415,6 @@ export async function connectZkapi(
   wallet: AppWallet,
   account: StandardAccount,
   initializeStorage = false,
-  admissionToken?: string,
 ): Promise<BrowserClientHandle> {
   const installed = parseConfig(config);
   if (
@@ -438,7 +437,6 @@ export async function connectZkapi(
           STORAGE_NAME,
           signer.publicKey,
           initializeStorage,
-          admissionToken,
         ).catch((error: unknown) => {
           // A delayed storage-missing result must not revive setup for an
           // account that changed while the deployment was being checked.
