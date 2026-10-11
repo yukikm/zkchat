@@ -597,16 +597,19 @@ describe("existing application adapter with public profile", () => {
       handle.client.chat({
         model: "model",
         stream: false,
-        maxOutputTokens: 129,
+        maxOutputTokens: 4097,
       } as any),
-    ).rejects.toThrow(/128/);
+    ).rejects.toThrow(/4096/);
     expect(client.chat).not.toHaveBeenCalled();
     await handle.client.chat({
       model: "model",
       stream: false,
-      maxOutputTokens: 128,
+      maxOutputTokens: 4096,
     } as any);
     expect(client.chat).toHaveBeenCalledTimes(1);
+    expect(client.chat).toHaveBeenCalledWith(
+      expect.objectContaining({ maxOutputTokens: 4096 }),
+    );
     handle.dispose();
   });
   it("rechecks a transient preflight transport failure before sending chat once", async () => {

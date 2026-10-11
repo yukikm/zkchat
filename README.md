@@ -2,6 +2,8 @@
 
 Solana zkAPIをLLMバックエンドにするReactチャットアプリです。公開SDK **0.2.0-devnet.12** と既存のrevision-6の認証済み公開Devnet profileを使います。既存の `.3` 保存領域には元のSDK・profileを使う復旧版を同梱しています。Solanaは **`@solana/kit` 8.4.0**、ウォレット接続は **`@solana/kit-plugin-wallet` 0.21.0 / Wallet Standard**。`web3.js`は使用しません。
 
+**2026-10-11 回答長の修正:** 現行版の128-token固定を解除し、回答長を最大4,096まで設定できるようにしました。上限に達した回答には打ち切りの案内を表示します。同じ公開URLへ反映・配信検証済みです。[修正内容と検証範囲](docs/RESPONSE-LENGTH-20261011.md)。
+
 **2026-10-11 SDK .12更新:** 公式配布物・署名証明・SHA-256を確認し、ストリーミングの正常終了が中断扱いになる問題へ対応しました。終端イベントに加えてHTTP EOFまで確認し、通常の応答後は同じ会話で次の送信に進めます。期限切れ・中断・精算待ちの操作には引き続き明示的な復旧を使います。既存の `.8` profile・保存領域と `.3` 復旧版を維持します。[更新内容と検証範囲](docs/SDK-STREAMING-UPGRADE-20261011.md)。
 
 **2026-10-11 SDK .10更新（過去の記録）:** `.10` の配布物・署名証明・SHA-256を確認し、既存の `.8` profile・保存名・note IDを保持したまま更新しました。未受付の不確定AUTHは明示的な`Check payment`で復旧できます。既に出金専用にしたnoteは元に戻せません。[更新内容と検証範囲](docs/SDK-UPGRADE-20261011.md)を参照してください。
@@ -43,7 +45,7 @@ npm run dev
 1. `Connect wallet`を開き、検出されたウォレットをプルダウンで選んで`Connect wallet`。拡張機能で承認したアカウントのアドレスがヘッダーに表示されます。アプリでアドレスを選び直す必要はありません。初回だけ`Set up this wallet`で入金データの保存設定へ進みます。接続・保存領域作成は送金しません。
 2. [Circle faucet](https://faucet.circle.com/)でUSDC / Solana Devnet、[Solana faucet](https://faucet.solana.com/)でDevnet SOLを用意します。認証済みUSDC mintは`4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU`。SOLは手数料・rent用です。
 3. 保存領域の注意事項を読み、例として2 Devnet USDCを`Review deposit`で準備します。`Approve in wallet`でウォレットに進み、内容を確認して署名します。送信後は`Check transaction`で保存済み取引を確認します。`pending`は未確定です。
-4. 「Ready to chat」になったら送信します。モデルは固定profileの許可リストから選択します。direct OpenRouter、アプリの上限は128 output tokensです。Streaming設定は認証済みprofileに従います。
+4. 「Ready to chat」になったら送信します。モデルは固定profileの許可リストから選択します。direct OpenRouterの回答上限は4,096 output tokensで、新規設定も4,096です。`Appearance and chat` → `Response length`で128〜4,096に変更できます。保存済みの設定値は保持します。上限に達した回答には案内を表示し、続きは同じ会話で明示的に依頼できます。Streaming設定は認証済みprofileに従います。元の `.3` 復旧版は128のままです。
 5. 公開profileを使う現行SDKのdirect OpenRouter sessionは、Gatewayが受け付ける60秒のleaseを明示指定します（SDK標準の300秒はこのGatewayに拒否されます）。同じ会話は同じsession IDを使い、新しい会話では分離します。別の会話へ送信する前には、前の会話のsessionを`Manage session`（別会話では`Review settlement`）→ `Settle charges`で明示的に閉じます。下書きは保持され、精算後に改めて送信します。Deposit切替・出金も精算後に進みます。応答が中断したら`Check status`で接続画面を開き、`Refresh status`と表示された次の操作で確認します。確認待ちのsessionがあれば`Check payment`で復旧します。推論は再送しません。新しい送信は新しいUUIDを使う別の操作です。
 6. 精算後に`Withdraw balance` → `Review withdrawal`で準備します。**現行SDKの出金は複数回の署名が必要**です。証明buffer作成 → 分割アップロード → 封印 → 出金実行の各取引に署名とネットワーク手数料が発生します。アップロード回数はpayload量次第で、公開APIには総数・現在段階がありません。署名ボタンと送信済み確認ボタンを使って一段ずつ進め、`Withdrawal complete`まで同じnoteを保持します。
 

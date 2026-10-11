@@ -98,6 +98,23 @@ describe("provider conversation context", () => {
   });
 });
 describe("history restoration", () => {
+  it("preserves length-limited replies and their context for an explicit follow-up", () => {
+    const original = conversation([
+      message("user", "a"),
+      {
+        ...message("assistant", "a", "complete", "1. 友人は入口の"),
+        finishReason: "length",
+      },
+    ] as Message[]);
+    const [restored] = parseHistory(JSON.stringify([original]));
+    expect(restored).toEqual(original);
+    expect(contextMessages(restored.messages)).toEqual([
+      { role: "user", content: "user: a" },
+      { role: "assistant", content: "1. 友人は入口の" },
+    ]);
+    original.messages[1].finishReason = "invalid" as Message["finishReason"];
+    expect(parseHistory(JSON.stringify([original]))).toEqual([]);
+  });
   it("keeps an interrupted reply readable but ineligible for provider context", () => {
     const original = conversation([
       message("user", "a"),
@@ -210,6 +227,7 @@ describe("local behavior", () => {
     expect(demo).toMatchObject({ mode: "demo", model: "demo", messages: [] });
   });
   it("validates stored preferences and recovers corrupted JSON", () => {
+    expect(parsePreferences(null).maxTokens).toBe(4096);
     expect(parsePreferences("{")).toEqual(defaultPreferences);
     expect(parsePreferences("null")).toEqual(defaultPreferences);
     expect(
@@ -226,6 +244,7 @@ describe("local behavior", () => {
         }),
       ),
     ).toEqual(defaultPreferences);
+    expect(parsePreferences('{"maxTokens":1024}').maxTokens).toBe(1024);
   });
   it("labels demo replies and exports without implying AI connectivity", () => {
     const c = {

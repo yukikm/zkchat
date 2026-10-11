@@ -7,6 +7,7 @@ export type Message = {
   operationId: string;
   createdAt: number;
   error?: string;
+  finishReason?: "stop" | "length" | "content_filter";
 };
 export type Conversation = {
   id: string;
@@ -20,6 +21,8 @@ export const HISTORY_KEY = "zkchat:conversations:v1";
 export const SETTINGS_KEY = "zkchat:preferences:v1";
 export const MAX_CHATS = 100;
 export const MAX_INPUT = 16000;
+export const MIN_OUTPUT_TOKENS = 128;
+export const MAX_OUTPUT_TOKENS = 4096;
 export type Preferences = {
   theme: "system" | "light" | "dark";
   stream: boolean;
@@ -28,7 +31,7 @@ export type Preferences = {
 export const defaultPreferences: Preferences = {
   theme: "system",
   stream: true,
-  maxTokens: 1024,
+  maxTokens: MAX_OUTPUT_TOKENS,
 };
 export function newConversation(mode: ChatMode, model = ""): Conversation {
   return {
@@ -70,7 +73,9 @@ export function parseHistory(raw: string | null): Conversation[] {
               ["complete", "streaming", "error", "stopped"].includes(m.state) &&
               typeof m.operationId === "string" &&
               Number.isFinite(m.createdAt) &&
-              (m.error === undefined || typeof m.error === "string"),
+              (m.error === undefined || typeof m.error === "string") &&
+              (m.finishReason === undefined ||
+                ["stop", "length", "content_filter"].includes(m.finishReason)),
           ),
       )
       .slice(0, MAX_CHATS)
@@ -101,16 +106,18 @@ export function parsePreferences(raw: string | null): Preferences {
       stream: typeof p?.stream === "boolean" ? p.stream : true,
       maxTokens:
         Number.isInteger(p?.maxTokens) &&
-        p.maxTokens >= 128 &&
-        p.maxTokens <= 4096
+        p.maxTokens >= MIN_OUTPUT_TOKENS &&
+        p.maxTokens <= MAX_OUTPUT_TOKENS
           ? p.maxTokens
-          : 1024,
+          : defaultPreferences.maxTokens,
     };
   } catch {
     return defaultPreferences;
   }
 }
-/** Only complete user/assistant pairs go back to the provider. Partial, failed and cancelled attempts stay visible locally. */
+/** Only successfully received user/assistant pairs go back to the provider.
+ * Length-limited replies remain context so the user can ask to continue;
+ * failed and cancelled transports stay visible locally. */
 export function contextMessages(
   messages: Message[],
 ): { role: "user" | "assistant"; content: string }[] {

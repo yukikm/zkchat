@@ -36,6 +36,7 @@ import {
 import type { PublicPreflightResult } from "@zkapi/solana-sdk/public-profile";
 import type { ServiceReadiness } from "./readiness";
 import { WalletConnectionError } from "./walletErrors";
+import { MAX_OUTPUT_TOKENS } from "./chat";
 import {
   openDepositCatalog,
   ORIGINAL_NOTE_ID,
@@ -738,10 +739,11 @@ export async function connectZkapi(
                 if (
                   !Number.isSafeInteger(input.maxOutputTokens) ||
                   input.maxOutputTokens! < 1 ||
-                  input.maxOutputTokens! > 128
+                  input.maxOutputTokens! >
+                    (RECOVERY_RUNTIME ? 128 : MAX_OUTPUT_TOKENS)
                 )
                   throw new Error(
-                    "This public Devnet preview allows at most 128 output tokens.",
+                    `This public Devnet version allows at most ${RECOVERY_RUNTIME ? 128 : MAX_OUTPUT_TOKENS} output tokens.`,
                   );
               }
             }

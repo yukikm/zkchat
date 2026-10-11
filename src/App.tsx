@@ -29,7 +29,7 @@ import {
   CircleHelp,
 } from "lucide-react";
 import type { ClientStatus } from "@zkapi/solana-sdk";
-import { readChatDeltas, readChatText } from "@zkapi/solana-sdk/chat";
+import { readChatResponse } from "./lib/chatResponse";
 import { SDK_VERSION, RECOVERY_RUNTIME } from "./lib/sdkVersion";
 import { chatFailureMessage, reusableSession } from "./lib/sdkStatus";
 import {
@@ -49,6 +49,8 @@ import {
   HISTORY_KEY,
   MAX_CHATS,
   MAX_INPUT,
+  MIN_OUTPUT_TOKENS,
+  MAX_OUTPUT_TOKENS,
   newConversation,
   parseHistory,
   parsePreferences,
@@ -180,10 +182,9 @@ export default function App() {
   const selectedModel = current?.model || model || defaultModel;
   const streamingSupported = configuredStreaming(config, selectedModel);
   const useStreaming = preferences.stream && streamingSupported;
-  const maxOutputTokens =
-    config?.schema === 2
-      ? Math.min(preferences.maxTokens, 128)
-      : preferences.maxTokens;
+  const outputTokenLimit =
+    RECOVERY_RUNTIME && config?.schema === 2 ? 128 : MAX_OUTPUT_TOKENS;
+  const maxOutputTokens = Math.min(preferences.maxTokens, outputTokenLimit);
   const needsConversationSettlement =
     selectedMode === "live" &&
     reusableSession(status) &&
@@ -459,6 +460,7 @@ export default function App() {
         ),
       }));
     let response: Response | undefined;
+    let finishReason: Message["finishReason"];
     try {
       if (selectedMode === "demo") {
         await streamDemo(
@@ -485,21 +487,16 @@ export default function App() {
           signal: controller.signal,
         });
         setActivity("Receiving the response…");
-        if (useStreaming) {
-          for await (const chunk of readChatDeltas(response)) {
-            controller.signal.throwIfAborted();
-            delta(chunk);
-          }
-        } else {
-          const text = await readChatText(response);
-          controller.signal.throwIfAborted();
-          delta(text);
-        }
+        finishReason = await readChatResponse(response, {
+          stream: useStreaming,
+          signal: controller.signal,
+          onDelta: delta,
+        });
       }
       updateChat(conversation.id, (c) => ({
         ...c,
         messages: c.messages.map((m) =>
-          m.id === assistant.id ? { ...m, state: "complete" } : m,
+          m.id === assistant.id ? { ...m, state: "complete", finishReason } : m,
         ),
       }));
     } catch (error) {
@@ -1045,6 +1042,17 @@ export default function App() {
                             {message.error}
                           </div>
                         )}
+                        {message.finishReason === "length" && (
+                          <div className="message-feedback" role="status">
+                            Response reached the length limit. Ask to continue.
+                          </div>
+                        )}
+                        {message.finishReason === "content_filter" && (
+                          <div className="message-feedback" role="status">
+                            The provider stopped this response because of its
+                            content filter.
+                          </div>
+                        )}
                         {message.state !== "streaming" && (
                           <div className="message-actions">
                             {current.mode === "live" &&
@@ -1313,9 +1321,9 @@ export default function App() {
             <input
               id="max-tokens"
               type="range"
-              min="128"
-              max={config?.schema === 2 ? "128" : "4096"}
-              step="128"
+              min={MIN_OUTPUT_TOKENS}
+              max={outputTokenLimit}
+              step={MIN_OUTPUT_TOKENS}
               value={maxOutputTokens}
               onChange={(e) =>
                 setPreferences((p) => ({
@@ -1325,8 +1333,8 @@ export default function App() {
               }
             />
             <small>
-              {config?.schema === 2
-                ? "Limited to 128 tokens during this preview."
+              {RECOVERY_RUNTIME && config?.schema === 2
+                ? "Limited to 128 tokens in this older recovery version."
                 : "Longer replies can cost more."}
             </small>
           </div>
