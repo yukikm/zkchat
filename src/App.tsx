@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { version as APP_VERSION } from "../package.json";
 import {
   ArrowDown,
   ArrowDownLeft,
@@ -30,6 +31,7 @@ import {
 } from "lucide-react";
 import type { ClientStatus } from "@zkapi/solana-sdk";
 import { readChatResponse } from "./lib/chatResponse";
+import { useAppUpdate } from "./lib/appUpdate";
 import { SDK_VERSION, RECOVERY_RUNTIME } from "./lib/sdkVersion";
 import { chatFailureMessage, reusableSession } from "./lib/sdkStatus";
 import {
@@ -74,7 +76,7 @@ import {
   getConnectedWalletAccount,
 } from "./lib/walletConnector";
 import { PublicOnboardingError } from "./lib/publicDeployment";
-import { DepositError, hasLowBalance } from "./lib/deposits";
+import { canChangeDeposit, DepositError, hasLowBalance } from "./lib/deposits";
 const suggestions = [
   {
     icon: Feather,
@@ -124,6 +126,7 @@ function Brand({ small = false }: { small?: boolean }) {
   );
 }
 export default function App() {
+  const updateAvailable = useAppUpdate();
   const [chats, setChats] = useState<Conversation[]>(() =>
     parseHistory(readLocal(HISTORY_KEY)),
   );
@@ -163,6 +166,11 @@ export default function App() {
   const [storageError, setStorageError] = useState(false);
   const [online, setOnline] = useState(navigator.onLine);
   const [showScroll, setShowScroll] = useState(false);
+  const updateOperationPending =
+    sending ||
+    connectionBusy ||
+    configLoading ||
+    (!!handle && !canChangeDeposit(status));
   const abortRef = useRef<AbortController | null>(null);
   const busyRef = useRef(false);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -865,6 +873,23 @@ export default function App() {
             </button>
           </div>
         </header>
+        {updateAvailable && (
+          <div className="settlement-banner" role="status">
+            <span>
+              {updateOperationPending
+                ? "An update is ready. Finish the current payment or operation before reloading."
+                : draft.length > 0
+                  ? "An update is ready. Send or clear your draft before reloading."
+                  : "An update is ready. Reload to use the latest fixes."}
+            </span>
+            <button
+              disabled={updateOperationPending || draft.length > 0}
+              onClick={() => window.location.reload()}
+            >
+              Reload app
+            </button>
+          </div>
+        )}
         {!online && (
           <div className="top-notice error-message" role="alert">
             You’re offline. Reconnect to send. Your draft is saved.
@@ -1414,7 +1439,8 @@ export default function App() {
           <details className="connection-details">
             <summary>Payment data details</summary>
             <p>
-              SDK {SDK_VERSION}. Payment records are encrypted in this browser.{" "}
+              App {APP_VERSION} · SDK {SDK_VERSION}. Payment records are
+              encrypted in this browser.{" "}
               {RECOVERY_RUNTIME
                 ? "Older records can include sent messages."
                 : "Sent message bodies are omitted from new SDK records. Request fingerprints and payment records remain."}{" "}

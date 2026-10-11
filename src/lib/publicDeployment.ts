@@ -33,6 +33,44 @@ const connectionCheckLabels: Readonly<Record<string, string>> = {
   snapshot: "finalized chain snapshot",
   readiness: "service status",
 };
+
+export function servicePauseReason(
+  diagnostic: {
+    preflight: PublicPreflightResult | null;
+    readiness: ServiceReadiness | null;
+    unavailableComponent: string | null;
+  } | null,
+) {
+  if (diagnostic?.preflight?.paused)
+    return "The operator has paused new payments. Check again later.";
+  if (diagnostic?.unavailableComponent) {
+    switch (diagnostic.unavailableComponent) {
+      case "rpc":
+        return "Could not verify the connection to Solana.";
+      case "snapshot":
+        return "Could not verify the latest confirmed Solana state.";
+      case "readiness":
+        return "Could not confirm that the payment service is ready.";
+      default: {
+        const label = Object.hasOwn(
+          connectionCheckLabels,
+          diagnostic.unavailableComponent,
+        )
+          ? connectionCheckLabels[diagnostic.unavailableComponent]
+          : "the service connection";
+        return `Could not verify ${label}.`;
+      }
+    }
+  }
+  if (diagnostic?.readiness?.admission === "suspended")
+    return "The operator has paused new requests. Check again later.";
+  if (diagnostic?.readiness?.invitationRequired)
+    return "The operator has restricted new requests. Check again later.";
+  if (diagnostic?.readiness && !diagnostic.readiness.servicesAvailable)
+    return "A payment service is not ready. Check again later.";
+  return "The service connection needs to be checked again.";
+}
+
 export function connectionCheckError(error: PublicProfileError) {
   const label = Object.hasOwn(connectionCheckLabels, error.component)
     ? connectionCheckLabels[error.component]

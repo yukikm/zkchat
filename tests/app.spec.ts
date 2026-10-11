@@ -499,6 +499,142 @@ test("public onboarding connects without invitation controls or a token argument
   await expect(page.getByLabel("Invitation code")).toHaveCount(0);
 });
 
+for (const unavailableComponent of ["snapshot", "readiness"]) {
+  test(`a failed ${unavailableComponent} check can be retried without withdrawing or losing the draft`, async ({
+    page,
+  }) => {
+    const source = liveStub
+      .replace(
+        "label: 'Test Operator', mode:",
+        "schema: 2, label: 'Test Operator', mode:",
+      )
+      .replace(
+        "let state = { mode:",
+        "let state = { noteId: 'existing-funded-note', mode:",
+      )
+      .replace(
+        "const calls = []; let recoveries = 0;",
+        `const calls = []; let recoveries = 0;
+        let serviceReady = true; let serviceChecks = 0;
+        window.testServiceOutage = () => { serviceReady = false; update({ canRequest: false }); };`,
+      )
+      .replace(
+        "publicAdmissionReady: true,",
+        `get publicAdmissionReady() { return serviceReady; },
+        get diagnostic() { return { preflight: serviceReady ? { paused: false } : null, unavailableComponent: serviceReady ? null : '${unavailableComponent}' }; },
+        selectedDepositId: 'existing-funded-note', deposits: [{ id: 'existing-funded-note' }],`,
+      )
+      .replace(
+        "async refreshPreflight() {}",
+        `async refreshPreflight() {
+          localStorage.setItem('zkchat:test-service-checks', String(++serviceChecks));
+          serviceReady = serviceChecks > 1;
+          update({ canRequest: serviceReady });
+        }`,
+      )
+      .replace(
+        "status: async () => state,",
+        `status: async () => { localStorage.setItem('zkchat:test-status-note', state.noteId); return state; },
+        prepareWithdrawal: async () => { localStorage.setItem('zkchat:test-withdrawals', '1'); },`,
+      )
+      .replace("if (calls.length === 1)", "if (false)");
+    await connectFixture(page, source);
+    await page.getByRole("button", { name: "Close", exact: true }).click();
+    const draft = "接続が戻ったらこのデポジットから送る";
+    await input(page).fill(draft);
+    await expect(send(page)).toBeEnabled();
+    await page.evaluate(() =>
+      (
+        window as unknown as { testServiceOutage: () => void }
+      ).testServiceOutage(),
+    );
+    await expect(send(page)).toBeDisabled();
+    await page
+      .getByRole("button", { name: "Connected wallet", exact: true })
+      .click();
+    const banner = page
+      .getByRole("status")
+      .filter({ hasText: "Chat temporarily paused" });
+    const retry = banner.getByRole("button", {
+      name: "Retry service check",
+      exact: true,
+    });
+    const deposit = page.getByRole("button", {
+      name: "Add deposit",
+      exact: true,
+    });
+    const withdrawal = page.getByRole("button", {
+      name: "Withdraw balance",
+      exact: true,
+    });
+    await expect(banner).toBeVisible();
+    await expect(banner).toContainText(
+      unavailableComponent === "snapshot"
+        ? "Could not verify the latest confirmed Solana state."
+        : "Could not confirm that the payment service is ready.",
+    );
+    await expect(banner).toContainText(
+      "New messages and deposits are paused until service checks pass.",
+    );
+    await expect(banner).toContainText(
+      "no withdrawal or new deposit is needed to retry",
+    );
+    await expect(retry).toBeEnabled();
+    await expect(deposit).toBeDisabled();
+    await expect(withdrawal).toBeEnabled();
+    await expect(
+      page.getByText("This deposit cannot authorize new messages.", {
+        exact: false,
+      }),
+    ).toHaveCount(0);
+    await retry.click();
+    await expect(retry).toBeEnabled();
+    await expect(banner).toBeVisible();
+    await expect(deposit).toBeDisabled();
+    await expect(withdrawal).toBeEnabled();
+    expect(
+      await page.evaluate(() =>
+        localStorage.getItem("zkchat:test-service-checks"),
+      ),
+    ).toBe("1");
+    await retry.click();
+    await expect(banner).toHaveCount(0);
+    await expect(page.getByText(/^Service check passed\./)).toBeVisible();
+    await expect(deposit).toBeEnabled();
+    await expect(page.getByLabel("Saved deposits")).toHaveValue(
+      "existing-funded-note",
+    );
+    expect(
+      await page.evaluate(() => ({
+        checks: localStorage.getItem("zkchat:test-service-checks"),
+        note: localStorage.getItem("zkchat:test-status-note"),
+        chat: localStorage.getItem("zkchat:test-calls"),
+        recovery: localStorage.getItem("zkchat:test-recoveries"),
+        withdrawal: localStorage.getItem("zkchat:test-withdrawals"),
+      })),
+    ).toEqual({
+      checks: "2",
+      note: "existing-funded-note",
+      chat: null,
+      recovery: null,
+      withdrawal: null,
+    });
+    await page.getByRole("button", { name: "Close", exact: true }).click();
+    await expect(input(page)).toHaveValue(draft);
+    await expect(send(page)).toBeEnabled();
+    await send(page).click();
+    await finish(page);
+    const calls = await page.evaluate(() =>
+      JSON.parse(localStorage.getItem("zkchat:test-calls") ?? "[]"),
+    );
+    expect(calls).toHaveLength(1);
+    expect(calls[0].messages.at(-1)).toMatchObject({
+      role: "user",
+      content: draft,
+    });
+  });
+}
+
 test("Kit wallet connector discovers, automatically selects and disconnects the exact Wallet Standard account", async ({
   page,
 }) => {

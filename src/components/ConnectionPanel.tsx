@@ -30,6 +30,7 @@ import {
 import {
   inspectPublicDeployment,
   PublicOnboardingError,
+  servicePauseReason,
 } from "../lib/publicDeployment";
 import {
   AmountInputError,
@@ -207,6 +208,28 @@ export function ConnectionPanel({
     }
   }
   const disabled = busy || locked || configLoading || !!status?.busy;
+  const servicePaused =
+    config?.schema === 2 && !!handle && !handle.publicAdmissionReady;
+  const retryServiceCheck = () =>
+    action(
+      async () => {
+        if (!handle) return;
+        await handle.refreshPreflight();
+        if (config?.schema !== 2) return;
+        if (handle.publicAdmissionReady) {
+          const latest = await handle.client.status();
+          setInfo(
+            latest.canRequest
+              ? "Service check passed. You can continue chatting."
+              : "Service check passed. Follow any remaining payment steps below.",
+          );
+        } else {
+          setError("The service check has not passed yet. Try again shortly.");
+        }
+      },
+      "Could not finish the service check. Try again shortly. No message or transaction was sent by this check.",
+      "Checking the service connection…",
+    );
   const withdrawalInProgress =
     !!status?.walletOperation &&
     ["mutual_close", "initiate_escape", "finalize_escape"].includes(
@@ -510,21 +533,23 @@ export function ConnectionPanel({
                     permanent protection.
                   </p>
                 )}
-              {config.schema === 2 && !handle.publicAdmissionReady && (
+              {servicePaused && (
                 <div className="notice" role="status">
-                  <strong>Service unavailable</strong>
+                  <strong>Chat temporarily paused</strong>
+                  <p>{servicePauseReason(handle.diagnostic ?? null)}</p>
                   <p>
-                    {handle.diagnostic?.preflight?.paused
-                      ? "The service is paused. Check again later."
-                      : handle.diagnostic?.unavailableComponent
-                        ? "Could not check the service. You can still check existing payments."
-                        : handle.diagnostic?.readiness?.admission ===
-                            "suspended"
-                          ? "New requests are paused. Existing payments and withdrawals can still be checked."
-                          : handle.diagnostic?.readiness?.invitationRequired
-                            ? "The operator has restricted new requests. Existing payments can still be checked."
-                            : "Choose Refresh status to check again. Existing payments stay saved."}
+                    New messages and deposits are paused until service checks
+                    pass. Retry with your current deposit; no withdrawal or new
+                    deposit is needed to retry.
                   </p>
+                  <button
+                    className="primary"
+                    disabled={disabled}
+                    onClick={() => void retryServiceCheck()}
+                  >
+                    <RefreshCw size={16} />
+                    Retry service check
+                  </button>
                 </div>
               )}
               <div className="notice">
@@ -985,21 +1010,18 @@ export function ConnectionPanel({
                     )}
                   </div>
                 )}
-              <div className="button-row connection-bottom">
-                <button
-                  className="text-button"
-                  disabled={disabled}
-                  onClick={() =>
-                    void action(async () => {
-                      await handle.refreshPreflight();
-                      await refresh();
-                    })
-                  }
-                >
-                  <RefreshCw size={14} />
-                  Refresh status
-                </button>
-              </div>
+              {!servicePaused && (
+                <div className="button-row connection-bottom">
+                  <button
+                    className="text-button"
+                    disabled={disabled}
+                    onClick={() => void retryServiceCheck()}
+                  >
+                    <RefreshCw size={14} />
+                    Refresh status
+                  </button>
+                </div>
+              )}
             </>
           )}
         </>
