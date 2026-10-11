@@ -2,8 +2,8 @@ import type { ClientStatus, ClientStorage } from "@zkapi/solana-sdk";
 import { openBrowserStorage } from "@zkapi/solana-sdk/browser";
 import { EncryptedJournal } from "@zkapi/solana-sdk/journal";
 
-import { SDK_VERSION } from "./sdkVersion";
-export const ORIGINAL_NOTE_ID = `zkchat-note-sdk-${SDK_VERSION}`;
+import { SDK_STORAGE_VERSION } from "./sdkVersion";
+export const ORIGINAL_NOTE_ID = `zkchat-note-sdk-${SDK_STORAGE_VERSION}`;
 const CATALOG_ID = "zkchat-deposit-catalog-v1";
 export class DepositError extends Error {}
 export interface SavedDeposit {

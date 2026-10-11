@@ -26,7 +26,7 @@
     "@solana/kit-plugin-wallet": "0.21.0",
     "@wallet-standard/app": "1.1.1",
     "@wallet-standard/ui-registry": "1.1.1",
-    "@zkapi/solana-sdk": "file:vendor/zkapi-solana-sdk-0.2.0-devnet.8.tgz",
+    "@zkapi/solana-sdk": "file:vendor/zkapi-solana-sdk-0.2.0-devnet.10.tgz",
     "@zkapi/solana-sdk-legacy": "file:vendor/zkapi-solana-sdk-0.2.0-devnet.3.tgz",
     "lucide-react": "^0.468.0",
     "react": "^19.2.0",

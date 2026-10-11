@@ -1920,7 +1920,7 @@ PERFORMANCE OF THIS SOFTWARE.
 
 
 ==============================================================================
-@zkapi/solana-sdk@0.2.0-devnet.8 / LICENSE
+@zkapi/solana-sdk@0.2.0-devnet.10 / LICENSE
 ==============================================================================
 MIT License
 

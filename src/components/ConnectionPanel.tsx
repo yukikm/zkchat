@@ -488,6 +488,21 @@ export function ConnectionPanel({
                   {status.expiry.message}
                 </p>
               )}
+              {status?.wallet === "active" &&
+                !status.canRequest &&
+                canChangeDeposit(status) &&
+                !hasLowBalance(status) &&
+                status.expiry?.severity !== "expired" &&
+                !handle.invalidated &&
+                handle.publicAdmissionReady && (
+                  <p className="notice" role="status">
+                    This deposit cannot authorize new messages. If you disabled
+                    an uncertain authorization (previously “Check
+                    authorization”), withdraw this deposit’s balance before
+                    funding a new deposit. Refresh status cannot undo that
+                    permanent protection.
+                  </p>
+                )}
               {config.schema === 2 && !handle.publicAdmissionReady && (
                 <div className="notice" role="status">
                   <strong>Service unavailable</strong>
@@ -728,6 +743,15 @@ export function ConnectionPanel({
                       ? "You can keep chatting in the same conversation. Settle charges before sending in another chat, switching deposits, or withdrawing."
                       : "Check the payment before sending again. This does not resend your message."}
                   </p>
+                  {!RECOVERY_RUNTIME &&
+                    status.canReconcileUnacceptedAuthorization && (
+                      <p className="small">
+                        If the service confirms the authorization was not
+                        accepted, Check payment can release it so this deposit
+                        can be used again. Your balance stays saved and no
+                        message is resent.
+                      </p>
+                    )}
                   <details className="connection-details">
                     <summary>Payment details</summary>
                     <code>{status.session.phase}</code>
@@ -800,17 +824,29 @@ export function ConnectionPanel({
                         </button>
                       )}
                     {status.canReconcileUnacceptedAuthorization && (
-                      <button
-                        className="secondary"
-                        disabled={disabled}
-                        onClick={() =>
-                          void action(() =>
-                            handle.client.reconcileUnacceptedAuthorization(),
-                          )
-                        }
-                      >
-                        Check authorization
-                      </button>
+                      <div className="notice">
+                        <p>
+                          Disable the uncertain authorization only if you want
+                          to withdraw this deposit. This permanently prevents
+                          new messages from using it, including after the
+                          service recovers. No message is resent and no funds
+                          move here.
+                        </p>
+                        <button
+                          className="secondary"
+                          disabled={disabled}
+                          onClick={() =>
+                            void action(async () => {
+                              await handle.client.reconcileUnacceptedAuthorization();
+                              setInfo(
+                                "Authorization disabled. Withdraw this deposit’s balance before funding a new deposit. Refresh status cannot re-enable it.",
+                              );
+                            })
+                          }
+                        >
+                          Disable authorization for withdrawal
+                        </button>
+                      </div>
                     )}
                   </div>
                 </div>

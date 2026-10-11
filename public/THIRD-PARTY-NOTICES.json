@@ -1,10 +1,10 @@
 {
   "schema": 1,
   "kind": "installed_production_dependency_notice_inventory",
-  "packageLockSha256": "9aca45fa9db6a2e9518922b16476453d37404f1f58ac8e789c387dc5526b9464",
-  "applicationPackageJsonSha256": "95da3f25d41d121b89579e53273231c816cff9642ee0158a31cd927461c98770",
-  "collectionSha256": "1cec64035a661d5d8b2d5544b85abc0496135d799ef8256c0708b0007262c8fd",
-  "collectionBytes": 249120,
+  "packageLockSha256": "81d08c48069388f9592c46a22a16615b7073a20eeb2d285401c1f9cfd73ce56d",
+  "applicationPackageJsonSha256": "9e75f55a4fcefe063bf33b046948a92f7b40a490959d18f79f7e9a0d1f8488a7",
+  "collectionSha256": "5a5a1efd9287279d2aa4619480f4b6ae9f7b9edf50c898bfe85d1e30c33ab440",
+  "collectionBytes": 249121,
   "scope": "Installed npm production closure; exact notice bytes preserved; overinclusive relative to Vite bundle",
   "fontPackages": [
     "@fontsource-variable/dm-sans",
@@ -797,10 +797,10 @@
     },
     {
       "name": "@zkapi/solana-sdk",
-      "version": "0.2.0-devnet.8",
+      "version": "0.2.0-devnet.10",
       "license": "MIT",
-      "lockIntegrity": "sha512-fvfCGlXdVyzupfpdeMl6DQOMkld2Vl3dOaj+I3BJUYcOZpMi+Hr8wtAIA0dvZigP3Uyl5T/5Jp43si9SocIoeQ==",
-      "packageJsonSha256": "3b509b88ad8a6277583147ed0d6922edbb5e59c7607192eaf9a6d9e877f4fa89",
+      "lockIntegrity": "sha512-lMzRPH66vRXY8tOntBVtxKxeRZcrD0j+kDgyFuDx0nLdVrrdXUQINbH0oLr+T5JnAbAHvXgPHc7dfF4nJqkihA==",
+      "packageJsonSha256": "a4193b620cd4443358bcd258ab5f224f0bcfa659e1444f8c5adf9ea79f20bd59",
       "sources": [
         {
           "path": "node_modules/@zkapi/solana-sdk/LICENSE",

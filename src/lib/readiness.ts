@@ -11,24 +11,36 @@ export interface ServiceReadiness {
 
 class RetryableReadinessError extends Error {}
 
+// Control probes may take 45s and the public relay allows 48s. Leave room
+// for transport without changing the observation's five-second validity.
+const READINESS_TIMEOUT_MS = 60_000;
+
 /** HTTPS observations, not a proof of provider credit or successful AUTH. */
 export async function checkServiceReadiness(
   deployment: { origin: string; id: string; manifestHash: string },
   fetcher: typeof fetch = globalThis.fetch,
+  signal?: AbortSignal,
 ): Promise<ServiceReadiness> {
   const origin = new URL(deployment.origin);
   if (origin.protocol !== "https:" || origin.origin !== deployment.origin)
     throw new Error("Invalid control origin.");
-  async function read(path: string): Promise<Record<string, unknown>> {
+  async function read(
+    path: string,
+    timeoutMs: number,
+  ): Promise<Record<string, unknown>> {
+    signal?.throwIfAborted();
     let response: Response;
     try {
       response = await fetcher(origin.origin + path, {
         credentials: "omit",
         redirect: "error",
         cache: "no-store",
-        signal: AbortSignal.timeout(15_000),
+        signal: signal
+          ? AbortSignal.any([signal, AbortSignal.timeout(timeoutMs)])
+          : AbortSignal.timeout(timeoutMs),
       });
     } catch {
+      signal?.throwIfAborted();
       throw new RetryableReadinessError("Service readiness is unavailable.");
     }
     if (!response.ok) {
@@ -78,11 +90,13 @@ export async function checkServiceReadiness(
     path: string,
     verify: (value: Record<string, unknown>) => T,
     mayRetry = true,
+    timeoutMs = 15_000,
   ): Promise<T> {
     for (let attempt = 0; ; attempt++) {
       try {
-        return verify(await read(path));
+        return verify(await read(path, timeoutMs));
       } catch (error) {
+        signal?.throwIfAborted();
         if (
           attempt !== 0 ||
           !mayRetry ||
@@ -148,5 +162,6 @@ export async function checkServiceReadiness(
       };
     },
     relay.admission === "enabled",
+    READINESS_TIMEOUT_MS,
   );
 }

@@ -33,7 +33,10 @@ function fixtures(relayPatch = {}, readinessPatch = {}) {
   return { fetcher, relay, readiness };
 }
 describe("live readiness contract", () => {
-  afterEach(() => vi.restoreAllMocks());
+  afterEach(() => {
+    vi.restoreAllMocks();
+    vi.useRealTimers();
+  });
   it("accepts public no-invitation admission using credential-free, bounded read-only routes", async () => {
     const { fetcher } = fixtures();
     expect(await checkServiceReadiness(deployment, fetcher)).toMatchObject({
@@ -135,6 +138,99 @@ describe("live readiness contract", () => {
       deployment.origin + "/zkapi/v1/readiness",
       deployment.origin + "/zkapi/v1/readiness",
     ]);
+  });
+
+  it("waits for a slow upstream probe while requiring a fresh observation", async () => {
+    vi.useFakeTimers();
+    // Native AbortSignal.timeout does not use Vitest's fake clock.
+    vi.spyOn(AbortSignal, "timeout").mockImplementation((ms) => {
+      const controller = new AbortController();
+      setTimeout(() => controller.abort(), ms);
+      return controller.signal;
+    });
+    const fetcher = vi.fn(
+      async (url: RequestInfo | URL, init?: RequestInit) => {
+        if (String(url).endsWith("/relay-status"))
+          return Response.json(fixtures().relay);
+        return new Promise<Response>((resolve, reject) => {
+          init!.signal!.addEventListener(
+            "abort",
+            () => reject(new DOMException("Timed out", "TimeoutError")),
+            { once: true },
+          );
+          // A 45s probe plus relay/transport time exceeds the old app bounds.
+          setTimeout(
+            () => resolve(Response.json(fixtures().readiness)),
+            49_000,
+          );
+        });
+      },
+    );
+    const result = checkServiceReadiness(deployment, fetcher);
+    const assertion = expect(result).resolves.toMatchObject({
+      servicesAvailable: true,
+    });
+    await vi.advanceTimersByTimeAsync(49_000);
+    await assertion;
+    expect(fetcher).toHaveBeenCalledTimes(2);
+  });
+
+  it("cancels an in-flight check without retrying", async () => {
+    const controller = new AbortController();
+    let started!: () => void;
+    const ready = new Promise<void>((resolve) => {
+      started = resolve;
+    });
+    const fetcher = vi.fn(
+      async (_url: RequestInfo | URL, init?: RequestInit) =>
+        new Promise<Response>((_resolve, reject) => {
+          init!.signal!.addEventListener(
+            "abort",
+            () => reject(init!.signal!.reason),
+            { once: true },
+          );
+          started();
+        }),
+    );
+    const result = checkServiceReadiness(
+      deployment,
+      fetcher,
+      controller.signal,
+    );
+    const assertion = expect(result).rejects.toThrow("User stopped");
+    await ready;
+    controller.abort(new Error("User stopped"));
+    await assertion;
+    expect(fetcher).toHaveBeenCalledTimes(1);
+  });
+
+  it("bounds a stalled readiness check and its single retry", async () => {
+    vi.useFakeTimers();
+    vi.spyOn(AbortSignal, "timeout").mockImplementation((ms) => {
+      const controller = new AbortController();
+      setTimeout(() => controller.abort(), ms);
+      return controller.signal;
+    });
+    const fetcher = vi.fn(
+      async (url: RequestInfo | URL, init?: RequestInit) => {
+        if (String(url).endsWith("/relay-status"))
+          return Response.json(fixtures().relay);
+        return new Promise<Response>((_, reject) => {
+          init!.signal!.addEventListener(
+            "abort",
+            () => reject(new DOMException("Timed out", "TimeoutError")),
+            { once: true },
+          );
+        });
+      },
+    );
+    const result = checkServiceReadiness(deployment, fetcher);
+    const assertion = expect(result).rejects.toThrow(
+      "Service readiness is unavailable.",
+    );
+    await vi.advanceTimersByTimeAsync(120_000);
+    await assertion;
+    expect(fetcher).toHaveBeenCalledTimes(3);
   });
 
   it.each(["relay", "readiness"] as const)(

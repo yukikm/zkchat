@@ -1,0 +1,165 @@
+{
+  "observedAt": "2026-10-11T06:07:58.902Z",
+  "origin": "https://dzt0611ozdx70.cloudfront.net",
+  "sdk": "0.2.0-devnet.10",
+  "checks": [
+    {
+      "path": "/index.html",
+      "sha256": "8240e960b05ef45f64e7f85768be761ebc4efa535e24b043af938c2ea7ff12a3",
+      "bytes": 813,
+      "type": "text/html; charset=utf-8",
+      "cache": "public,max-age=0,s-maxage=60,must-revalidate"
+    },
+    {
+      "path": "/zkapi-config.json",
+      "sha256": "ce29a42706fc186cd4a7a992300825456f0883a9b1703e5068cc2f9b88130927",
+      "bytes": 302,
+      "type": "application/json",
+      "cache": "public,max-age=0,s-maxage=60,must-revalidate"
+    },
+    {
+      "path": "/THIRD-PARTY-NOTICES.json",
+      "sha256": "0145d7e2760ec5919541bc0c31f9a036936705cbb252ae782645ff3e5225f081",
+      "bytes": 90091,
+      "type": "application/json",
+      "cache": "public,max-age=0,s-maxage=60,must-revalidate"
+    },
+    {
+      "path": "/THIRD-PARTY-NOTICES.txt",
+      "sha256": "5a5a1efd9287279d2aa4619480f4b6ae9f7b9edf50c898bfe85d1e30c33ab440",
+      "bytes": 249121,
+      "type": "text/plain",
+      "cache": "public,max-age=0,s-maxage=60,must-revalidate"
+    },
+    {
+      "path": "/assets/index-Bg_qMSCY.css",
+      "sha256": "a705827be717f06af79887a76da9140eec6933635a2401d3cef59bc48f8fd652",
+      "bytes": 130715,
+      "type": "text/css",
+      "cache": "public,max-age=31536000,immutable"
+    },
+    {
+      "path": "/assets/index-CDmqdKBh.js",
+      "sha256": "4b8af140866eecfac3c3687e5bc1a3fd582f91038ffef05b28f887c1f66f8955",
+      "bytes": 334949,
+      "type": "text/javascript",
+      "cache": "public,max-age=31536000,immutable"
+    },
+    {
+      "path": "/assets/markdown-zaA84sOm.js",
+      "sha256": "3f4411de2ec310b8bbe9540ae1b666753a0cdfe56a16a4bb30bfd3defb9f82d1",
+      "bytes": 166975,
+      "type": "text/javascript",
+      "cache": "public,max-age=31536000,immutable"
+    },
+    {
+      "path": "/assets/prover.worker-CX6K0Mkg.js",
+      "sha256": "b9845389791c32037dd0ae24ed52b010b71752899108ce58c406df19b85b5ef9",
+      "bytes": 2175,
+      "type": "text/javascript",
+      "cache": "public,max-age=31536000,immutable"
+    },
+    {
+      "path": "/assets/zkapi-sdk-QaDO8NrR.js",
+      "sha256": "b1ecbd63c7309019ea8352f6443dc755b4b5645ee5924cfeb8be1312b5d99f11",
+      "bytes": 270845,
+      "type": "text/javascript",
+      "cache": "public,max-age=31536000,immutable"
+    },
+    {
+      "path": "/recovery-v3/index.html",
+      "sha256": "80fb284b13aab272abf9d26f81108bbd8f66b804216a570232a1db8eac05806a",
+      "bytes": 873,
+      "type": "text/html; charset=utf-8",
+      "cache": "public,max-age=0,s-maxage=60,must-revalidate"
+    },
+    {
+      "path": "/recovery-v3/zkapi-config.json",
+      "sha256": "64b6cb8ffb9bbd4e64710a1ba658b3f259074db5e968712f6c729a90d19c0709",
+      "bytes": 299,
+      "type": "application/json",
+      "cache": "public,max-age=0,s-maxage=60,must-revalidate"
+    },
+    {
+      "path": "/recovery-v3/THIRD-PARTY-NOTICES.json",
+      "sha256": "0145d7e2760ec5919541bc0c31f9a036936705cbb252ae782645ff3e5225f081",
+      "bytes": 90091,
+      "type": "application/json",
+      "cache": "public,max-age=0,s-maxage=60,must-revalidate"
+    },
+    {
+      "path": "/recovery-v3/THIRD-PARTY-NOTICES.txt",
+      "sha256": "5a5a1efd9287279d2aa4619480f4b6ae9f7b9edf50c898bfe85d1e30c33ab440",
+      "bytes": 249121,
+      "type": "text/plain",
+      "cache": "public,max-age=0,s-maxage=60,must-revalidate"
+    },
+    {
+      "path": "/recovery-v3/assets/index-BLxoa488.css",
+      "sha256": "82d1c364c2524d900cbca5bb752da7f2c15ba117777b6045c51ae2389ee7c26d",
+      "bytes": 132227,
+      "type": "text/css",
+      "cache": "public,max-age=31536000,immutable"
+    },
+    {
+      "path": "/recovery-v3/assets/index-UCUlgCF7.js",
+      "sha256": "39fa0251ebc7eb06aad41626ccbab339778e398fb43a2ebea25dd099acce970c",
+      "bytes": 334319,
+      "type": "text/javascript",
+      "cache": "public,max-age=31536000,immutable"
+    },
+    {
+      "path": "/recovery-v3/assets/markdown-CNvaGaf6.js",
+      "sha256": "e61ebd29f515d0b74d7f1f2bc2cb940b5faeed8e927243118876ff2490507563",
+      "bytes": 166975,
+      "type": "text/javascript",
+      "cache": "public,max-age=31536000,immutable"
+    },
+    {
+      "path": "/recovery-v3/assets/prover.worker-CX6K0Mkg.js",
+      "sha256": "b9845389791c32037dd0ae24ed52b010b71752899108ce58c406df19b85b5ef9",
+      "bytes": 2175,
+      "type": "text/javascript",
+      "cache": "public,max-age=31536000,immutable"
+    },
+    {
+      "path": "/recovery-v3/assets/zkapi-sdk-O9XVRUZG.js",
+      "sha256": "c4318fca12f3c4199fe7e355a1c097f55e52167052947f16f67d638c7940ea75",
+      "bytes": 252212,
+      "type": "text/javascript",
+      "cache": "public,max-age=31536000,immutable"
+    },
+    {
+      "path": "/assets/index-Cv-PHxYk.js",
+      "oldAssetRetained": true
+    },
+    {
+      "path": "/assets/zkapi-sdk-C7hWdlCu.js",
+      "oldAssetRetained": true
+    },
+    {
+      "path": "/recovery-v3/assets/index-3Fg9jy4h.js",
+      "oldAssetRetained": true
+    }
+  ],
+  "browser": {
+    "demo": true,
+    "currentSdk": true,
+    "legacyRecovery": true,
+    "sameOriginStorageSentinel": true,
+    "realProfileLoaded": true,
+    "publicPreflightReady": true,
+    "pageErrors": []
+  },
+  "scope": "Public files, isolated browser demo/recovery, and read-only live preflight. No user browser data, wallet, AUTH, inference or financial changes.",
+  "deployment": {
+    "stack": "zkchat-static",
+    "region": "us-east-1",
+    "distributionId": "E3OT9UOJBXFFK5",
+    "invalidationId": "IDCRDS04I18VB99AMASACQB4QG",
+    "invalidationCompleted": true,
+    "uploadedFiles": 272,
+    "uploadedBytes": 13031718,
+    "oldAssetsRetained": true
+  }
+}

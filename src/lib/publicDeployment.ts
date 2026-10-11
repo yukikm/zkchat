@@ -102,6 +102,7 @@ async function checkPreflight(
       return await preflightPublicDeployment(loaded, {
         fetch: observedFetch,
         signal,
+        timeoutMs: 180_000,
       });
     } catch (error) {
       signal?.throwIfAborted();
@@ -127,6 +128,7 @@ export async function inspectPublicDeployment(config: PublicAppConfig) {
 function serviceReadiness(
   loaded: LoadedPublicDeploymentProfile,
   fetcher?: typeof fetch,
+  signal?: AbortSignal,
 ) {
   const manifest = loaded.assets.verifiedManifest;
   return checkServiceReadiness(
@@ -136,6 +138,7 @@ function serviceReadiness(
       manifestHash: manifest.manifest_hash,
     },
     fetcher,
+    signal,
   );
 }
 
@@ -287,9 +290,10 @@ export async function connectPublicDeployment(
       }
       if (preflight) {
         try {
-          readiness = await serviceReadiness(loaded, fetcher);
+          readiness = await serviceReadiness(loaded, fetcher, signal);
         } catch {
           unavailableComponent = "readiness";
+          signal?.throwIfAborted();
         }
       }
       return { preflight, readiness, unavailableComponent };

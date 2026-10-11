@@ -34,6 +34,10 @@ export const connectZkapi=async()=>({account,wallet,persistence:'persistent',pub
    if(prompt==='failure before session') throw new Error('private pre-session failure');
    if(prompt==='indexer failure before session') throw new Error('finalized indexer unavailable');
    if(prompt==='payment HTTP 400 before session') throw new globalThis.__sdkUpgradeControlHttpError(400);
+   if(prompt==='uncertain authorization') {
+     update({canRequest:false,canReconcileUnacceptedAuthorization:true,session:{id:'AUTH-uncertain',phase:'send_unknown',operations:[]}});
+     throw new globalThis.__sdkUpgradeControlHttpError(503);
+   }
    if(activeConversation!==null && activeConversation!==request.sessionId) {
      throw new Error('Settle the active conversation before switching scope');
    }
@@ -66,7 +70,19 @@ export const connectZkapi=async()=>({account,wallet,persistence:'persistent',pub
    activeConversation=null;
    update({canRequest:true,lastSettlement:{operationIds,chargeMicroUsdc:'10000'},session:null});
  },
- recover:async()=>{count('fixture:recoverCalls');throw new Error('Recovery must not be triggered automatically')},
+ reconcileUnacceptedAuthorization:async()=>{
+   count('fixture:clearanceCalls');
+   update({canRequest:false,canReconcileUnacceptedAuthorization:false,session:null});
+ },
+ recover:async()=>{
+   count('fixture:recoverCalls');
+   if(localStorage.getItem('fixture:allowRelease')==='1' && state.canReconcileUnacceptedAuthorization) {
+     activeConversation=null;
+     update({canRequest:true,canReconcileUnacceptedAuthorization:false,session:null});
+     return;
+   }
+   throw new Error('Recovery must not be triggered automatically');
+ },
 }});`;
 
 const message = (page: Page) =>
@@ -593,4 +609,110 @@ test("new chats prefer the configured GPT model while saved and explicit model c
   expect(saved).toHaveLength(1);
   expect(saved[0].model).toBe(previous);
   expect(saved[0].messages).toHaveLength(2);
+});
+
+test("explicit Check payment releases an unaccepted authorization without changing the deposit or replaying", async ({
+  page,
+}) => {
+  await message(page).fill("uncertain authorization");
+  await sendButton(page).click();
+  await expect(page.locator(".message.assistant")).toContainText(
+    "The payment service returned HTTP 503.",
+  );
+  await page.getByRole("button", { name: "Check status", exact: true }).click();
+  const panel = page.getByRole("dialog", { name: "Connection settings" });
+  await expect(panel).toContainText(
+    "Check payment can release it so this deposit can be used again.",
+  );
+  await expect(panel).toContainText(
+    "Your balance stays saved and no message is resent.",
+  );
+  const deposits = panel.getByLabel("Saved deposits");
+  await expect(deposits).toHaveValue("fixture");
+  const depositOptions = await deposits.locator("option").allTextContents();
+  const balance = await panel.locator(".balance-panel strong").innerText();
+  const attempts = await callAttempts(page);
+  expect(attempts).toHaveLength(1);
+  expect(
+    await page.evaluate(() => localStorage.getItem("fixture:recoverCalls")),
+  ).toBeNull();
+
+  await page.evaluate(() => localStorage.setItem("fixture:allowRelease", "1"));
+  await panel
+    .getByRole("button", { name: "Check payment", exact: true })
+    .click();
+  await expect(panel).toContainText("Ready to chat.");
+  await expect(
+    panel.getByRole("heading", { name: "Payment pending" }),
+  ).toHaveCount(0);
+  await expect(deposits).toHaveValue("fixture");
+  expect(await deposits.locator("option").allTextContents()).toEqual(
+    depositOptions,
+  );
+  await expect(panel.locator(".balance-panel strong")).toHaveText(balance);
+  expect(await callAttempts(page)).toEqual(attempts);
+  expect(
+    await page.evaluate(() => ({
+      recover: localStorage.getItem("fixture:recoverCalls"),
+      clearance: localStorage.getItem("fixture:clearanceCalls"),
+      settled: localStorage.getItem("fixture:settled"),
+    })),
+  ).toEqual({ recover: "1", clearance: null, settled: null });
+
+  await panel.getByRole("button", { name: "Close", exact: true }).click();
+  await message(page).fill("a new explicit message");
+  await expect(sendButton(page)).toBeEnabled();
+  expect(await callAttempts(page)).toEqual(attempts);
+  await sendButton(page).click();
+  await expect(page.locator(".message.assistant").last()).toContainText(
+    "Fixture reply",
+  );
+  const finalAttempts = await callAttempts(page);
+  expect(finalAttempts).toHaveLength(2);
+  expect(finalAttempts[1].operationId).not.toBe(attempts[0].operationId);
+  expect(finalAttempts[1].messages.at(-1).content).toBe(
+    "a new explicit message",
+  );
+});
+
+test("uncertain authorization explains permanent withdrawal-only recovery without replay", async ({
+  page,
+}) => {
+  await message(page).fill("uncertain authorization");
+  await sendButton(page).click();
+  await expect(page.locator(".message.assistant")).toContainText(
+    "The payment service returned HTTP 503.",
+  );
+  await page.getByRole("button", { name: "Check status", exact: true }).click();
+  const panel = page.getByRole("dialog", { name: "Connection settings" });
+  await expect(panel).toContainText("This permanently prevents new messages");
+  await panel
+    .getByRole("button", {
+      name: "Disable authorization for withdrawal",
+      exact: true,
+    })
+    .click();
+  await expect(panel).toContainText(
+    "Authorization disabled. Withdraw this deposit",
+  );
+  await panel
+    .getByRole("button", { name: "Refresh status", exact: true })
+    .click();
+  await expect(panel).toContainText(
+    "Refresh status cannot undo that permanent protection.",
+  );
+  await expect(
+    panel.getByRole("button", { name: "Withdraw balance", exact: true }),
+  ).toBeEnabled();
+  await panel.getByRole("button", { name: "Close", exact: true }).click();
+  await expect(
+    page.getByRole("button", { name: "Send again", exact: true }),
+  ).toBeDisabled();
+  expect(await callAttempts(page)).toHaveLength(1);
+  expect(
+    await page.evaluate(() => ({
+      clearance: localStorage.getItem("fixture:clearanceCalls"),
+      recover: localStorage.getItem("fixture:recoverCalls"),
+    })),
+  ).toEqual({ clearance: "1", recover: null });
 });

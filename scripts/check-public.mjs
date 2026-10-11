@@ -40,7 +40,9 @@ try {
     wasmBytes: loaded.assets.wasm.byteLength,
   });
   stage = "preflight";
-  const preflight = await preflightPublicDeployment(loaded);
+  const preflight = await preflightPublicDeployment(loaded, {
+    timeoutMs: 180_000,
+  });
   report.checks.push({ stage, passed: true, ...preflight });
   stage = "readiness";
   const manifest = loaded.assets.verifiedManifest;
