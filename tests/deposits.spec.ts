@@ -38,6 +38,95 @@ async function connect(page: Page) {
     .click();
   await expect(page.getByLabel("Saved deposits")).toBeVisible();
 }
+
+test("deposit preparation explains an unavailable indexer without requesting a signature", async ({
+  page,
+}) => {
+  await page.route("**/src/lib/zkapi.ts*", (r) =>
+    r.fulfill({
+      contentType: "application/javascript",
+      body: depositStub("closed").replace(
+        "prepareDeposit:async amount=>{",
+        "prepareDeposit:async amount=>{ throw new Error('finalized indexer unavailable');",
+      ),
+    }),
+  );
+  await page.goto("/");
+  await connect(page);
+  await page.getByRole("button", { name: "Add deposit", exact: true }).click();
+  await page.getByLabel("I will keep this browser’s data").check();
+  await page
+    .getByRole("button", { name: "Review deposit", exact: true })
+    .click();
+  await expect(page.getByRole("alert")).toContainText(
+    "chain indexer is unavailable",
+  );
+  await expect(page.getByRole("alert")).toContainText(
+    "No wallet signature was requested",
+  );
+  await expect(
+    page.getByRole("button", { name: "Approve in wallet", exact: true }),
+  ).toHaveCount(0);
+  await expect(page.getByLabel("Saved deposits").locator("option")).toHaveCount(
+    2,
+  );
+});
+
+for (const signature of [null, "saved-test-signature"]) {
+  test(`indexer error preserves the ${signature ? "signed" : "unsigned"} deposit without retrying`, async ({
+    page,
+  }) => {
+    await page.route("**/src/lib/zkapi.ts*", (r) =>
+      r.fulfill({
+        contentType: "application/javascript",
+        body: depositStub("closed")
+          .replace("signature:null", `signature:${JSON.stringify(signature)}`)
+          .replace(
+            "advanceWallet:async()=>{",
+            "advanceWallet:async()=>{ localStorage.setItem('test-advance-count', String(Number(localStorage.getItem('test-advance-count') || '0') + 1)); throw new Error('finalized indexer unavailable');",
+          ),
+      }),
+    );
+    await page.goto("/");
+    await connect(page);
+    await page
+      .getByRole("button", { name: "Add deposit", exact: true })
+      .click();
+    await page.getByLabel("I will keep this browser’s data").check();
+    await page
+      .getByRole("button", { name: "Review deposit", exact: true })
+      .click();
+    const next = page.getByRole("button", {
+      name: signature ? "Check transaction" : "Approve in wallet",
+      exact: true,
+    });
+    await next.click();
+    await expect(page.getByRole("alert")).toContainText("chain indexer");
+    await expect(page.getByRole("alert")).not.toContainText(
+      "No wallet signature",
+    );
+    await expect(next).toBeEnabled();
+    await expect(page.getByLabel("Saved deposits")).toBeDisabled();
+    if (signature)
+      await expect(
+        page.getByRole("link", { name: "View transaction" }),
+      ).toHaveAttribute(
+        "href",
+        `https://explorer.solana.com/tx/${signature}?cluster=devnet`,
+      );
+    await page
+      .getByRole("button", { name: "Refresh status", exact: true })
+      .click();
+    await expect(next).toBeEnabled();
+    expect(
+      await page.evaluate(() => localStorage.getItem("test-advance-count")),
+    ).toBe("1");
+    await expect(
+      page.getByLabel("Saved deposits").locator("option"),
+    ).toHaveCount(2);
+  });
+}
+
 for (const initial of ["closed", "active"] as const) {
   test(`deposit after ${initial}, resume after reload, chat and keep previous funds`, async ({
     page,

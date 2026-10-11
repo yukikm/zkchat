@@ -209,3 +209,132 @@ test("public SDK browser factory creates and reopens unfunded custody with no si
     fullPage: true,
   });
 });
+
+test("public SDK prepares an inline deposit before any signing", async ({
+  page,
+}, testInfo) => {
+  test.skip(
+    process.env.ZKCHAT_LIVE_CHECK !== "1",
+    "Opt-in public-service deposit preparation with an isolated fixture wallet.",
+  );
+  test.setTimeout(240_000);
+  const blocked: string[] = [];
+  const serviceErrors: { path: string; status: number }[] = [];
+  page.on("response", (response) => {
+    if (response.status() >= 400 && response.url().includes("cloudfront.net"))
+      serviceErrors.push({
+        path: new URL(response.url()).pathname,
+        status: response.status(),
+      });
+  });
+  await page.route("**/*", async (route) => {
+    const request = route.request();
+    if (!["GET", "HEAD", "OPTIONS"].includes(request.method())) {
+      let method: string | undefined;
+      try {
+        method = request.postDataJSON()?.method;
+      } catch {}
+      if (
+        request.method() !== "POST" ||
+        ![
+          "getGenesisHash",
+          "getAccountInfo",
+          "getMultipleAccounts",
+          "getBlock",
+        ].includes(method ?? "")
+      ) {
+        blocked.push(new URL(request.url()).pathname);
+        await route.abort();
+        return;
+      }
+    }
+    await route.continue();
+  });
+  // Keep this SDK fixture independent of app HMR and any page wallet state.
+  await page.route("**/__deposit-preparation-harness", (route) =>
+    route.fulfill({
+      contentType: "text/html",
+      body: "<!doctype html><title>Isolated SDK deposit preparation</title>",
+    }),
+  );
+  await page.goto("/__deposit-preparation-harness");
+  const result = await page.evaluate(async () => {
+    // @ts-expect-error Test-only Vite module; signer always throws.
+    const { registerTestWallet } = await import("/tests/walletHarness.ts");
+    const { loadConfig, listWallets, connectWalletAccount, connectZkapi } =
+      // @ts-expect-error Vite source module in Playwright's fresh browser context.
+      await import("/src/lib/zkapi.ts");
+    const unregister = registerTestWallet();
+    const wallet = listWallets().find(
+      (candidate: { name: string }) =>
+        candidate.name === "Integration Test Wallet",
+    );
+    const account = await connectWalletAccount(wallet);
+    const config = await loadConfig();
+    const handle = await connectZkapi(config, wallet, account, true);
+    const started = performance.now();
+    try {
+      // Creates only an encrypted local candidate. Never advance it, sign,
+      // broadcast, authorize a session, or request inference.
+      await handle.client.prepareDeposit("2000000");
+      const status = await handle.client.status();
+      return {
+        completed: true,
+        elapsedMs: performance.now() - started,
+        wallet: status.wallet,
+        operation: status.walletOperation && {
+          kind: status.walletOperation.kind,
+          phase: status.walletOperation.phase,
+          signature: status.walletOperation.signature,
+        },
+      };
+    } catch (error) {
+      // Do not export full SDK status, journal contents, or exception details.
+      const knownFailures = [
+        "finalized indexer unavailable",
+        "RPC/indexer finalized cut changed; retry snapshot",
+        "RPC finalized account cut block missing or invalid",
+        "untrusted indexer root",
+      ];
+      return {
+        completed: false,
+        elapsedMs: performance.now() - started,
+        errorName: error instanceof Error ? error.name : "UnknownError",
+        failure:
+          error instanceof Error && knownFailures.includes(error.message)
+            ? error.message
+            : "Unclassified preparation error",
+      };
+    } finally {
+      handle.dispose();
+      unregister();
+    }
+  });
+  const report = testInfo.outputPath("public-browser-deposit-preparation.json");
+  await writeFile(
+    report,
+    JSON.stringify(
+      {
+        observedAt: new Date().toISOString(),
+        sdk: "0.2.0-devnet.8",
+        result,
+        blocked,
+        serviceErrors,
+        scope:
+          "Real published SDK, public profile and services, prover and inline transaction construction in isolated Chromium. Fixture wallet cannot sign; no advance, broadcast, AUTH or inference. No user wallet or funds are accessed.",
+      },
+      null,
+      2,
+    ) + "\n",
+  );
+  await testInfo.attach("public-browser-deposit-preparation.json", {
+    path: report,
+    contentType: "application/json",
+  });
+  expect(blocked).toEqual([]);
+  expect(result).toMatchObject({
+    completed: true,
+    wallet: "unfunded",
+    operation: { kind: "deposit", phase: "ready", signature: null },
+  });
+});

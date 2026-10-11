@@ -30,7 +30,6 @@ import {
   cachedAppProfile,
   connectPublicDeployment,
   loadAppProfile,
-  PublicOnboardingError,
   assertRuntimeCustody,
   type PublicAppConfig,
 } from "./publicDeployment";
@@ -49,7 +48,7 @@ import {
 export { BrowserStorageMissing };
 export type { StandardAccount };
 export const CHAIN = "solana:devnet" as const;
-import { SDK_STORAGE_NAME } from "./sdkVersion";
+import { RECOVERY_RUNTIME, SDK_STORAGE_NAME } from "./sdkVersion";
 export const STORAGE_NAME = SDK_STORAGE_NAME;
 export const NOTE_ID = ORIGINAL_NOTE_ID;
 export type AppConfig = LegacyAppConfig | PublicAppConfig;
@@ -482,6 +481,12 @@ export async function connectZkapi(
         directProviderBases: legacy.directProviderBases,
         oaVerifier: legacy.oaVerifier,
       }),
+      // The public gateway accepts 60-second quotes and AUTH. SDK .8's
+      // default is 300 seconds, which that gateway rejects before AUTH.
+      ...(!RECOVERY_RUNTIME &&
+      publicConnection?.options.mode === "direct_openrouter"
+        ? { keyReuseSeconds: 60 }
+        : {}),
       storageName: STORAGE_NAME,
       noteId,
       initializeStorage: initialize,
@@ -620,10 +625,7 @@ export async function connectZkapi(
       try {
         if (!id && publicConnection) {
           await publicConnection.refreshPreflight();
-          if (!publicConnection.canAdmit || !publicConnection.freshAdmission)
-            throw new PublicOnboardingError(
-              "New deposits are unavailable. Refresh operator readiness; your existing deposits remain available.",
-            );
+          publicConnection.assertAdmission("New deposits are unavailable.");
         }
         const nextId = id ?? `zkchat-deposit-${crypto.randomUUID()}`;
         next = await openClient(nextId);
@@ -717,16 +719,10 @@ export async function connectZkapi(
                   ? undefined
                   : (args[0] as { signal?: AbortSignal }).signal;
               signal?.throwIfAborted();
-              await publicConnection.refreshPreflight();
+              await publicConnection.refreshPreflight(signal);
               signal?.throwIfAborted();
               assertActiveAccount();
-              if (
-                !publicConnection.canAdmit ||
-                !publicConnection.freshAdmission
-              )
-                throw new PublicOnboardingError(
-                  "New work is unavailable. Refresh operator readiness and check whether this deployment requires an invitation. Recovery remains available.",
-                );
+              publicConnection.assertAdmission();
               if (property === "chat") {
                 const input = args[0] as {
                   model?: string;

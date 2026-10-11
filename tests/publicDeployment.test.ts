@@ -366,6 +366,31 @@ describe("profile and original custody binding", () => {
     expect(storage.size).toBe(0);
     expect(sdk.browser).not.toHaveBeenCalled();
   });
+  it("retains a new binding through later preflight failures and permits a service refresh", async () => {
+    const connection = await connectPublicDeployment(
+      config,
+      "zkchat-v1",
+      "account",
+      true,
+      token,
+    );
+    expect(storage.get(profileBindingKey("zkchat-v1", "account"))).toBe(
+      config.profileSha256,
+    );
+    expect(connection.canAdmit).toBe(true);
+    sdk.preflight.mockRejectedValueOnce(new PublicProfileError("snapshot"));
+    await expect(connection.refreshPreflight()).resolves.toMatchObject({
+      preflight: null,
+      unavailableComponent: "snapshot",
+    });
+    expect(connection.canAdmit).toBe(false);
+    expect(storage.get(profileBindingKey("zkchat-v1", "account"))).toBe(
+      config.profileSha256,
+    );
+    await connection.refreshPreflight();
+    expect(connection.canAdmit).toBe(true);
+    connection.clear();
+  });
 });
 describe("existing application adapter with public profile", () => {
   const make = () => {
@@ -623,35 +648,39 @@ describe("existing application adapter with public profile", () => {
     expect(storage.size).toBe(0);
     expect(sdk.browser).not.toHaveBeenCalled();
   });
-  it("blocks new funding/chat after fresh readiness failure but retains recovery/withdrawal", async () => {
-    const { account, wallet, client } = make();
-    const handle = await connectZkapi(
-      config,
-      wallet as any,
-      account as any,
-      false,
-      token,
-    );
-    sdk.preflight.mockRejectedValue(new PublicProfileError("catalog"));
-    await expect(handle.client.prepareDeposit(2000000n)).rejects.toThrow(
-      /Recovery remains/,
-    );
-    await expect(
-      handle.client.chat({
-        model: "model",
-        stream: false,
-        maxOutputTokens: 128,
-      } as any),
-    ).rejects.toThrow(/Recovery remains/);
-    expect(client.prepareDeposit).not.toHaveBeenCalled();
-    expect(client.chat).not.toHaveBeenCalled();
-    await handle.client.recover();
-    await handle.client.prepareWithdrawal();
-    expect(client.recover).toHaveBeenCalledTimes(1);
-    expect(client.prepareWithdrawal).toHaveBeenCalledTimes(1);
-    expect((await handle.client.status()).canRequest).toBe(false);
-    handle.dispose();
-  });
+  it.each([false, true])(
+    "blocks funding/chat after a later preflight failure and retains recovery (initialize=%s)",
+    async (initialize) => {
+      const { account, wallet, client } = make();
+      if (initialize) storage.clear();
+      const handle = await connectZkapi(
+        config,
+        wallet as any,
+        account as any,
+        initialize,
+        token,
+      );
+      sdk.preflight.mockRejectedValue(new PublicProfileError("catalog"));
+      await expect(handle.client.prepareDeposit(2000000n)).rejects.toThrow(
+        /Recovery remains/,
+      );
+      await expect(
+        handle.client.chat({
+          model: "model",
+          stream: false,
+          maxOutputTokens: 128,
+        } as any),
+      ).rejects.toThrow(/Recovery remains/);
+      expect(client.prepareDeposit).not.toHaveBeenCalled();
+      expect(client.chat).not.toHaveBeenCalled();
+      await handle.client.recover();
+      await handle.client.prepareWithdrawal();
+      expect(client.recover).toHaveBeenCalledTimes(1);
+      expect(client.prepareWithdrawal).toHaveBeenCalledTimes(1);
+      expect((await handle.client.status()).canRequest).toBe(false);
+      handle.dispose();
+    },
+  );
   it("rejects unsupported streaming/output cap before underlying SDK chat", async () => {
     const { account, wallet, client } = make();
     const handle = await connectZkapi(
@@ -682,6 +711,61 @@ describe("existing application adapter with public profile", () => {
       maxOutputTokens: 128,
     } as any);
     expect(client.chat).toHaveBeenCalledTimes(1);
+    handle.dispose();
+  });
+  it("rechecks a transient preflight transport failure before sending chat once", async () => {
+    const { account, wallet, client } = make();
+    const fetcher = vi.fn(async () => new Response(null, { status: 503 }));
+    vi.stubGlobal("fetch", fetcher);
+    const handle = await connectZkapi(config, wallet as any, account as any);
+    sdk.preflight.mockClear();
+    sdk.preflight.mockImplementationOnce(async (_loaded, options) => {
+      await options.fetch("https://control.example/zkapi/v1/tree/snapshot");
+      throw new PublicProfileError("snapshot");
+    });
+    await handle.client.chat({
+      model: "model",
+      stream: false,
+      maxOutputTokens: 128,
+    } as any);
+    expect(handle.publicAdmissionReady).toBe(true);
+    expect(sdk.preflight).toHaveBeenCalledTimes(2);
+    expect(fetcher).toHaveBeenCalledTimes(1);
+    expect(client.chat).toHaveBeenCalledTimes(1);
+    handle.dispose();
+  });
+  it("reports exhausted snapshot checks without suggesting an invitation or sending", async () => {
+    const { account, wallet, client } = make();
+    const fetcher = vi.fn(async () => new Response(null, { status: 503 }));
+    vi.stubGlobal("fetch", fetcher);
+    const handle = await connectZkapi(config, wallet as any, account as any);
+    sdk.preflight.mockClear();
+    sdk.preflight.mockImplementation(async (_loaded, options) => {
+      await options.fetch("https://control.example/zkapi/v1/tree/snapshot");
+      throw new PublicProfileError("snapshot");
+    });
+    const error = await handle.client
+      .chat({ model: "model", stream: false, maxOutputTokens: 128 } as any)
+      .catch((error) => error);
+    expect(error.message).toContain(
+      "Could not verify finalized chain snapshot",
+    );
+    expect(error.message).not.toContain("invitation");
+    expect(error.message).toContain("Recovery remains available");
+    expect(sdk.preflight).toHaveBeenCalledTimes(2);
+    expect(fetcher).toHaveBeenCalledTimes(2);
+    expect(client.chat).not.toHaveBeenCalled();
+    handle.dispose();
+  });
+  it("uses the public gateway's 60-second session TTL on every deposit client", async () => {
+    const f = depositFixture("closed");
+    const handle = await f.connect();
+    await handle.addDeposit();
+    expect(sdk.browser).toHaveBeenCalledTimes(2);
+    for (const [options] of sdk.browser.mock.calls) {
+      expect(options.keyReuseSeconds).toBe(60);
+      expect(options.storageName).toBe(STORAGE_NAME);
+    }
     handle.dispose();
   });
   it("permits recovery without an invitation but rejects new funding when required", async () => {

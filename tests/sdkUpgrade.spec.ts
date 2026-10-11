@@ -6,7 +6,7 @@ const account={address:'11111111111111111111111111111111'};
 const wallet={name:'SDK Upgrade Test Wallet'};
 export const configuredModels=c=>c?.models??[];
 export const configuredMode=()=> 'direct_openrouter';
-export const configuredStreaming=()=>false;
+export const configuredStreaming=()=>localStorage.getItem('fixture:streaming')==='1';
 export const loadConfig=async()=>({schema:1,mode:'direct_openrouter',models:[{id:'test/model',apis:['chat']}]});
 export const listWallets=()=>[wallet];
 export const watchWallets=()=>()=>{};
@@ -17,10 +17,23 @@ const update=value=>{state={...state,...value};for(const fn of listeners)fn(stat
 const calls=[];
 let activeConversation=null;
 let authorizationSequence=0;
-export const connectZkapi=async()=>({account,wallet,persistence:'persistent',publicAdmissionReady:true,deposits:[{id:'fixture'}],selectedDepositId:'fixture',deployment:{mint:'fixture-mint'},dispose(){},client:{
- status:async()=>state,subscribe:fn=>{listeners.add(fn);return()=>listeners.delete(fn)},
+const count=name=>localStorage.setItem(name,String(Number(localStorage.getItem(name)||'0')+1));
+export const connectZkapi=async()=>({account,wallet,persistence:'persistent',publicAdmissionReady:true,deposits:[{id:'fixture'}],selectedDepositId:'fixture',deployment:{mint:'fixture-mint'},dispose(){},
+ refreshPreflight:async()=>{
+   count('fixture:preflightCalls');
+   if(localStorage.getItem('fixture:holdRefresh')==='1') await new Promise(resolve=>{globalThis.__sdkUpgradeReleaseRefresh=()=>{localStorage.removeItem('fixture:holdRefresh');resolve()}});
+ },client:{
+ status:async()=>{
+   count('fixture:statusCalls');
+   if(localStorage.getItem('fixture:holdStatus')==='1') await new Promise(resolve=>{globalThis.__sdkUpgradeReleaseStatus=()=>{localStorage.removeItem('fixture:holdStatus');resolve()}});
+   return state;
+ },subscribe:fn=>{listeners.add(fn);return()=>listeners.delete(fn)},
  chat:async request=>{
    calls.push(request); localStorage.setItem('fixture:calls',JSON.stringify(calls));
+   const prompt=request.messages.at(-1).content;
+   if(prompt==='failure before session') throw new Error('private pre-session failure');
+   if(prompt==='indexer failure before session') throw new Error('finalized indexer unavailable');
+   if(prompt==='payment HTTP 400 before session') throw new globalThis.__sdkUpgradeControlHttpError(400);
    if(activeConversation!==null && activeConversation!==request.sessionId) {
      throw new Error('Settle the active conversation before switching scope');
    }
@@ -29,11 +42,22 @@ export const connectZkapi=async()=>({account,wallet,persistence:'persistent',pub
      update({session:{id:'AUTH-'+(++authorizationSequence),phase:'authorized',operations:[]}});
    }
    const session={...state.session,operations:[...state.session.operations,{id:request.operationId,phase:'completed'}]};
-   if(request.messages.at(-1).content==='provider failure') {
+   if(prompt==='provider failure') {
      update({canRequest:false,session:{...session,phase:'settlement_pending'}});
      return new Response('private provider message', {status:402,headers:{'Content-Type':'application/json','X-Zkapi-Error-Code':'provider_budget_unavailable'}});
    }
    update({session});
+   if(prompt==='stream failure') {
+     const body=new ReadableStream({start(controller){
+       controller.enqueue(new TextEncoder().encode('data: '+JSON.stringify({choices:[{index:0,delta:{content:'Partial reply'},finish_reason:null}]})+'\\n\\n'));
+       globalThis.__sdkUpgradeFailStream=()=>{
+         update({canRequest:false,session:{...session,phase:'settlement_pending'}});
+         controller.error(new Error('private streamed provider failure'));
+       };
+       request.signal.addEventListener('abort',()=>controller.error(new DOMException('Aborted','AbortError')),{once:true});
+     }});
+     return new Response(body,{headers:{'Content-Type':'text/event-stream'}});
+   }
    return Response.json({choices:[{message:{content:'Fixture reply'},finish_reason:'stop'}]});
  },
  settle:async()=>{
@@ -42,7 +66,7 @@ export const connectZkapi=async()=>({account,wallet,persistence:'persistent',pub
    activeConversation=null;
    update({canRequest:true,lastSettlement:{operationIds,chargeMicroUsdc:'10000'},session:null});
  },
- recover:async()=>{throw new Error('Recovery must not be triggered automatically')},
+ recover:async()=>{count('fixture:recoverCalls');throw new Error('Recovery must not be triggered automatically')},
 }});`;
 
 const message = (page: Page) =>
@@ -84,6 +108,19 @@ async function settleSession(page: Page) {
 }
 
 test.beforeEach(async ({ page }) => {
+  await page.route("**/*", (route) =>
+    ["127.0.0.1", "localhost"].includes(new URL(route.request().url()).hostname)
+      ? route.continue()
+      : route.abort(),
+  );
+  // Reuse the app's imported SDK constructor to exercise its instanceof guard.
+  await page.route("**/src/lib/sdkStatus.ts*", async (route) => {
+    const response = await route.fetch();
+    await route.fulfill({
+      response,
+      body: `${await response.text()}\nglobalThis.__sdkUpgradeControlHttpError = ControlHttpError;`,
+    });
+  });
   await page.route("**/src/lib/zkapi.ts*", (r) =>
     r.fulfill({ contentType: "application/javascript", body: fixture }),
   );
@@ -316,6 +353,12 @@ test("provider budget errors stay redacted and do not invite more deposits or re
   await expect(page.locator(".message.assistant")).not.toContainText(
     "private provider message",
   );
+  await expect(page.locator(".message.assistant")).toContainText(
+    "Check status",
+  );
+  await expect(
+    page.getByRole("button", { name: "Check status", exact: true }),
+  ).toBeEnabled();
   await expect(
     page.getByRole("button", { name: "Review payment", exact: true }),
   ).toBeVisible();
@@ -324,4 +367,230 @@ test("provider budget errors stay redacted and do not invite more deposits or re
       () => JSON.parse(localStorage.getItem("fixture:calls")!).length,
     ),
   ).toBe(1);
+});
+
+for (const scenario of [
+  {
+    prompt: "failure before session",
+    error:
+      "Reply interrupted. Choose Check status before sending again. Nothing is resent automatically.",
+    hidden: "private pre-session failure",
+  },
+  {
+    prompt: "indexer failure before session",
+    error:
+      "Could not verify chain data because the indexer is unavailable. Choose Check status before sending again. Nothing is resent automatically.",
+    hidden: "finalized indexer unavailable",
+  },
+  {
+    prompt: "payment HTTP 400 before session",
+    error:
+      "The payment service returned HTTP 400. Choose Check status before sending again. Nothing is resent automatically.",
+    hidden: "ControlHttpError",
+  },
+]) {
+  test(`${scenario.prompt} offers a status check without session recovery or replay`, async ({
+    page,
+  }) => {
+    await message(page).fill(scenario.prompt);
+    await sendButton(page).click();
+    const assistant = page.locator(".message.assistant");
+    await expect(assistant).toContainText(scenario.error);
+    await expect(assistant).not.toContainText(scenario.hidden);
+    await expect(
+      page.getByRole("button", { name: "Review payment", exact: true }),
+    ).toHaveCount(0);
+    const checkStatus = page.getByRole("button", {
+      name: "Check status",
+      exact: true,
+    });
+    await expect(checkStatus).toBeEnabled();
+    const originalCalls = await callAttempts(page);
+    expect(originalCalls).toHaveLength(1);
+    await checkStatus.click();
+    await expect(
+      page.getByRole("dialog", { name: "Connection settings", exact: true }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Active session", exact: true }),
+    ).toHaveCount(0);
+    const beforeRefresh = await page.evaluate(() => {
+      localStorage.setItem("fixture:holdRefresh", "1");
+      return Number(localStorage.getItem("fixture:statusCalls") || "0");
+    });
+    const refresh = page.getByRole("button", {
+      name: "Refresh status",
+      exact: true,
+    });
+    await refresh.click();
+    await expect(refresh).toBeDisabled();
+    await expect(checkStatus).toBeDisabled();
+    await page.evaluate(() =>
+      (
+        globalThis as unknown as { __sdkUpgradeReleaseRefresh(): void }
+      ).__sdkUpgradeReleaseRefresh(),
+    );
+    await expect(refresh).toBeEnabled();
+    await expect(checkStatus).toBeEnabled();
+    expect(
+      await page.evaluate(() =>
+        Number(localStorage.getItem("fixture:statusCalls") || "0"),
+      ),
+    ).toBeGreaterThan(beforeRefresh);
+    expect(
+      await page.evaluate(() => localStorage.getItem("fixture:preflightCalls")),
+    ).toBe("1");
+    expect(await callAttempts(page)).toEqual(originalCalls);
+    expect(
+      await page.evaluate(() => localStorage.getItem("fixture:recoverCalls")),
+    ).toBeNull();
+    expect(
+      await page.evaluate(() => localStorage.getItem("fixture:settled")),
+    ).toBeNull();
+  });
+}
+
+test("a failed response stream preserves its partial reply and checks status without replay", async ({
+  page,
+}) => {
+  await page.evaluate(() => localStorage.setItem("fixture:streaming", "1"));
+  await message(page).fill("stream failure");
+  await sendButton(page).click();
+  const assistant = page.locator(".message.assistant");
+  await expect(assistant).toContainText("Partial reply");
+  await expect(
+    page.getByRole("button", { name: "Stop generation", exact: true }),
+  ).toBeVisible();
+  const originalCalls = await callAttempts(page);
+  expect(originalCalls).toHaveLength(1);
+  expect(originalCalls[0].stream).toBe(true);
+  await page.evaluate(() => {
+    localStorage.setItem("fixture:holdStatus", "1");
+    (
+      globalThis as unknown as { __sdkUpgradeFailStream(): void }
+    ).__sdkUpgradeFailStream();
+  });
+  await expect(assistant).toContainText(
+    "Reply interrupted. Choose Check status before sending again. Nothing is resent automatically.",
+  );
+  await expect(assistant).toContainText("Partial reply");
+  await expect(assistant).not.toContainText(
+    "private streamed provider failure",
+  );
+  const checkStatus = page.getByRole("button", {
+    name: "Check status",
+    exact: true,
+  });
+  await expect(checkStatus).toBeDisabled();
+  await page.evaluate(() =>
+    (
+      globalThis as unknown as { __sdkUpgradeReleaseStatus(): void }
+    ).__sdkUpgradeReleaseStatus(),
+  );
+  await expect(checkStatus).toBeEnabled();
+  await checkStatus.click();
+  await expect(
+    page.getByRole("dialog", { name: "Connection settings", exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Payment pending", exact: true }),
+  ).toBeVisible();
+  const refresh = page.getByRole("button", {
+    name: "Refresh status",
+    exact: true,
+  });
+  await refresh.click();
+  await expect(refresh).toBeEnabled();
+  expect(await callAttempts(page)).toEqual(originalCalls);
+  expect(
+    await page.evaluate(() => localStorage.getItem("fixture:preflightCalls")),
+  ).toBe("1");
+  expect(
+    await page.evaluate(() => localStorage.getItem("fixture:recoverCalls")),
+  ).toBeNull();
+  expect(
+    await page.evaluate(() => localStorage.getItem("fixture:settled")),
+  ).toBeNull();
+});
+
+test("new chats prefer the configured GPT model while saved and explicit model choices stay unchanged", async ({
+  page,
+}) => {
+  const preferred = "openai/gpt-6.1-sol";
+  const previous = "anthropic/claude-fable-5";
+  const modelPicker = page.getByRole("combobox", {
+    name: "Select model",
+    exact: true,
+  });
+  // Independent configurations retain their existing first-model default.
+  await expect(modelPicker).toHaveValue("test/model");
+  await page.route("**/src/lib/zkapi.ts*", (route) =>
+    route.fulfill({
+      contentType: "application/javascript",
+      body: fixture.replace(
+        "models:[{id:'test/model',apis:['chat']}]",
+        `models:[{id:'${previous}',apis:['chat']},{id:'${preferred}',apis:['chat']}]`,
+      ),
+    }),
+  );
+  await page.reload();
+  await expect(modelPicker).toHaveValue(preferred);
+  await expect(modelPicker).toBeEnabled();
+  // An explicit choice remains available even before connecting a wallet.
+  await modelPicker.selectOption(previous);
+  await page
+    .getByRole("button", { name: "Connection settings", exact: true })
+    .click();
+  await connectAccount(page);
+  await page.getByRole("button", { name: "Close", exact: true }).click();
+  await expect(modelPicker).toHaveValue(previous);
+  await message(page).fill("failure before session");
+  await sendButton(page).click();
+  await expect(page.locator(".message.assistant")).toContainText(
+    "Reply interrupted. Choose Check status",
+  );
+  const originalCalls = await callAttempts(page);
+  expect(originalCalls).toHaveLength(1);
+  expect(originalCalls[0].model).toBe(previous);
+  const transcript = await page.locator(".message").allTextContents();
+  await page
+    .getByRole("button", { name: /^New chat/ })
+    .first()
+    .click();
+  await expect(modelPicker).toHaveValue(preferred);
+  await expect(page.locator(".message")).toHaveCount(0);
+  await page
+    .getByRole("button", { name: "failure before session", exact: true })
+    .click();
+  await expect(modelPicker).toHaveValue(previous);
+  await expect(modelPicker).toBeDisabled();
+  expect(await page.locator(".message").allTextContents()).toEqual(transcript);
+  await page
+    .getByRole("button", { name: /^New chat/ })
+    .first()
+    .click();
+  await expect(modelPicker).toHaveValue(preferred);
+  await modelPicker.selectOption(previous);
+  await message(page).fill("unsent draft");
+  await expect(modelPicker).toHaveValue(previous);
+  await page.keyboard.press("Control+Shift+O");
+  await expect(modelPicker).toHaveValue(preferred);
+  await expect(message(page)).toHaveValue("");
+  await expect(page.locator(".message")).toHaveCount(0);
+  expect(await callAttempts(page)).toEqual(originalCalls);
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () =>
+          JSON.parse(localStorage.getItem("zkchat:conversations:v1") || "[]")
+            .length,
+      ),
+    )
+    .toBe(1);
+  const saved = await page.evaluate(() =>
+    JSON.parse(localStorage.getItem("zkchat:conversations:v1") || "[]"),
+  );
+  expect(saved).toHaveLength(1);
+  expect(saved[0].model).toBe(previous);
+  expect(saved[0].messages).toHaveLength(2);
 });

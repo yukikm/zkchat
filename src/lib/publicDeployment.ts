@@ -74,10 +74,46 @@ export async function loadAppProfile(config: PublicAppConfig) {
 export const cachedAppProfile = (config: PublicAppConfig) =>
   profiles.get(key(config));
 
+/** Retry a failed read-only preflight once only when its transport failed.
+ * Never wrap quotes, AUTH, inference, wallet actions or failed trust checks. */
+async function checkPreflight(
+  loaded: LoadedPublicDeploymentProfile,
+  fetcher: typeof fetch = globalThis.fetch,
+  signal?: AbortSignal,
+) {
+  for (let attempt = 0; ; attempt++) {
+    let transportFailed = false;
+    const observedFetch: typeof fetch = async (input, init) => {
+      try {
+        const response = await fetcher(input, init);
+        if ([429, 502, 503, 504].includes(response.status))
+          transportFailed = true;
+        return response;
+      } catch (error) {
+        if (
+          error instanceof TypeError ||
+          (error instanceof DOMException && error.name === "TimeoutError")
+        )
+          transportFailed = true;
+        throw error;
+      }
+    };
+    try {
+      return await preflightPublicDeployment(loaded, {
+        fetch: observedFetch,
+        signal,
+      });
+    } catch (error) {
+      signal?.throwIfAborted();
+      if (attempt !== 0 || !transportFailed) throw error;
+    }
+  }
+}
+
 export async function inspectPublicDeployment(config: PublicAppConfig) {
   try {
     const loaded = await loadAppProfile(config);
-    const preflight = await preflightPublicDeployment(loaded);
+    const preflight = await checkPreflight(loaded);
     const readiness = await serviceReadiness(loaded);
     return { preflight, readiness };
   } catch (error) {
@@ -303,17 +339,18 @@ export async function connectPublicDeployment(
     let preflight: PublicPreflightResult | null = null,
       readiness: ServiceReadiness | null = null,
       closed = false,
+      profileRetained = installed !== null,
       unavailableComponent: string | null = null;
-    const refreshPreflight = async () => {
+    const refreshPreflight = async (signal?: AbortSignal) => {
       readiness = null;
       try {
-        preflight = await preflightPublicDeployment(loaded);
+        preflight = await checkPreflight(loaded, transport.fetch, signal);
         unavailableComponent = null;
       } catch (error) {
         preflight = null;
         unavailableComponent =
           error instanceof PublicProfileError ? error.component : "unavailable";
-        if (installed === null) throw error;
+        if (!profileRetained) throw error;
       }
       if (preflight) {
         try {
@@ -326,6 +363,13 @@ export async function connectPublicDeployment(
     };
     await refreshPreflight();
     await retainProfileBinding(config, storageName, account, initialize);
+    profileRetained = true;
+    const canAdmit = () =>
+      !closed &&
+      preflight?.chainAllowsNewOperations === true &&
+      readiness?.servicesAvailable === true &&
+      readiness.admission === "enabled" &&
+      (!readiness.invitationRequired || transport.available);
     return {
       options: publicProfileClientOptions(loaded),
       assets: loaded.assets,
@@ -335,16 +379,37 @@ export async function connectPublicDeployment(
         return { preflight, readiness, unavailableComponent };
       },
       get canAdmit() {
-        return (
-          !closed &&
-          preflight?.chainAllowsNewOperations === true &&
-          readiness?.servicesAvailable === true &&
-          readiness.admission === "enabled" &&
-          (!readiness.invitationRequired || transport.available)
-        );
+        return canAdmit();
       },
       get freshAdmission() {
         return readiness !== null && readiness.expiresAt > Date.now();
+      },
+      assertAdmission(prefix = "New work is unavailable.") {
+        if (canAdmit() && readiness && readiness.expiresAt > Date.now()) return;
+        let reason = "Choose Refresh status to check the service again.";
+        if (closed) reason = "Reconnect the same wallet to continue.";
+        else if (unavailableComponent) {
+          const label = Object.hasOwn(
+            connectionCheckLabels,
+            unavailableComponent,
+          )
+            ? connectionCheckLabels[unavailableComponent]
+            : "service";
+          reason = `Could not verify ${label}. Choose Refresh status to check again.`;
+        } else if (preflight?.paused || readiness?.admission === "suspended")
+          reason = "The operator has paused new requests. Check again later.";
+        else if (readiness && !readiness.servicesAvailable)
+          reason =
+            "A payment service is unavailable. Choose Refresh status to check again.";
+        else if (readiness?.invitationRequired && !transport.available)
+          reason =
+            "This deployment requires an invitation. Reconnect with an invitation code.";
+        else if (readiness && readiness.expiresAt <= Date.now())
+          reason =
+            "The service check expired. Choose Refresh status to check again.";
+        throw new PublicOnboardingError(
+          `${prefix} ${reason} Recovery remains available.`,
+        );
       },
       clear() {
         closed = true;

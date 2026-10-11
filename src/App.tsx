@@ -31,7 +31,7 @@ import {
 import type { ClientStatus } from "@zkapi/solana-sdk";
 import { readChatDeltas, readChatText } from "@zkapi/solana-sdk/chat";
 import { SDK_VERSION, RECOVERY_RUNTIME } from "./lib/sdkVersion";
-import { providerResponseError, reusableSession } from "./lib/sdkStatus";
+import { chatFailureMessage, reusableSession } from "./lib/sdkStatus";
 import {
   loadConfig,
   configuredModels,
@@ -173,7 +173,11 @@ export default function App() {
   const models = configuredModels(config).filter((m) =>
     m.apis.includes("chat"),
   );
-  const selectedModel = current?.model || model || models[0]?.id || "";
+  const defaultModel =
+    models.find((m) => m.id === "openai/gpt-6.1-sol")?.id ||
+    models[0]?.id ||
+    "";
+  const selectedModel = current?.model || model || defaultModel;
   const streamingSupported = configuredStreaming(config, selectedModel);
   const useStreaming = preferences.stream && streamingSupported;
   const maxOutputTokens =
@@ -322,6 +326,7 @@ export default function App() {
         e.preventDefault();
         if (!busyRef.current) {
           setActiveId(null);
+          setModel("");
           setDraft("");
           setSidebar(false);
         }
@@ -346,6 +351,7 @@ export default function App() {
     if (busyRef.current) return;
     setMode(selectedMode);
     setActiveId(null);
+    setModel("");
     setDraft("");
     setSidebar(false);
     setMenu(false);
@@ -508,15 +514,16 @@ export default function App() {
                 error: stopped
                   ? selectedMode === "demo"
                     ? "Display stopped."
-                    : "Stopped. Charges may still apply. Choose Review payment."
+                    : "Stopped. Charges may still apply. Choose Check status."
                   : error instanceof PublicOnboardingError ||
                       error instanceof DepositError
                     ? error.message
-                    : ((!RECOVERY_RUNTIME &&
-                      status?.mode === "direct_openrouter"
-                        ? providerResponseError(response)
-                        : undefined) ??
-                      "Reply interrupted. Choose Review payment before sending again. Nothing is resent automatically."),
+                    : chatFailureMessage(
+                        error,
+                        response,
+                        !RECOVERY_RUNTIME &&
+                          status?.mode === "direct_openrouter",
+                      ),
               }
             : m,
         ),
@@ -1040,6 +1047,19 @@ export default function App() {
                         )}
                         {message.state !== "streaming" && (
                           <div className="message-actions">
+                            {current.mode === "live" &&
+                              (message.state === "error" ||
+                                message.state === "stopped") &&
+                              i === current.messages.length - 1 && (
+                                <button
+                                  className="text-button"
+                                  disabled={sending || connectionBusy}
+                                  onClick={() => setDialog("connection")}
+                                >
+                                  <Wallet size={14} />
+                                  Check status
+                                </button>
+                              )}
                             {message.content && (
                               <button
                                 className="icon-button"

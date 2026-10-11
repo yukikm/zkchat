@@ -38,6 +38,7 @@ import {
   microUsdc,
 } from "../lib/chat";
 import { WalletConnectionError } from "../lib/walletErrors";
+import { depositPreparationError, walletStepError } from "../lib/depositErrors";
 import {
   canAddDeposit,
   canChangeDeposit,
@@ -560,7 +561,9 @@ export function ConnectionPanel({
                           throw new AmountInputError(
                             `Deposit at least ${formatUsdc(status.authorizationCapMicroUsdc)} USDC to authorize a request.`,
                           );
-                        await handle.client.prepareDeposit(value);
+                        await handle.client.prepareDeposit(value).catch((e) => {
+                          throw depositPreparationError(e);
+                        });
                         setProgressState("");
                         setInfo(
                           "Deposit ready. Choose Approve in wallet to continue.",
@@ -640,7 +643,11 @@ export function ConnectionPanel({
                       disabled={disabled}
                       onClick={() =>
                         void action(async () => {
-                          const p = await handle.client.advanceWallet();
+                          const p = await handle.client
+                            .advanceWallet()
+                            .catch((e) => {
+                              throw walletStepError(e);
+                            });
                           setProgressState(p.state);
                           setInfo(
                             p.state === "complete"
