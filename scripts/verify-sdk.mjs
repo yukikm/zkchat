@@ -1,6 +1,8 @@
 import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 for (const [version, expected] of Object.entries({
+  "0.2.0-devnet.12":
+    "cf6deabf4e929deff9e9c5239144fc5ac6e64e6db7612af6c28a6bebd62bd129",
   "0.2.0-devnet.10":
     "087e5dd6da712710509a5320f93e4426687382a7f976e8ce522e83b2318a08a2",
   "0.2.0-devnet.8":

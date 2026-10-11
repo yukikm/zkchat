@@ -1,12 +1,16 @@
 # zkchat
 
-Solana zkAPIをLLMバックエンドにするReactチャットアプリです。公開SDK **0.2.0-devnet.10** と既存のrevision-6の認証済み公開Devnet profileを使います。既存の `.3` 保存領域には元のSDK・profileを使う復旧版を同梱しています。Solanaは **`@solana/kit` 8.4.0**、ウォレット接続は **`@solana/kit-plugin-wallet` 0.21.0 / Wallet Standard**。`web3.js`は使用しません。
+Solana zkAPIをLLMバックエンドにするReactチャットアプリです。公開SDK **0.2.0-devnet.12** と既存のrevision-6の認証済み公開Devnet profileを使います。既存の `.3` 保存領域には元のSDK・profileを使う復旧版を同梱しています。Solanaは **`@solana/kit` 8.4.0**、ウォレット接続は **`@solana/kit-plugin-wallet` 0.21.0 / Wallet Standard**。`web3.js`は使用しません。
 
-**2026-10-11 SDK更新:** `.10` の配布物・署名証明・SHA-256を確認し、既存の `.8` profile・保存名・note IDを保持したまま更新しました。未受付の不確定AUTHは明示的な`Check payment`で復旧できます。既に出金専用にしたnoteは元に戻せません。[更新内容と検証範囲](docs/SDK-UPGRADE-20261011.md)を参照してください。
+**2026-10-11 SDK .12更新:** 公式配布物・署名証明・SHA-256を確認し、ストリーミングの正常終了が中断扱いになる問題へ対応しました。終端イベントに加えてHTTP EOFまで確認し、通常の応答後は同じ会話で次の送信に進めます。期限切れ・中断・精算待ちの操作には引き続き明示的な復旧を使います。既存の `.8` profile・保存領域と `.3` 復旧版を維持します。[更新内容と検証範囲](docs/SDK-STREAMING-UPGRADE-20261011.md)。
+
+**2026-10-11 SDK .10更新（過去の記録）:** `.10` の配布物・署名証明・SHA-256を確認し、既存の `.8` profile・保存名・note IDを保持したまま更新しました。未受付の不確定AUTHは明示的な`Check payment`で復旧できます。既に出金専用にしたnoteは元に戻せません。[更新内容と検証範囲](docs/SDK-UPGRADE-20261011.md)を参照してください。
 
 **2026-10-10のSDK更新（過去の記録）:** `.8` の配布物とGitHubリリース署名を確認し、セッション再利用、会話単位のsession ID、ZDR必須化に伴うエラー表示へ対応しました。[更新内容と検証範囲](docs/SDK-UPGRADE-20261010.md)を参照してください。
 
-**公開サービスの確認（2026-10-11 15:03–15:04 JST）:** SDK `.10` と元のrevision-6 profileで公開preflight全10項目・readinessに成功しました。[確認記録](docs/evidence/public-preflight-20261011-sdk10.json)。実入金・推論・精算・出金の再実行はしていません。
+**公開サービスの確認（2026-10-11 18:07–18:11 JST）:** SDK `.12` で公開preflight全10項目・readiness、隔離ブラウザでSDK・Worker・WASMの初期化と再接続に成功しました。同じ公開URLへ反映済みで、配信ファイル・デモ・旧版復旧画面を確認しています。実推論や入出金は再実行していません。[確認記録](docs/SDK-STREAMING-UPGRADE-20261011.md)。
+
+**公開サービスの過去の確認（2026-10-11 15:03–15:04 JST）:** SDK `.10` と元のrevision-6 profileで公開preflight全10項目・readinessに成功しました。[確認記録](docs/evidence/public-preflight-20261011-sdk10.json)。実入金・推論・精算・出金の再実行はしていません。
 
 **公開サービスの過去の確認（2026-10-11 01:24–01:25 JST）:** 公開catalogの空応答は解消し、モデル一覧21件と空でないcatalogを確認しました。一方、公開preflightはRPCで失敗し、RPCはHTTP 429、readinessはHTTP 503（Indexer unavailable）でした。この時点では利用可能と判定できていません。利用前に`Check service`で再確認してください。`.8` の有資金での入金・推論・精算・出金は未検証です。
 
@@ -66,7 +70,7 @@ npm run dev
 
 `Refresh status`は接続と保存済み状態の確認です。`Disable authorization for withdrawal`（旧表記`Check authorization`）は未確定の認可を永久に無効化し、その入金を出金専用にします。単なるステータス確認ではありません。実行後は同じ入金でチャットを再開できないため、残高を出金してから新しい入金を作成します。メッセージの再送や出金は自動実行しません。
 
-公開readinessの待ち時間は1回60秒、読み取りの再試行は1回までです。SDKのフル診断は180秒まで待ちます。停止操作は読み取りも中断します。SDKは `.10` へ更新し、既存の `.8` profileと暗号化保存領域を維持するため、既存入金の移行は不要です。未受付AUTHの復旧記録を書いた後は旧SDKがjournalを読めない場合があるので、現行版を使い続けてください。
+公開readinessの待ち時間は1回60秒、読み取りの再試行は1回までです。SDKのフル診断は180秒まで待ちます。停止操作は読み取りも中断します。SDKは `.12` へ更新し、既存の `.8` profileと暗号化保存領域を維持するため、既存入金の移行は不要です。未受付AUTHの復旧記録を書いた後は旧SDKがjournalを読めない場合があるので、現行版を使い続けてください。
 
 ## 検証コマンド
 
@@ -93,9 +97,9 @@ npm run check:browser
 
 ## 固定設定と保存
 
-[`.10` 更新ガイド](https://github.com/yukikm/solana-zkapi/blob/5a880fa4ddf6241fd29d3c125a4750e25a479a39/docs/releases/authorization-recovery-preview.md)に従い、SDK `.10` を導入し、`public/zkapi-config.json`の既存revision-6 profile・SHA-256を維持しています。復旧版は`config/zkapi-config.devnet.3.json`の元のrevision-2 profileを使用します。`verify:sdk`で現行 `.10`・保持した `.8`・復旧用 `.3` のvendor archiveを公開SHA-256と照合できます。配布元はnpm registryではなくGitHub releaseです。
+[`.12` 更新ガイド](https://github.com/yukikm/solana-zkapi/blob/v0.2.0-devnet.12/docs/getting-started/sdk-streaming-upgrade.md)に従い、SDK `.12` を導入し、`public/zkapi-config.json`の既存revision-6 profile・SHA-256を維持しています。復旧版は`config/zkapi-config.devnet.3.json`の元のrevision-2 profileを使用します。`verify:sdk`で現行 `.12`・保持した `.10`・`.8`・復旧用 `.3` のvendor archiveを公開SHA-256と照合できます。配布元はnpm registryではなくGitHub releaseです。
 
-現行 `.10` も保存名`zkchat-sdk-0.2.0-devnet.8`、初回note ID`zkchat-note-sdk-0.2.0-devnet.8`を引き続き使います。SDK実行版から保存領域の世代を分離しており、新しい空の保存領域は作りません。復旧版は`zkchat-sdk-0.2.0-devnet.3` / `zkchat-note-sdk-0.2.0-devnet.3`を維持します。追加noteと選択状態は各SDKの暗号化catalogに保存します。SDK・Worker・profileを混在させず、旧`zkchat-v1`も消去・移行しません。操作と切替はアカウント・deployment別のWeb Lockで直列化し、別タブで選択が変わった古い接続からの操作は拒否します。
+現行 `.12` も保存名`zkchat-sdk-0.2.0-devnet.8`、初回note ID`zkchat-note-sdk-0.2.0-devnet.8`を引き続き使います。SDK実行版から保存領域の世代を分離しており、新しい空の保存領域は作りません。復旧版は`zkchat-sdk-0.2.0-devnet.3` / `zkchat-note-sdk-0.2.0-devnet.3`を維持します。追加noteと選択状態は各SDKの暗号化catalogに保存します。SDK・Worker・profileを混在させず、旧`zkchat-v1`も消去・移行しません。操作と切替はアカウント・deployment別のWeb Lockで直列化し、別タブで選択が変わった古い接続からの操作は拒否します。
 
 会話表示はlocalStorageに平文で保存します。現行SDKはdirectの送信本文をSDK journalに保存せず、proxy本文も送信後に削減しますが、request fingerprintと資金の復旧情報は保持します。旧journalの本文・外部バックアップ・画面の会話履歴は自動消去されません。会話の削除とjournalの削除は別です。OpenRouterにはZDRとdata collection denyを要求し、自動的に緩和しません。これはprovider側の削除やIP秘匿の証明ではありません。directではproviderが、proxyではoperatorも内容を受け取ります。ブラウザ保存はポータブルバックアップではありません。
 

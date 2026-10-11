@@ -51,6 +51,23 @@ export const connectZkapi=async()=>({account,wallet,persistence:'persistent',pub
      return new Response('private provider message', {status:402,headers:{'Content-Type':'application/json','X-Zkapi-Error-Code':'provider_budget_unavailable'}});
    }
    update({session});
+   if(prompt==='stream completion' || prompt==='stream abort') {
+     update({canRequest:false,busy:true,session});
+     const body=new ReadableStream({start(controller){
+       controller.enqueue(new TextEncoder().encode('data: '+JSON.stringify({choices:[{index:0,delta:{content:'Terminal reply'},finish_reason:'stop'}]})+'\\n\\ndata: [DONE]\\n\\n'));
+       globalThis.__sdkUpgradeCompleteStream=()=>{
+         count('fixture:eofCalls');
+         update({canRequest:true,busy:false,session});
+         controller.close();
+       };
+       request.signal.addEventListener('abort',()=>{
+         count('fixture:abortCalls');
+         update({canRequest:false,busy:false,session:{...session,phase:'settlement_pending'}});
+         controller.error(new DOMException('Aborted','AbortError'));
+       },{once:true});
+     }});
+     return new Response(body,{headers:{'Content-Type':'text/event-stream'}});
+   }
    if(prompt==='stream failure') {
      const body=new ReadableStream({start(controller){
        controller.enqueue(new TextEncoder().encode('data: '+JSON.stringify({choices:[{index:0,delta:{content:'Partial reply'},finish_reason:null}]})+'\\n\\n'));
@@ -62,6 +79,7 @@ export const connectZkapi=async()=>({account,wallet,persistence:'persistent',pub
      }});
      return new Response(body,{headers:{'Content-Type':'text/event-stream'}});
    }
+   if(request.stream) return new Response('data: '+JSON.stringify({choices:[{index:0,delta:{content:'Fixture reply'},finish_reason:'stop'}]})+'\\n\\ndata: [DONE]\\n\\n',{headers:{'Content-Type':'text/event-stream'}});
    return Response.json({choices:[{message:{content:'Fixture reply'},finish_reason:'stop'}]});
  },
  settle:async()=>{
@@ -527,6 +545,87 @@ test("a failed response stream preserves its partial reply and checks status wit
   expect(
     await page.evaluate(() => localStorage.getItem("fixture:settled")),
   ).toBeNull();
+});
+
+test("terminal SSE waits for EOF, then enables the next explicit send without a payment check", async ({
+  page,
+}) => {
+  await page.evaluate(() => localStorage.setItem("fixture:streaming", "1"));
+  await message(page).fill("stream completion");
+  await sendButton(page).click();
+  await expect(page.locator(".message.assistant")).toContainText(
+    "Terminal reply",
+  );
+  const stop = page.getByRole("button", {
+    name: "Stop generation",
+    exact: true,
+  });
+  await expect(stop).toBeVisible();
+  await message(page).fill("next explicit message");
+  await expect(sendButton(page)).toHaveCount(0);
+  await message(page).press("Enter");
+  const firstCalls = await callAttempts(page);
+  expect(firstCalls).toHaveLength(1);
+  expect(firstCalls[0].stream).toBe(true);
+  await page.evaluate(() =>
+    (
+      globalThis as unknown as { __sdkUpgradeCompleteStream(): void }
+    ).__sdkUpgradeCompleteStream(),
+  );
+  await expect(stop).toHaveCount(0);
+  await expect(sendButton(page)).toBeEnabled();
+  await expect(page.locator(".message-feedback")).toHaveCount(0);
+  await expect(message(page)).toHaveValue("next explicit message");
+  expect(await callAttempts(page)).toEqual(firstCalls);
+  await sendButton(page).click();
+  await expect(page.locator(".message.assistant").last()).toContainText(
+    "Fixture reply",
+  );
+  await expect(stop).toHaveCount(0);
+  const finalCalls = await callAttempts(page);
+  expect(finalCalls).toHaveLength(2);
+  expect(finalCalls[1].sessionId).toBe(firstCalls[0].sessionId);
+  expect(finalCalls[1].operationId).not.toBe(firstCalls[0].operationId);
+  expect(
+    await page.evaluate(() => ({
+      recover: localStorage.getItem("fixture:recoverCalls"),
+      settled: localStorage.getItem("fixture:settled"),
+      eof: localStorage.getItem("fixture:eofCalls"),
+    })),
+  ).toEqual({ recover: null, settled: null, eof: "1" });
+});
+
+test("Stop reaches the original request after terminal SSE and preserves recovery without replay", async ({
+  page,
+}) => {
+  await page.evaluate(() => localStorage.setItem("fixture:streaming", "1"));
+  await message(page).fill("stream abort");
+  await sendButton(page).click();
+  const assistant = page.locator(".message.assistant");
+  await expect(assistant).toContainText("Terminal reply");
+  await page
+    .getByRole("button", { name: "Stop generation", exact: true })
+    .click();
+  await expect(assistant).toContainText(
+    "Stopped. Charges may still apply. Choose Check status.",
+  );
+  await expect(assistant).toContainText("Terminal reply");
+  await expect(
+    page.getByRole("button", { name: "Send again", exact: true }),
+  ).toBeDisabled();
+  await page.getByRole("button", { name: "Check status", exact: true }).click();
+  await expect(
+    page.getByRole("heading", { name: "Payment pending", exact: true }),
+  ).toBeVisible();
+  expect(await callAttempts(page)).toHaveLength(1);
+  expect(
+    await page.evaluate(() => ({
+      abort: localStorage.getItem("fixture:abortCalls"),
+      recover: localStorage.getItem("fixture:recoverCalls"),
+      settled: localStorage.getItem("fixture:settled"),
+      eof: localStorage.getItem("fixture:eofCalls"),
+    })),
+  ).toEqual({ abort: "1", recover: null, settled: null, eof: null });
 });
 
 test("new chats prefer the configured GPT model while saved and explicit model choices stay unchanged", async ({

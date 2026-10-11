@@ -8,7 +8,7 @@ export default defineConfig(({ mode }) => ({
     `node_modules/.vite-${mode}`,
   define: {
     "import.meta.env.VITE_ZKCHAT_SDK_VERSION": JSON.stringify(
-      mode === "recovery" ? "0.2.0-devnet.3" : "0.2.0-devnet.10",
+      mode === "recovery" ? "0.2.0-devnet.3" : "0.2.0-devnet.12",
     ),
   },
   resolve: {

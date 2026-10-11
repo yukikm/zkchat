@@ -1,9 +1,9 @@
 {
   "schema": 1,
   "kind": "installed_production_dependency_notice_inventory",
-  "packageLockSha256": "81d08c48069388f9592c46a22a16615b7073a20eeb2d285401c1f9cfd73ce56d",
-  "applicationPackageJsonSha256": "9e75f55a4fcefe063bf33b046948a92f7b40a490959d18f79f7e9a0d1f8488a7",
-  "collectionSha256": "5a5a1efd9287279d2aa4619480f4b6ae9f7b9edf50c898bfe85d1e30c33ab440",
+  "packageLockSha256": "9cf0acd6f273acae3f75dd5bd54201421767267b59c185d125b2595d65852a2d",
+  "applicationPackageJsonSha256": "37109d577fe9965e5254134e095070905cdd21661a4ebad52ec31c73a92a344c",
+  "collectionSha256": "8a97939f05ff596948a2bea5fc137a7201ef881f148e9a315c998e679ef30177",
   "collectionBytes": 249121,
   "scope": "Installed npm production closure; exact notice bytes preserved; overinclusive relative to Vite bundle",
   "fontPackages": [
@@ -769,10 +769,10 @@
     },
     {
       "name": "@wallet-standard/app",
-      "version": "1.1.0",
+      "version": "1.1.1",
       "license": "Apache-2.0",
-      "lockIntegrity": "sha512-3CijvrO9utx598kjr45hTbbeeykQrQfKmSnxeWOgU25TOEpvcipD/bYDQWIqUv1Oc6KK4YStokSMu/FBNecGUQ==",
-      "packageJsonSha256": "20ef7a71c115e1ce3e7eaeac827e802ca734bd64741bb52f15c4f4881194c220",
+      "lockIntegrity": "sha512-WDGwoByhP5gwHH01r5EaLgQdLVkACPCdOMQhmhn8rsm10h/siSgTorShzBxrn0ExSPof+Lu+C3TfgqBrPa1xoQ==",
+      "packageJsonSha256": "e171664c61c8ba06bb68d14caf49982f63f5e221ae73106e5c9adfe1a4f60dd1",
       "sources": [
         {
           "path": "node_modules/@wallet-standard/app/LICENSE",
@@ -797,10 +797,10 @@
     },
     {
       "name": "@zkapi/solana-sdk",
-      "version": "0.2.0-devnet.10",
+      "version": "0.2.0-devnet.12",
       "license": "MIT",
-      "lockIntegrity": "sha512-lMzRPH66vRXY8tOntBVtxKxeRZcrD0j+kDgyFuDx0nLdVrrdXUQINbH0oLr+T5JnAbAHvXgPHc7dfF4nJqkihA==",
-      "packageJsonSha256": "a4193b620cd4443358bcd258ab5f224f0bcfa659e1444f8c5adf9ea79f20bd59",
+      "lockIntegrity": "sha512-2IHQn0jd3ZqLgz8+thIaDTYf1ongIqAoi5we5OzoR/edjKLbk2IxpeTZJ998UJveuIyhROvXSY4f97FZ/R3AyQ==",
+      "packageJsonSha256": "7ba8f201d7c1322b8ad9585467f8406772c69002ee3fd00f01e12ef0452485eb",
       "sources": [
         {
           "path": "node_modules/@zkapi/solana-sdk/LICENSE",

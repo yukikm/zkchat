@@ -1506,7 +1506,7 @@ PERFORMANCE OF THIS SOFTWARE.
 
 
 ==============================================================================
-@wallet-standard/app@1.1.0 / LICENSE
+@wallet-standard/app@1.1.1 / LICENSE
 ==============================================================================
 
                                  Apache License
@@ -1920,7 +1920,7 @@ PERFORMANCE OF THIS SOFTWARE.
 
 
 ==============================================================================
-@zkapi/solana-sdk@0.2.0-devnet.10 / LICENSE
+@zkapi/solana-sdk@0.2.0-devnet.12 / LICENSE
 ==============================================================================
 MIT License
 

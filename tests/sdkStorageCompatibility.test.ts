@@ -53,10 +53,10 @@ afterAll(async () => {
   if (extracted) await rm(extracted, { recursive: true, force: true });
 });
 
-describe("SDK .8 to .10 custody compatibility", () => {
+describe("SDK .8 to .12 custody compatibility", () => {
   it("updates the installed runtime while keeping the existing storage and first note identities", () => {
-    expect(PUBLIC_PROFILE_SDK_VERSION).toBe("0.2.0-devnet.10");
-    expect(SDK_VERSION).toBe("0.2.0-devnet.10");
+    expect(PUBLIC_PROFILE_SDK_VERSION).toBe("0.2.0-devnet.12");
+    expect(SDK_VERSION).toBe("0.2.0-devnet.12");
     expect(SDK_STORAGE_VERSION).toBe("0.2.0-devnet.8");
     expect(SDK_STORAGE_NAME).toBe("zkchat-sdk-0.2.0-devnet.8");
     expect(ORIGINAL_NOTE_ID).toBe("zkchat-note-sdk-0.2.0-devnet.8");

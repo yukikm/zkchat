@@ -1,0 +1,45 @@
+{
+  "observedAt": "2026-10-11T09:10:35.866Z",
+  "sdk": "0.2.0-devnet.12",
+  "sourceRepository": "https://github.com/yukikm/solana-zkapi",
+  "sourceRevision": "989bdd3abe796c65c0d954ce761436d212b08840",
+  "release": "https://github.com/yukikm/solana-zkapi/releases/tag/v0.2.0-devnet.12",
+  "archive": {
+    "path": "vendor/zkapi-solana-sdk-0.2.0-devnet.12.tgz",
+    "sha256": "cf6deabf4e929deff9e9c5239144fc5ac6e64e6db7612af6c28a6bebd62bd129"
+  },
+  "authenticatedDistribution": {
+    "immutableReleaseVerified": true,
+    "sha256sumsAssetVerified": true,
+    "sdkAssetVerified": true,
+    "archiveMatchesAuthenticatedSums": true,
+    "commands": [
+      "gh release verify v0.2.0-devnet.12 --repo yukikm/solana-zkapi",
+      "gh release verify-asset v0.2.0-devnet.12 SHA256SUMS --repo yukikm/solana-zkapi",
+      "gh release verify-asset v0.2.0-devnet.12 zkapi-solana-sdk-0.2.0-devnet.12.tgz --repo yukikm/solana-zkapi"
+    ]
+  },
+  "runtime": {
+    "node": "24.19.0",
+    "npm": "11.9.0",
+    "kit": "8.4.0",
+    "legacySdk": "0.2.0-devnet.3"
+  },
+  "validation": {
+    "unitTests": 196,
+    "browserFixtureTests": 48,
+    "liveTestsSkippedInFixtureSuite": 3,
+    "verifySdk": true,
+    "typecheckAndDualBuild": true,
+    "checkBuild": true,
+    "checkAws": true,
+    "profileFilesUnchanged": true,
+    "noticesVerified": true
+  },
+  "storageName": "zkchat-sdk-0.2.0-devnet.8",
+  "originalNoteId": "zkchat-note-sdk-0.2.0-devnet.8",
+  "configSha256": "ce29a42706fc186cd4a7a992300825456f0883a9b1703e5068cc2f9b88130927",
+  "recoveryConfigSha256": "64b6cb8ffb9bbd4e64710a1ba658b3f259074db5e968712f6c729a90d19c0709",
+  "packageLockSha256": "9cf0acd6f273acae3f75dd5bd54201421767267b59c185d125b2595d65852a2d",
+  "scope": "Archive authentication, local fixtures, build and custody format compatibility. No funded inference, wallet signatures, AUTH or financial transaction. Public read-only checks and deployment are recorded separately."
+}

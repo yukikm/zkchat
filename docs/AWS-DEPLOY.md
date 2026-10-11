@@ -29,6 +29,8 @@
 
 反映後、本体・復旧版のHTML、設定、JS/CSS、Worker、ライセンス一覧の18ファイルで公開bytes・MIME・cacheがビルドと一致し、旧asset 3ファイルの保持も確認しました。隔離ブラウザでデモ応答、`.10` 表示、`.3` 復旧版への同一origin遷移と保存状態保持、実profileを使う公開preflight成功を確認しました。ページ内JavaScriptエラーはありません。利用者の実ブラウザ保存領域、署名、AUTH、実推論、入出金は操作していません。[配信検証記録](evidence/deployment-sdk10-20261011.json)・[更新詳細](SDK-UPGRADE-20261011.md)を参照してください。
 
+2026-10-11 18:10 JSTにSDK `0.2.0-devnet.12` を同じURLへ反映しました。272ファイル（13,037,521 bytes）を配信し、CloudFront invalidation `IAY46G6SUE0BCA1ET74T69EG93` は完了しています。18:11 JSTに18ファイルの公開bytes・MIME・cache一致、旧asset 10ファイルの保持、デモ応答と `.12` 表示、`.3` 復旧画面と同一origin保存の保持を確認しました。単体196件、画面48件、両SDKのビルドと配信検査が成功し、公開API事前確認と隔離ブラウザの無資金初期化・再接続も成功しました。[更新詳細](SDK-STREAMING-UPGRADE-20261011.md)・[配信検証記録](evidence/deployment-sdk12-20261011.json)を参照してください。実推論・署名・入出金は操作していません。
+
 ## 費用と対象範囲
 
 | 項目                               | 想定                                          |

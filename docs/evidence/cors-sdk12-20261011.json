@@ -1,0 +1,193 @@
+{
+  "observedAt": "2026-10-11T09:07:39.925Z",
+  "origin": "https://dzt0611ozdx70.cloudfront.net",
+  "profileSha256": "ec10c1ab41bb5105222d3e25c7e1eba6b96b1b397abd0f854657030269992a77",
+  "checks": [
+    {
+      "endpoint": "/rpc",
+      "method": "POST",
+      "requestedHeaders": [
+        "content-type"
+      ],
+      "status": 204,
+      "allowOrigin": "*",
+      "allowMethods": [
+        "POST"
+      ],
+      "allowHeaders": [
+        "authorization",
+        "content-type"
+      ],
+      "allowed": true
+    },
+    {
+      "endpoint": "/zkapi/v1/quotes",
+      "method": "POST",
+      "requestedHeaders": [
+        "content-type"
+      ],
+      "status": 204,
+      "allowOrigin": "*",
+      "allowMethods": [
+        "POST"
+      ],
+      "allowHeaders": [
+        "authorization",
+        "content-type"
+      ],
+      "allowed": true
+    },
+    {
+      "endpoint": "/zkapi/v1/sessions",
+      "method": "POST",
+      "requestedHeaders": [
+        "authorization",
+        "content-type"
+      ],
+      "status": 204,
+      "allowOrigin": "*",
+      "allowMethods": [
+        "POST"
+      ],
+      "allowHeaders": [
+        "authorization",
+        "content-type",
+        "x-zkapi-admission"
+      ],
+      "allowed": true
+    },
+    {
+      "endpoint": "/zkapi/v1/sessions/retire",
+      "method": "POST",
+      "requestedHeaders": [
+        "authorization",
+        "content-type"
+      ],
+      "status": 204,
+      "allowOrigin": "*",
+      "allowMethods": [
+        "POST"
+      ],
+      "allowHeaders": [
+        "authorization",
+        "content-type"
+      ],
+      "allowed": true
+    },
+    {
+      "endpoint": "/zkapi/v1/sessions/00000000-0000-4000-8000-000000000000",
+      "method": "GET",
+      "requestedHeaders": [
+        "authorization"
+      ],
+      "status": 204,
+      "allowOrigin": "*",
+      "allowMethods": [
+        "GET"
+      ],
+      "allowHeaders": [
+        "authorization",
+        "content-type"
+      ],
+      "allowed": true
+    },
+    {
+      "endpoint": "/zkapi/v1/sessions/00000000-0000-4000-8000-000000000000/close",
+      "method": "POST",
+      "requestedHeaders": [
+        "authorization",
+        "content-type"
+      ],
+      "status": 204,
+      "allowOrigin": "*",
+      "allowMethods": [
+        "POST"
+      ],
+      "allowHeaders": [
+        "authorization",
+        "content-type"
+      ],
+      "allowed": true
+    },
+    {
+      "endpoint": "/zkapi/v1/sessions/00000000-0000-4000-8000-000000000000/receipts",
+      "method": "GET",
+      "requestedHeaders": [
+        "authorization"
+      ],
+      "status": 204,
+      "allowOrigin": "*",
+      "allowMethods": [
+        "GET"
+      ],
+      "allowHeaders": [
+        "authorization",
+        "content-type"
+      ],
+      "allowed": true
+    },
+    {
+      "endpoint": "/zkapi/v1/withdraw/clearance",
+      "method": "POST",
+      "requestedHeaders": [
+        "content-type"
+      ],
+      "status": 204,
+      "allowOrigin": "*",
+      "allowMethods": [
+        "POST"
+      ],
+      "allowHeaders": [
+        "authorization",
+        "content-type"
+      ],
+      "allowed": true
+    },
+    {
+      "endpoint": "/zkapi/v1/readiness",
+      "method": "GET",
+      "requestedHeaders": [],
+      "status": 204,
+      "allowOrigin": "*",
+      "allowMethods": [
+        "GET"
+      ],
+      "allowHeaders": [
+        "authorization",
+        "content-type"
+      ],
+      "allowed": true
+    },
+    {
+      "endpoint": "/zkapi/v1/tree/root",
+      "method": "GET",
+      "requestedHeaders": [],
+      "status": 204,
+      "allowOrigin": "*",
+      "allowMethods": [
+        "GET"
+      ],
+      "allowHeaders": [
+        "authorization",
+        "content-type"
+      ],
+      "allowed": true
+    },
+    {
+      "endpoint": "/zkapi/v1/tree/snapshot",
+      "method": "GET",
+      "requestedHeaders": [],
+      "status": 204,
+      "allowOrigin": "*",
+      "allowMethods": [
+        "GET"
+      ],
+      "allowHeaders": [
+        "authorization",
+        "content-type"
+      ],
+      "allowed": true
+    }
+  ],
+  "scope": "Authenticated profile loading and exact-origin OPTIONS only. No wallet, quote, AUTH, inference or transaction. CORS permission is not financial-route acceptance."
+}
