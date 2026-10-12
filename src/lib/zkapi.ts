@@ -37,6 +37,7 @@ import type { PublicPreflightResult } from "@zkapi/solana-sdk/public-profile";
 import type { ServiceReadiness } from "./readiness";
 import { WalletConnectionError } from "./walletErrors";
 import { MAX_OUTPUT_TOKENS } from "./chat";
+import { createIndexerSnapshotFetch } from "./indexerFetch";
 import {
   openDepositCatalog,
   ORIGINAL_NOTE_ID,
@@ -463,10 +464,23 @@ export async function connectZkapi(
     throw error;
   }
   const legacy = installed as LegacyAppConfig;
+  let requestSignal: AbortSignal | undefined;
+  const publicOptions = publicConnection?.options;
+  if (publicOptions && !RECOVERY_RUNTIME) {
+    const deployment = publicOptions.deployment;
+    publicOptions.deployment = {
+      ...deployment,
+      fetch: createIndexerSnapshotFetch(
+        deployment.indexerOrigin,
+        deployment.fetch ?? globalThis.fetch,
+        () => requestSignal,
+      ),
+    };
+  }
   let raw: Awaited<ReturnType<typeof createBrowserClient>>;
   const openClient = (noteId: string, initialize = false) =>
     createBrowserClient({
-      ...(publicConnection?.options ?? {
+      ...(publicOptions ?? {
         deployment: {
           manifest: assets.manifest,
           trust: assets.trust,
@@ -747,11 +761,20 @@ export async function connectZkapi(
                   );
               }
             }
-            return Reflect.apply(
-              Reflect.get(target, property, target),
-              target,
-              args,
-            );
+            // The SDK's snapshot read has its own deadline. Also let Stop
+            // interrupt its bounded retry before authorization is submitted.
+            requestSignal = ["chat", "request"].includes(String(property))
+              ? (args[0] as { signal?: AbortSignal }).signal
+              : undefined;
+            try {
+              return await Reflect.apply(
+                Reflect.get(target, property, target),
+                target,
+                args,
+              );
+            } finally {
+              requestSignal = undefined;
+            }
           });
         };
       return value.bind(target);

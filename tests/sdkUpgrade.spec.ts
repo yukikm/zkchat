@@ -505,7 +505,7 @@ test("a failed response stream preserves its partial reply and checks status wit
     ).__sdkUpgradeFailStream();
   });
   await expect(assistant).toContainText(
-    "Reply interrupted. Choose Check status before sending again. Nothing is resent automatically.",
+    "The response could not be validated. Choose Check status before sending again. Nothing is resent automatically.",
   );
   await expect(assistant).toContainText("Partial reply");
   await expect(assistant).not.toContainText(

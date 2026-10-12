@@ -1,4 +1,5 @@
 import { ClientActionError, type ClientStatus } from "@zkapi/solana-sdk";
+import { ChatResponseError } from "@zkapi/solana-sdk/chat";
 import { ControlHttpError } from "@zkapi/solana-sdk/control";
 
 export function reusableSession(status: ClientStatus | null): boolean {
@@ -66,6 +67,23 @@ export function chatFailureMessage(
     error.status <= 599
   ) {
     reason = `The payment service returned HTTP ${error.status}.`;
+  } else if (error instanceof ChatResponseError) {
+    switch (error.code) {
+      case "incomplete_stream":
+        reason = "Response completion could not be confirmed.";
+        break;
+      case "invalid_response":
+        reason = "The response could not be validated.";
+        break;
+      case "http_error":
+        reason =
+          Number.isInteger(error.status) &&
+          error.status >= 400 &&
+          error.status <= 599
+            ? `The provider returned HTTP ${error.status}.`
+            : "The provider request failed.";
+        break;
+    }
   } else if (error instanceof ClientActionError) {
     switch (error.code) {
       case "busy":

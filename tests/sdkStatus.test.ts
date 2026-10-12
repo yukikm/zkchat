@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { ClientActionError, type ClientStatus } from "@zkapi/solana-sdk";
+import { ChatResponseError } from "@zkapi/solana-sdk/chat";
 import { ControlHttpError } from "@zkapi/solana-sdk/control";
 import {
   reusableSession,
@@ -82,12 +83,79 @@ describe("SDK .8 session and error presentation", () => {
   });
 
   it.each([
+    ["incomplete_stream", 200, "Response completion could not be confirmed."],
+    ["invalid_response", 200, "The response could not be validated."],
+    ["http_error", 400, "The provider returned HTTP 400."],
+    ["http_error", 599, "The provider returned HTTP 599."],
+  ] as const)(
+    "explains SDK %s without exposing response data or claiming no charge",
+    (code, status, reason) => {
+      const error = new ChatResponseError(code, "private-operation-id", status);
+      error.message = "private response or credential";
+      const response = new Response("private provider body", { status });
+      const message = chatFailureMessage(error, response, true);
+      expect(message).toBe(
+        `${reason} Choose Check status before sending again. Nothing is resent automatically.`,
+      );
+      expect(message).not.toMatch(
+        /private|not charged|no charge|no funds|not sent/i,
+      );
+      expect(response.bodyUsed).toBe(false);
+    },
+  );
+
+  it.each([Number.NaN, Number.POSITIVE_INFINITY, 399, 600, 401.5])(
+    "does not display an invalid provider HTTP status: %s",
+    (status) => {
+      expect(
+        chatFailureMessage(new ChatResponseError("http_error", null, status)),
+      ).toBe(
+        "The provider request failed. Choose Check status before sending again. Nothing is resent automatically.",
+      );
+    },
+  );
+
+  it("prioritizes known provider guidance over an SDK HTTP error", () => {
+    const response = new Response("private provider body", {
+      status: 402,
+      headers: { "X-Zkapi-Error-Code": "provider_budget_unavailable" },
+    });
+    const error = new ChatResponseError(
+      "http_error",
+      "private-operation-id",
+      402,
+    );
+    expect(chatFailureMessage(error, response, true)).toBe(
+      "The provider has no available credit. Adding a deposit will not resolve this. Choose Check status before sending again. No automatic retry.",
+    );
+    expect(response.bodyUsed).toBe(false);
+  });
+
+  it.each([
     new Error("private witness or provider payload"),
     new Error("__proto__"),
     new Error("toString"),
     { status: 400, message: "private response" },
     "private rejection",
     new ControlHttpError(Number.NaN),
+    new ChatResponseError(
+      "private-unknown-code" as ChatResponseError["code"],
+      "private-operation-id",
+      503,
+    ),
+    {
+      name: "ChatResponseError",
+      code: "http_error",
+      status: 503,
+      operationId: "private-operation-id",
+      message: "private response",
+    },
+    Object.assign(new Error("private response"), {
+      name: "ChatResponseError",
+      code: "incomplete_stream",
+      status: 200,
+      operationId: "private-operation-id",
+    }),
   ])("keeps unknown exceptions private", (error) => {
     expect(chatFailureMessage(error)).toBe(
       "Reply interrupted. Choose Check status before sending again. Nothing is resent automatically.",

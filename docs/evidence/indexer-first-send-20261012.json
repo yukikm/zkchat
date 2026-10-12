@@ -1,0 +1,722 @@
+{
+  "startedAt": "2026-10-12T06:10:02.813Z",
+  "scope": "Read-only public profile and snapshot GETs and public SDK preflight (config/catalog GETs and finalized RPC reads). No wallet, AUTH, quote, transaction, custody, or inference.",
+  "profileSha256": "ec10c1ab41bb5105222d3e25c7e1eba6b96b1b397abd0f854657030269992a77",
+  "samples": [
+    {
+      "trial": 1,
+      "startedAt": "2026-10-12T06:10:05.990Z",
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/zkapi/v1/tree/snapshot",
+          "status": 200,
+          "elapsedMs": 11309,
+          "httpDate": "Mon, 12 Oct 2026 06:10:17 GMT",
+          "retryAfter": null,
+          "cache": "Miss from cloudfront",
+          "cacheControl": "no-store",
+          "bytes": 481
+        },
+        {
+          "method": "GET",
+          "path": "/zkapi/v1/tree/snapshots/21b1767c3d245c26379e7199d750bc4cc548760ecbc88a323fa7afd30c295dec.json",
+          "status": 200,
+          "elapsedMs": 212,
+          "httpDate": "Mon, 12 Oct 2026 06:10:17 GMT",
+          "retryAfter": null,
+          "cache": "Miss from cloudfront",
+          "cacheControl": "no-store",
+          "bytes": 924
+        }
+      ],
+      "downloadPath": "/zkapi/v1/tree/snapshots/21b1767c3d245c26379e7199d750bc4cc548760ecbc88a323fa7afd30c295dec.json",
+      "snapshot": {
+        "slot": "510168825",
+        "sequence": "11",
+        "nextNoteId": "7"
+      },
+      "digestMatches": true,
+      "activeCount": 4,
+      "pendingCount": 0
+    },
+    {
+      "trial": 2,
+      "startedAt": "2026-10-12T06:10:17.511Z",
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/zkapi/v1/tree/snapshot",
+          "status": 200,
+          "elapsedMs": 181,
+          "httpDate": "Mon, 12 Oct 2026 06:10:17 GMT",
+          "retryAfter": null,
+          "cache": "Miss from cloudfront",
+          "cacheControl": "no-store",
+          "bytes": 481
+        },
+        {
+          "method": "GET",
+          "path": "/zkapi/v1/tree/snapshots/21b1767c3d245c26379e7199d750bc4cc548760ecbc88a323fa7afd30c295dec.json",
+          "status": 200,
+          "elapsedMs": 168,
+          "httpDate": "Mon, 12 Oct 2026 06:10:17 GMT",
+          "retryAfter": null,
+          "cache": "Miss from cloudfront",
+          "cacheControl": "no-store",
+          "bytes": 924
+        }
+      ],
+      "downloadPath": "/zkapi/v1/tree/snapshots/21b1767c3d245c26379e7199d750bc4cc548760ecbc88a323fa7afd30c295dec.json",
+      "snapshot": {
+        "slot": "510168825",
+        "sequence": "11",
+        "nextNoteId": "7"
+      },
+      "digestMatches": true,
+      "activeCount": 4,
+      "pendingCount": 0
+    },
+    {
+      "trial": 3,
+      "startedAt": "2026-10-12T06:10:17.861Z",
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/zkapi/v1/tree/snapshot",
+          "status": 200,
+          "elapsedMs": 169,
+          "httpDate": "Mon, 12 Oct 2026 06:10:18 GMT",
+          "retryAfter": null,
+          "cache": "Miss from cloudfront",
+          "cacheControl": "no-store",
+          "bytes": 481
+        },
+        {
+          "method": "GET",
+          "path": "/zkapi/v1/tree/snapshots/21b1767c3d245c26379e7199d750bc4cc548760ecbc88a323fa7afd30c295dec.json",
+          "status": 200,
+          "elapsedMs": 177,
+          "httpDate": "Mon, 12 Oct 2026 06:10:18 GMT",
+          "retryAfter": null,
+          "cache": "Miss from cloudfront",
+          "cacheControl": "no-store",
+          "bytes": 924
+        }
+      ],
+      "downloadPath": "/zkapi/v1/tree/snapshots/21b1767c3d245c26379e7199d750bc4cc548760ecbc88a323fa7afd30c295dec.json",
+      "snapshot": {
+        "slot": "510168825",
+        "sequence": "11",
+        "nextNoteId": "7"
+      },
+      "digestMatches": true,
+      "activeCount": 4,
+      "pendingCount": 0
+    },
+    {
+      "trial": 4,
+      "startedAt": "2026-10-12T06:10:18.207Z",
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/zkapi/v1/tree/snapshot",
+          "status": 200,
+          "elapsedMs": 173,
+          "httpDate": "Mon, 12 Oct 2026 06:10:18 GMT",
+          "retryAfter": null,
+          "cache": "Miss from cloudfront",
+          "cacheControl": "no-store",
+          "bytes": 481
+        },
+        {
+          "method": "GET",
+          "path": "/zkapi/v1/tree/snapshots/21b1767c3d245c26379e7199d750bc4cc548760ecbc88a323fa7afd30c295dec.json",
+          "status": 200,
+          "elapsedMs": 165,
+          "httpDate": "Mon, 12 Oct 2026 06:10:18 GMT",
+          "retryAfter": null,
+          "cache": "Miss from cloudfront",
+          "cacheControl": "no-store",
+          "bytes": 924
+        }
+      ],
+      "downloadPath": "/zkapi/v1/tree/snapshots/21b1767c3d245c26379e7199d750bc4cc548760ecbc88a323fa7afd30c295dec.json",
+      "snapshot": {
+        "slot": "510168825",
+        "sequence": "11",
+        "nextNoteId": "7"
+      },
+      "digestMatches": true,
+      "activeCount": 4,
+      "pendingCount": 0
+    },
+    {
+      "trial": 5,
+      "startedAt": "2026-10-12T06:10:18.545Z",
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/zkapi/v1/tree/snapshot",
+          "status": 200,
+          "elapsedMs": 319,
+          "httpDate": "Mon, 12 Oct 2026 06:10:18 GMT",
+          "retryAfter": null,
+          "cache": "Miss from cloudfront",
+          "cacheControl": "no-store",
+          "bytes": 481
+        },
+        {
+          "method": "GET",
+          "path": "/zkapi/v1/tree/snapshots/21b1767c3d245c26379e7199d750bc4cc548760ecbc88a323fa7afd30c295dec.json",
+          "status": 200,
+          "elapsedMs": 328,
+          "httpDate": "Mon, 12 Oct 2026 06:10:19 GMT",
+          "retryAfter": null,
+          "cache": "Miss from cloudfront",
+          "cacheControl": "no-store",
+          "bytes": 924
+        }
+      ],
+      "downloadPath": "/zkapi/v1/tree/snapshots/21b1767c3d245c26379e7199d750bc4cc548760ecbc88a323fa7afd30c295dec.json",
+      "snapshot": {
+        "slot": "510168825",
+        "sequence": "11",
+        "nextNoteId": "7"
+      },
+      "digestMatches": true,
+      "activeCount": 4,
+      "pendingCount": 0
+    },
+    {
+      "trial": 6,
+      "startedAt": "2026-10-12T06:10:19.193Z",
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/zkapi/v1/tree/snapshot",
+          "elapsedMs": 15001,
+          "error": "TimeoutError",
+          "message": "The operation was aborted due to timeout"
+        }
+      ]
+    },
+    {
+      "trial": 7,
+      "startedAt": "2026-10-12T06:10:34.194Z",
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/zkapi/v1/tree/snapshot",
+          "status": 200,
+          "elapsedMs": 2777,
+          "httpDate": "Mon, 12 Oct 2026 06:10:36 GMT",
+          "retryAfter": null,
+          "cache": "Miss from cloudfront",
+          "cacheControl": "no-store",
+          "bytes": 481
+        },
+        {
+          "method": "GET",
+          "path": "/zkapi/v1/tree/snapshots/0feaf8f3069b3f92bd9bcfc235d8576ede115815dc6abe2babd83a700b514c98.json",
+          "status": 200,
+          "elapsedMs": 238,
+          "httpDate": "Mon, 12 Oct 2026 06:10:37 GMT",
+          "retryAfter": null,
+          "cache": "Miss from cloudfront",
+          "cacheControl": "no-store",
+          "bytes": 924
+        }
+      ],
+      "downloadPath": "/zkapi/v1/tree/snapshots/0feaf8f3069b3f92bd9bcfc235d8576ede115815dc6abe2babd83a700b514c98.json",
+      "snapshot": {
+        "slot": "510168895",
+        "sequence": "11",
+        "nextNoteId": "7"
+      },
+      "digestMatches": true,
+      "activeCount": 4,
+      "pendingCount": 0
+    },
+    {
+      "trial": 8,
+      "startedAt": "2026-10-12T06:10:37.209Z",
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/zkapi/v1/tree/snapshot",
+          "status": 200,
+          "elapsedMs": 230,
+          "httpDate": "Mon, 12 Oct 2026 06:10:37 GMT",
+          "retryAfter": null,
+          "cache": "Miss from cloudfront",
+          "cacheControl": "no-store",
+          "bytes": 481
+        },
+        {
+          "method": "GET",
+          "path": "/zkapi/v1/tree/snapshots/0feaf8f3069b3f92bd9bcfc235d8576ede115815dc6abe2babd83a700b514c98.json",
+          "status": 200,
+          "elapsedMs": 231,
+          "httpDate": "Mon, 12 Oct 2026 06:10:37 GMT",
+          "retryAfter": null,
+          "cache": "Miss from cloudfront",
+          "cacheControl": "no-store",
+          "bytes": 924
+        }
+      ],
+      "downloadPath": "/zkapi/v1/tree/snapshots/0feaf8f3069b3f92bd9bcfc235d8576ede115815dc6abe2babd83a700b514c98.json",
+      "snapshot": {
+        "slot": "510168895",
+        "sequence": "11",
+        "nextNoteId": "7"
+      },
+      "digestMatches": true,
+      "activeCount": 4,
+      "pendingCount": 0
+    }
+  ],
+  "indexerOrigin": "https://d366buuvadnp3.cloudfront.net",
+  "completedAt": "2026-10-12T06:12:02.195Z",
+  "initialProbeTimeoutMs": 15000,
+  "initialProbeCaveat": "Trial 6 is a diagnostic 15-second timeout, shorter than the SDK snapshot read timeout and backend 25-second refresh wait. It does not reproduce the user-visible error.",
+  "preflights": [
+    {
+      "trial": 1,
+      "startedAt": "2026-10-12T06:11:03.053Z",
+      "requests": [
+        {
+          "method": "POST",
+          "path": "/rpc",
+          "rpcMethod": "getGenesisHash",
+          "status": 200,
+          "elapsedMs": 361,
+          "httpDate": "Mon, 12 Oct 2026 06:11:03 GMT",
+          "retryAfter": null,
+          "cache": "Miss from cloudfront",
+          "cacheControl": "no-store"
+        },
+        {
+          "method": "POST",
+          "path": "/rpc",
+          "rpcMethod": "getAccountInfo",
+          "status": 200,
+          "elapsedMs": 337,
+          "httpDate": "Mon, 12 Oct 2026 06:11:03 GMT",
+          "retryAfter": null,
+          "cache": "Miss from cloudfront",
+          "cacheControl": "no-store"
+        },
+        {
+          "method": "GET",
+          "path": "/zkapi/v1/config",
+          "status": 200,
+          "elapsedMs": 167,
+          "httpDate": "Mon, 12 Oct 2026 06:11:03 GMT",
+          "retryAfter": null,
+          "cache": "Miss from cloudfront",
+          "cacheControl": "no-store"
+        },
+        {
+          "method": "GET",
+          "path": "/zkapi/v1/catalog",
+          "status": 200,
+          "elapsedMs": 194,
+          "httpDate": "Mon, 12 Oct 2026 06:11:04 GMT",
+          "retryAfter": null,
+          "cache": "Miss from cloudfront",
+          "cacheControl": "no-store"
+        },
+        {
+          "method": "GET",
+          "path": "/zkapi/v1/tree/snapshot",
+          "status": 200,
+          "elapsedMs": 18598,
+          "httpDate": "Mon, 12 Oct 2026 06:11:22 GMT",
+          "retryAfter": null,
+          "cache": "Miss from cloudfront",
+          "cacheControl": "no-store"
+        },
+        {
+          "method": "GET",
+          "path": "/zkapi/v1/tree/snapshots/54f3fa595d2a4a3b5d050becbed3d497b67bf2c0907affc5579ece31d3157f89.json",
+          "status": 200,
+          "elapsedMs": 517,
+          "httpDate": "Mon, 12 Oct 2026 06:11:23 GMT",
+          "retryAfter": null,
+          "cache": "Miss from cloudfront",
+          "cacheControl": "no-store"
+        },
+        {
+          "method": "POST",
+          "path": "/rpc",
+          "rpcMethod": "getGenesisHash",
+          "status": 200,
+          "elapsedMs": 208,
+          "httpDate": "Mon, 12 Oct 2026 06:11:23 GMT",
+          "retryAfter": null,
+          "cache": "Miss from cloudfront",
+          "cacheControl": "no-store"
+        },
+        {
+          "method": "POST",
+          "path": "/rpc",
+          "rpcMethod": "getBlock",
+          "status": 200,
+          "elapsedMs": 355,
+          "httpDate": "Mon, 12 Oct 2026 06:11:23 GMT",
+          "retryAfter": null,
+          "cache": "Miss from cloudfront",
+          "cacheControl": "no-store"
+        },
+        {
+          "method": "POST",
+          "path": "/rpc",
+          "rpcMethod": "getMultipleAccounts",
+          "status": 200,
+          "elapsedMs": 392,
+          "httpDate": "Mon, 12 Oct 2026 06:11:23 GMT",
+          "retryAfter": null,
+          "cache": "Miss from cloudfront",
+          "cacheControl": "no-store"
+        },
+        {
+          "method": "POST",
+          "path": "/rpc",
+          "rpcMethod": "getBlock",
+          "status": 200,
+          "elapsedMs": 213,
+          "httpDate": "Mon, 12 Oct 2026 06:11:23 GMT",
+          "retryAfter": null,
+          "cache": "Miss from cloudfront",
+          "cacheControl": "no-store"
+        }
+      ],
+      "passed": true,
+      "snapshot": {
+        "slot": 510169133,
+        "sourceSlot": 510169097,
+        "clock": "1791785482",
+        "sequence": "11",
+        "activeCount": 4
+      },
+      "elapsedMs": 20832
+    },
+    {
+      "trial": 2,
+      "startedAt": "2026-10-12T06:11:23.887Z",
+      "requests": [
+        {
+          "method": "POST",
+          "path": "/rpc",
+          "rpcMethod": "getGenesisHash",
+          "status": 200,
+          "elapsedMs": 204,
+          "httpDate": "Mon, 12 Oct 2026 06:11:24 GMT",
+          "retryAfter": null,
+          "cache": "Miss from cloudfront",
+          "cacheControl": "no-store"
+        },
+        {
+          "method": "POST",
+          "path": "/rpc",
+          "rpcMethod": "getAccountInfo",
+          "status": 200,
+          "elapsedMs": 202,
+          "httpDate": "Mon, 12 Oct 2026 06:11:24 GMT",
+          "retryAfter": null,
+          "cache": "Miss from cloudfront",
+          "cacheControl": "no-store"
+        },
+        {
+          "method": "GET",
+          "path": "/zkapi/v1/config",
+          "status": 200,
+          "elapsedMs": 413,
+          "httpDate": "Mon, 12 Oct 2026 06:11:24 GMT",
+          "retryAfter": null,
+          "cache": "Miss from cloudfront",
+          "cacheControl": "no-store"
+        },
+        {
+          "method": "GET",
+          "path": "/zkapi/v1/catalog",
+          "status": 200,
+          "elapsedMs": 355,
+          "httpDate": "Mon, 12 Oct 2026 06:11:25 GMT",
+          "retryAfter": null,
+          "cache": "Miss from cloudfront",
+          "cacheControl": "no-store"
+        },
+        {
+          "method": "GET",
+          "path": "/zkapi/v1/tree/snapshot",
+          "status": 200,
+          "elapsedMs": 14757,
+          "httpDate": "Mon, 12 Oct 2026 06:11:39 GMT",
+          "retryAfter": null,
+          "cache": "Miss from cloudfront",
+          "cacheControl": "no-store"
+        },
+        {
+          "method": "GET",
+          "path": "/zkapi/v1/tree/snapshots/44f20a58881b62473cc9a4934b63dd33543e3c93347311bf75459a47ed0fb6fe.json",
+          "status": 200,
+          "elapsedMs": 227,
+          "httpDate": "Mon, 12 Oct 2026 06:11:40 GMT",
+          "retryAfter": null,
+          "cache": "Miss from cloudfront",
+          "cacheControl": "no-store"
+        },
+        {
+          "method": "POST",
+          "path": "/rpc",
+          "rpcMethod": "getGenesisHash",
+          "status": 200,
+          "elapsedMs": 207,
+          "httpDate": "Mon, 12 Oct 2026 06:11:40 GMT",
+          "retryAfter": null,
+          "cache": "Miss from cloudfront",
+          "cacheControl": "no-store"
+        },
+        {
+          "method": "POST",
+          "path": "/rpc",
+          "rpcMethod": "getBlock",
+          "status": 200,
+          "elapsedMs": 208,
+          "httpDate": "Mon, 12 Oct 2026 06:11:40 GMT",
+          "retryAfter": null,
+          "cache": "Miss from cloudfront",
+          "cacheControl": "no-store"
+        },
+        {
+          "method": "POST",
+          "path": "/rpc",
+          "rpcMethod": "getMultipleAccounts",
+          "status": 200,
+          "elapsedMs": 386,
+          "httpDate": "Mon, 12 Oct 2026 06:11:40 GMT",
+          "retryAfter": null,
+          "cache": "Miss from cloudfront",
+          "cacheControl": "no-store"
+        },
+        {
+          "method": "POST",
+          "path": "/rpc",
+          "rpcMethod": "getBlock",
+          "status": 200,
+          "elapsedMs": 212,
+          "httpDate": "Mon, 12 Oct 2026 06:11:40 GMT",
+          "retryAfter": null,
+          "cache": "Miss from cloudfront",
+          "cacheControl": "no-store"
+        }
+      ],
+      "passed": true,
+      "snapshot": {
+        "slot": 510169204,
+        "sourceSlot": 510169169,
+        "clock": "1791785499",
+        "sequence": "11",
+        "activeCount": 4
+      },
+      "elapsedMs": 16829
+    },
+    {
+      "trial": 3,
+      "startedAt": "2026-10-12T06:11:40.717Z",
+      "requests": [
+        {
+          "method": "POST",
+          "path": "/rpc",
+          "rpcMethod": "getGenesisHash",
+          "status": 200,
+          "elapsedMs": 206,
+          "httpDate": "Mon, 12 Oct 2026 06:11:40 GMT",
+          "retryAfter": null,
+          "cache": "Miss from cloudfront",
+          "cacheControl": "no-store"
+        },
+        {
+          "method": "POST",
+          "path": "/rpc",
+          "rpcMethod": "getAccountInfo",
+          "status": 200,
+          "elapsedMs": 206,
+          "httpDate": "Mon, 12 Oct 2026 06:11:41 GMT",
+          "retryAfter": null,
+          "cache": "Miss from cloudfront",
+          "cacheControl": "no-store"
+        },
+        {
+          "method": "GET",
+          "path": "/zkapi/v1/config",
+          "status": 200,
+          "elapsedMs": 338,
+          "httpDate": "Mon, 12 Oct 2026 06:11:41 GMT",
+          "retryAfter": null,
+          "cache": "Miss from cloudfront",
+          "cacheControl": "no-store"
+        },
+        {
+          "method": "GET",
+          "path": "/zkapi/v1/catalog",
+          "status": 200,
+          "elapsedMs": 183,
+          "httpDate": "Mon, 12 Oct 2026 06:11:41 GMT",
+          "retryAfter": null,
+          "cache": "Miss from cloudfront",
+          "cacheControl": "no-store"
+        },
+        {
+          "method": "GET",
+          "path": "/zkapi/v1/tree/snapshot",
+          "status": 200,
+          "elapsedMs": 184,
+          "httpDate": "Mon, 12 Oct 2026 06:11:41 GMT",
+          "retryAfter": null,
+          "cache": "Miss from cloudfront",
+          "cacheControl": "no-store"
+        },
+        {
+          "method": "GET",
+          "path": "/zkapi/v1/tree/snapshots/44f20a58881b62473cc9a4934b63dd33543e3c93347311bf75459a47ed0fb6fe.json",
+          "status": 200,
+          "elapsedMs": 1611,
+          "httpDate": "Mon, 12 Oct 2026 06:11:43 GMT",
+          "retryAfter": null,
+          "cache": "Miss from cloudfront",
+          "cacheControl": "no-store"
+        },
+        {
+          "method": "POST",
+          "path": "/rpc",
+          "rpcMethod": "getBlock",
+          "status": 200,
+          "elapsedMs": 214,
+          "httpDate": "Mon, 12 Oct 2026 06:11:43 GMT",
+          "retryAfter": null,
+          "cache": "Miss from cloudfront",
+          "cacheControl": "no-store"
+        },
+        {
+          "method": "POST",
+          "path": "/rpc",
+          "rpcMethod": "getMultipleAccounts",
+          "status": 200,
+          "elapsedMs": 218,
+          "httpDate": "Mon, 12 Oct 2026 06:11:43 GMT",
+          "retryAfter": null,
+          "cache": "Miss from cloudfront",
+          "cacheControl": "no-store"
+        },
+        {
+          "method": "POST",
+          "path": "/rpc",
+          "rpcMethod": "getGenesisHash",
+          "status": 200,
+          "elapsedMs": 370,
+          "httpDate": "Mon, 12 Oct 2026 06:11:43 GMT",
+          "retryAfter": null,
+          "cache": "Miss from cloudfront",
+          "cacheControl": "no-store"
+        },
+        {
+          "method": "POST",
+          "path": "/rpc",
+          "rpcMethod": "getBlock",
+          "status": 200,
+          "elapsedMs": 213,
+          "httpDate": "Mon, 12 Oct 2026 06:11:44 GMT",
+          "retryAfter": null,
+          "cache": "Miss from cloudfront",
+          "cacheControl": "no-store"
+        }
+      ],
+      "passed": true,
+      "snapshot": {
+        "slot": 510169217,
+        "sourceSlot": 510169169,
+        "clock": "1791785502",
+        "sequence": "11",
+        "activeCount": 4
+      },
+      "elapsedMs": 3365
+    }
+  ],
+  "sdk": "0.2.0-devnet.12",
+  "node": "v24.19.0",
+  "followupProbeTimeoutMs": 35000,
+  "followupProbes": [
+    {
+      "trial": 1,
+      "startedAt": "2026-10-12T06:11:27.498Z",
+      "method": "GET",
+      "path": "/zkapi/v1/tree/snapshot",
+      "status": 200,
+      "elapsedMs": 12382,
+      "httpDate": "Mon, 12 Oct 2026 06:11:39 GMT",
+      "retryAfter": null,
+      "cache": "Miss from cloudfront",
+      "cacheControl": "no-store",
+      "slot": "510169169"
+    },
+    {
+      "trial": 2,
+      "startedAt": "2026-10-12T06:11:39.881Z",
+      "method": "GET",
+      "path": "/zkapi/v1/tree/snapshot",
+      "status": 200,
+      "elapsedMs": 235,
+      "httpDate": "Mon, 12 Oct 2026 06:11:40 GMT",
+      "retryAfter": null,
+      "cache": "Miss from cloudfront",
+      "cacheControl": "no-store",
+      "slot": "510169169"
+    },
+    {
+      "trial": 3,
+      "startedAt": "2026-10-12T06:11:40.116Z",
+      "method": "GET",
+      "path": "/zkapi/v1/tree/snapshot",
+      "status": 200,
+      "elapsedMs": 328,
+      "httpDate": "Mon, 12 Oct 2026 06:11:40 GMT",
+      "retryAfter": null,
+      "cache": "Miss from cloudfront",
+      "cacheControl": "no-store",
+      "slot": "510169169"
+    },
+    {
+      "trial": 4,
+      "startedAt": "2026-10-12T06:11:40.444Z",
+      "method": "GET",
+      "path": "/zkapi/v1/tree/snapshot",
+      "status": 200,
+      "elapsedMs": 182,
+      "httpDate": "Mon, 12 Oct 2026 06:11:40 GMT",
+      "retryAfter": null,
+      "cache": "Miss from cloudfront",
+      "cacheControl": "no-store",
+      "slot": "510169169"
+    }
+  ],
+  "findings": {
+    "observed": [
+      "No non-2xx response was observed in this sample; all three public SDK preflights passed.",
+      "Snapshot descriptor response times ranged from 169 ms to 18598 ms among completed requests. Content-addressed downloads passed digest checks.",
+      "One 15-second diagnostic-only timeout was followed by a successful GET after 2777 ms with an advanced snapshot slot; the shorter probe timeout does not reproduce the user-visible error.",
+      "All sampled HTTP responses were CloudFront cache misses with Cache-Control no-store; no Retry-After header was present."
+    ],
+    "localSourceMechanism": [
+      "SDK session-snapshot read throws finalized indexer unavailable when a descriptor/download HTTP response is non-2xx. The app maps that exact message to the reported text.",
+      "Local backend source withdraws availability during refresh. HTTP root/path/snapshot reads wait up to 25 seconds for a reconciled cut, then return 503; failed refreshes can return 503 immediately. Downloads read immutable content-addressed files."
+    ],
+    "limitations": [
+      "The user-visible HTTP error was not reproduced by these read-only probes.",
+      "The backend source is the local solana-zkapi checkout; this check did not establish the deployed binary revision.",
+      "These observations support intermittent snapshot refresh latency, not an always-failing first-send rule."
+    ]
+  }
+}

@@ -656,6 +656,80 @@ describe("existing application adapter with public profile", () => {
     expect(client.chat).not.toHaveBeenCalled();
     handle.dispose();
   });
+  it.each(["recovered", "unavailable", "stopped"])(
+    "handles a transient runtime snapshot within one chat operation: %s",
+    async (outcome) => {
+      const { account, wallet, client } = make();
+      let firstRead!: () => void;
+      const snapshotStarted = new Promise<void>((resolve) => {
+        firstRead = resolve;
+      });
+      const fetcher = vi
+        .fn<typeof fetch>()
+        .mockImplementationOnce(async () => {
+          firstRead();
+          return new Response(null, { status: 503 });
+        })
+        .mockResolvedValue(
+          new Response(null, {
+            status: outcome === "unavailable" ? 503 : 200,
+          }),
+        );
+      sdk.options.mockReturnValue({
+        deployment: { indexerOrigin: origin, fetch: fetcher },
+        mode: "direct_openrouter",
+        models: [],
+      });
+      const handle = await connectZkapi(config, wallet as any, account as any);
+      const runtimeFetch: typeof fetch =
+        sdk.browser.mock.calls[0][0].deployment.fetch;
+      const infer = vi.fn(() => new Response("reply"));
+      // Exercise the actual app-to-SDK fetch wiring, including the fact that
+      // SDK snapshot reads have a deadline distinct from the caller's signal.
+      client.chat.mockImplementation(async () => {
+        const response = await runtimeFetch(
+          origin + "/zkapi/v1/tree/snapshot",
+          {
+            credentials: "omit",
+            redirect: "error",
+            cache: "no-store",
+            signal: new AbortController().signal,
+          },
+        );
+        if (!response.ok) throw new Error("finalized indexer unavailable");
+        return infer();
+      });
+      const controller = new AbortController();
+      const request = {
+        operationId: "11111111-1111-4111-8111-111111111111",
+        model: "model",
+        maxOutputTokens: 128,
+        signal: controller.signal,
+      };
+      vi.useFakeTimers();
+      try {
+        const result = handle.client
+          .chat(request as any)
+          .catch((error) => error);
+        await snapshotStarted;
+        if (outcome === "stopped") controller.abort();
+        await vi.advanceTimersByTimeAsync(2_500);
+        const response = await result;
+        expect(client.chat).toHaveBeenCalledExactlyOnceWith(request);
+        if (outcome === "recovered") {
+          expect(response).toBeInstanceOf(Response);
+          expect(infer).toHaveBeenCalledOnce();
+        } else {
+          expect(response).toBeInstanceOf(Error);
+          expect(infer).not.toHaveBeenCalled();
+        }
+        expect(fetcher).toHaveBeenCalledTimes(outcome === "stopped" ? 1 : 2);
+      } finally {
+        vi.useRealTimers();
+        handle.dispose();
+      }
+    },
+  );
   it("uses the public gateway's 60-second session TTL on every deposit client", async () => {
     const f = depositFixture("closed");
     const handle = await f.connect();
