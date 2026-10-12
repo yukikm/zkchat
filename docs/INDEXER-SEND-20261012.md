@@ -1,6 +1,6 @@
 # First-send indexer failure
 
-2026-10-12 JST. Local fix; not published.
+2026-10-12 JST. Published as v0.1.3 to the existing public origin.
 
 ## Finding
 
@@ -60,3 +60,16 @@ persistent outage still produces the existing Check status guidance.
   by disk exhaustion while writing traces. Those four passed when rerun with one
   worker and tracing disabled. Local CloudFront routing checks also passed.
 - No live inference, authorization, wallet signature or transaction was sent.
+
+## Publication
+
+The existing `zkchat-static` stack received 272 files (13,050,169 bytes) at
+`https://dzt0611ozdx70.cloudfront.net`. CloudFront invalidation
+`IE0TXO2ZTGUUBMLB6PK93YGGOH` completed. The deployment verification checked
+18 file hashes/MIME/cache policies, six routing cases, ten retained assets,
+and isolated demo/recovery navigation with the original storage origin.
+See [deployment evidence](evidence/deployment-indexer-retry-20261012.json).
+
+Open tabs need to load the new entry via `Reload app` or a page reload after
+active operations finish. Publication does not automatically replay failed chats
+or establish that an upstream outage has ended.
