@@ -1,21 +1,24 @@
 # AWSでの最小コスト公開
 
-2026-10-11時点。zkchatは静的React/Viteアプリなので、**非公開S3 + CloudFront Free定額プラン**で公開できます。EC2、Lambda、API Gateway、DB、独自ドメインを追加しません。ビルドはローカルで行い、`https://….cloudfront.net` を固定URLにします。
+現行の配信手順は2026-10-23更新。zkchatは静的React/Viteアプリなので、**非公開S3 + CloudFront Free定額プラン**で公開できます。EC2、Lambda、API Gateway、DB、独自ドメインを追加しません。ビルドはローカルで行い、`https://….cloudfront.net` を固定URLにします。以下の2026-10-11の確認記録・料金見積もりはその時点の結果です。
 
 既存のZKAPI用CloudFront・S3は共有せず、専用の `zkchat-static` スタックで管理します。
+
+v0.2.0は通常画面をSDK `.13` / 新Poolへ切り替え、旧Poolの `.12` と元の `.3` の復旧画面を保持します。Node 24.22.1 LTS / npm 11.19.1でビルドします。S3/CloudFrontにNodeサーバーは常駐しておらず、Node更新の対象はローカルの開発・検証・ビルド環境です。公開結果は[SDK・Pool更新記録](SDK-POOL-UPGRADE-20261023.md)へ実行後に記録します。
 
 本番ビルド、ローカルブラウザでの配信検証、AWSの `validate-template` が成功しています。公開スクリプトの停止条件とアップロード順序はAWS CLIのstubでも確認済みです。2026-10-11に実AWSで専用リソースを作成し、Subscriptionが `ACTIVE` / `FREE` であることも確認しました。
 
 ## デプロイ先
 
-| 項目                    | 値                                                |
-| ----------------------- | ------------------------------------------------- |
-| サイトURL               | https://dzt0611ozdx70.cloudfront.net              |
-| 復旧画面                | https://dzt0611ozdx70.cloudfront.net/recovery-v3/ |
-| CloudFormation          | `zkchat-static` / `us-east-1`                     |
-| CloudFront distribution | `E3OT9UOJBXFFK5`                                  |
-| 非公開S3バケット        | `zkchat-static-sitebucket-4chfrmlwl1lh`           |
-| 初回アップロード        | 272ファイル、13,010,168 bytes                     |
+| 項目                    | 値                                                 |
+| ----------------------- | -------------------------------------------------- |
+| サイトURL               | https://dzt0611ozdx70.cloudfront.net               |
+| 旧Pool `.12` 復旧画面   | https://dzt0611ozdx70.cloudfront.net/recovery-v12/ |
+| 元の `.3` 復旧画面      | https://dzt0611ozdx70.cloudfront.net/recovery-v3/  |
+| CloudFormation          | `zkchat-static` / `us-east-1`                      |
+| CloudFront distribution | `E3OT9UOJBXFFK5`                                   |
+| 非公開S3バケット        | `zkchat-static-sitebucket-4chfrmlwl1lh`            |
+| 初回アップロード        | 272ファイル、13,010,168 bytes                      |
 
 更新時はこのスタックとURLを維持し、後述の `publish:aws` を使います。
 
@@ -33,13 +36,13 @@
 
 ## 費用と対象範囲
 
-| 項目                               | 想定                                          |
-| ---------------------------------- | --------------------------------------------- |
-| CloudFront Free定額プラン          | 月額$0。月100GB転送・100万リクエストの利用枠  |
-| S3 Standard保存                    | 5GB分の月次クレジット。現行ビルド全体は約13MB |
-| S3 PUT/GET/LIST                    | 別途従量課金。小規模利用では通常少額          |
-| ビルド・ドメイン・常時稼働サーバー | この構成では追加費用なし                      |
-| ZKAPI operator・RPC・Indexer・LLM  | この静的サイトの配信費用には含まれない        |
+| 項目                               | 想定                                                  |
+| ---------------------------------- | ----------------------------------------------------- |
+| CloudFront Free定額プラン          | 月額$0。月100GB転送・100万リクエストの利用枠          |
+| S3 Standard保存                    | 5GB分の月次クレジット。2026-10-11のビルド全体は約13MB |
+| S3 PUT/GET/LIST                    | 別途従量課金。小規模利用では通常少額                  |
+| ビルド・ドメイン・常時稼働サーバー | この構成では追加費用なし                              |
+| ZKAPI operator・RPC・Indexer・LLM  | この静的サイトの配信費用には含まれない                |
 
 したがって**低トラフィックでは、月額ほぼ$0〜$1を目安**にできます。これは見積もりであり、AWS全体の請求額を保証するものではありません。既存ZKAPIのインフラ費用は別です。S3へのアクセス数、保存済みの旧asset量、他のS3利用によるクレジット消費で変わります。プランの利用枠を継続して大幅に超える場合は配信性能が調整されることがあります。
 
@@ -53,20 +56,25 @@ Free定額プランは1アカウント3件までです。AWSのFree Tierアカ�
 - スタックは **us-east-1** に作ります。CloudFront用WAFの要件です。閲覧者への配信は世界各地のCloudFrontから行われます。
 - Freeプランに必要な専用WAFを作成します。最小構成のため個別の検知ルール・アクセスログ・追加メトリクスは設定していません。
 - 初期状態は `DistributionEnabled=false`。FreeプランがACTIVEになり、ファイルをアップロードしてから公開します。
-- CloudFront Functionが `/` と `/recovery-v3/` をそれぞれの `index.html` に対応させます。`/recovery-v3` は末尾スラッシュ付きへ転送します。欠落JS/JSONをHTMLに置き換えません。
+- CloudFront Functionが `/`、`/recovery-v12/`、`/recovery-v3/` をそれぞれの `index.html` に対応させます。`/recovery-v12` と `/recovery-v3` はクエリを保持して末尾スラッシュ付きへ転送します。欠落JS/JSONをHTMLに置き換えません。
 - HTTPSへ転送し、CloudFront標準証明書とmanaged SecurityHeadersPolicyを使います。Workerは同一origin、WASMは既存の固定済み公開profileから取得します。
 - ハッシュ付きassetは1年間immutable。HTMLと設定はブラウザで再検証、CDNでは最大60秒のキャッシュとし、公開時に主要パスをinvalidateします。managed CachingOptimizedの最小TTLは1秒です。
 - 古いassetを削除しません。開いたままの画面が旧Worker/chunkを参照するためです。長期運用では保存容量を確認し、不要になった世代を判断して整理します。
 
-**同じCloudFront URLを使い続けてください。** localhostや以前の別URLに保存された会話・暗号化された資金復旧情報は、新URLへ自動移行しません。残高・未完了操作は元のURL/ブラウザ/profileから処理します。復旧版は新しいサイトでも本体と同一originの `/recovery-v3/` に置きます。SDK/profileの制約と復旧手順はREADMEを参照してください。
+**同じCloudFront URLを使い続けてください。** localhostや以前の別URLに保存された会話・暗号化された資金復旧情報は、新URLへ自動移行しません。旧データは元のURL/ブラウザ/profileに保持します。`.12` の復旧画面は `/recovery-v12/`、`.3` は `/recovery-v3/` に置き、本体とoriginを共有します。新Pool用の保存領域は別名で明示的に作成し、旧データを上書きしません。旧Poolは退役しているため、復旧画面の保持だけで旧残高を回収できるとは保証しません。SDK/profileの制約はREADMEを参照してください。
 
 ## 準備とローカル検証
 
-Node 24.19.x、AWS CLI v2、対象AWSアカウントの認証が必要です。初回は `npx playwright install chromium` も実行します。認証情報をこのリポジトリに保存しません。
+Node **24.22.1 LTS** / npm **11.19.1**、AWS CLI v2、対象AWSアカウントの認証が必要です。Nodeは[10月21日のセキュリティ修正版](https://nodejs.org/en/blog/release/v24.22.1)を使用します。SDKのNode 24系対応を維持し、`.nvmrc` と `package.json` の版を一致させます。初回またはPlaywright更新後は `npx playwright install chromium` も実行します。認証情報をこのリポジトリに保存しません。
 
 ```sh
+nvm install
+nvm use
 npm ci --ignore-scripts
+npm run verify:sdk
+npm test
 npm run build
+node scripts/check-build.mjs
 npm run check:aws
 npm run publish:aws
 ```
@@ -127,7 +135,7 @@ Outputsの `SiteUrl` が公開URLです。作成に失敗した場合はCloudFor
 
 ## 公開後と更新
 
-公開URLで本体、デモ、`Connection settings` → `Have an older deposit?` → 復旧画面への遷移を確認します。ブラウザのNetworkでJS/WorkerがJavaScriptとして200で返ること、欠落URLがエラーになることも確認します。
+公開URLで本体、デモ、`Connection settings` → `Have an older deposit?` → 両復旧画面への遷移を確認します。SDK表示が通常 `.13` / `/recovery-v12/` は `.12` / `/recovery-v3/` は `.3` であること、元の保存データを維持することを確認します。ブラウザのNetworkでJS/WorkerがJavaScriptとして200で返ること、欠落URLがエラーになることも確認します。
 
 新URLに対するAPIのCORSは次で確認できます。金融API本体へのPOSTはしません。
 
@@ -139,6 +147,19 @@ npm run check:public
 公開APIのreadinessはホスティングと独立しています。2026-10-11 01:55–01:58 JSTのデプロイ時確認では、固定済みprofileのSHA検証・WASM取得・新CloudFront originのCORS（10ルート）は成功しました。一方、SDK preflightはsnapshotで失敗し、個別のsnapshot/readiness GETも15秒でタイムアウトしました。relay statusは200でしたが、これだけでは実チャットの利用可能性を確認できません。実際の利用前にはアプリの `Check service` で再確認してください。署名・送金・実推論は実施していません。
 
 通常のコード更新は同じスタック/URLへアップロードします。有効化済みのスタックを作り直す必要はありません。
+
+v0.2.0では新しい `/recovery-v12/` の入口を追加するため、CloudFront Functionを含むテンプレートの更新も必要です。既存スタックの変更セットを確認し、配信を有効のまま更新します。Freeプラン・既存URL・バケットを維持し、リソースの置換や削除がある変更セットは適用せず原因を確認します。
+
+```sh
+aws cloudformation deploy \
+  --region us-east-1 \
+  --stack-name zkchat-static \
+  --template-file infra/aws/static-site.json \
+  --parameter-overrides DistributionEnabled=true \
+  --no-fail-on-empty-changeset
+```
+
+3画面すべてのassetを先にアップロードし、設定・HTMLを公開します。`publish:aws` は旧assetを削除せず、各入口と設定のキャッシュを無効化します。
 
 ```sh
 npm run build

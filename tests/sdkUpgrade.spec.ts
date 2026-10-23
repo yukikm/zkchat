@@ -710,6 +710,266 @@ test("new chats prefer the configured GPT model while saved and explicit model c
   expect(saved[0].messages).toHaveLength(2);
 });
 
+test("removed saved models cannot send or alter history and a new chat uses an available model", async ({
+  page,
+}) => {
+  const previous = "anthropic/claude-fable-5";
+  const available = "openai/gpt-4o-mini";
+  const saved = [
+    {
+      id: "retained-conversation",
+      title: "Earlier conversation",
+      mode: "live",
+      model: previous,
+      updatedAt: 1_700_000_000_000,
+      messages: [
+        {
+          id: "original-user",
+          role: "user",
+          content: "Original question",
+          state: "complete",
+          operationId: "original-operation",
+          createdAt: 1_700_000_000_000,
+        },
+        {
+          id: "original-assistant",
+          role: "assistant",
+          content: "",
+          state: "error",
+          error: "An earlier request failed.",
+          operationId: "original-operation",
+          createdAt: 1_700_000_000_000,
+        },
+      ],
+    },
+  ];
+  await page.addInitScript(
+    (history) =>
+      localStorage.setItem("zkchat:conversations:v1", JSON.stringify(history)),
+    saved,
+  );
+  await page.route("**/src/lib/zkapi.ts*", (route) =>
+    route.fulfill({
+      contentType: "application/javascript",
+      body: fixture.replace(
+        "models:[{id:'test/model',apis:['chat']}]",
+        `models:[{id:'${available}',apis:['chat']}]`,
+      ),
+    }),
+  );
+  await page.reload();
+  await page
+    .getByRole("button", { name: "Connection settings", exact: true })
+    .click();
+  await connectAccount(page);
+  await page.getByRole("button", { name: "Close", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Earlier conversation", exact: true })
+    .click();
+  await expect(
+    page
+      .getByRole("status")
+      .filter({ hasText: "This chat’s model is no longer available." }),
+  ).toBeVisible();
+  const picker = page.getByRole("combobox", {
+    name: "Select model",
+    exact: true,
+  });
+  await expect(picker).toHaveValue(previous);
+  await expect(picker).toBeDisabled();
+  await expect(picker.locator("option:checked")).toHaveText(
+    `${previous} (unavailable)`,
+  );
+  await expect(
+    page.getByRole("button", { name: "Send again", exact: true }),
+  ).toBeDisabled();
+  await message(page).fill("Do not send with the removed model");
+  await expect(sendButton(page)).toBeDisabled();
+  await message(page).press("Enter");
+  await expect(message(page)).toHaveValue("Do not send with the removed model");
+  await expect(page.locator(".message")).toHaveCount(2);
+  expect(await callAttempts(page)).toEqual([]);
+  expect(
+    await page.evaluate(() =>
+      JSON.parse(localStorage.getItem("zkchat:conversations:v1") || "[]"),
+    ),
+  ).toEqual(saved);
+  await page
+    .getByRole("button", { name: "Start a new chat", exact: true })
+    .click();
+  await expect(picker).toHaveValue(available);
+  await sendMessage(page, "New Pool conversation");
+  const attempts = await callAttempts(page);
+  expect(attempts).toHaveLength(1);
+  expect(attempts[0].model).toBe(available);
+  expect(attempts[0].messages).toEqual([
+    { role: "user", content: "New Pool conversation" },
+  ]);
+  await expect
+    .poll(() =>
+      page.evaluate(() =>
+        JSON.parse(
+          localStorage.getItem("zkchat:conversations:v1") || "[]",
+        ).find((chat: { id: string }) => chat.id === "retained-conversation"),
+      ),
+    )
+    .toEqual(saved[0]);
+});
+
+test("current app exposes both original-Pool recovery routes", async ({
+  page,
+}) => {
+  await page
+    .getByRole("button", { name: "Connected wallet", exact: true })
+    .click();
+  await page.getByText("Have an older deposit?", { exact: true }).click();
+  await expect(
+    page.getByRole("link", { name: "Recover October 8 deposits", exact: true }),
+  ).toHaveAttribute("href", "/recovery-v12/");
+  await expect(
+    page.getByRole("link", { name: "Recover an older deposit", exact: true }),
+  ).toHaveAttribute("href", "/recovery-v3/");
+  await expect(
+    page.getByText(
+      "Recovery depends on the old service and is not guaranteed.",
+      { exact: false },
+    ),
+  ).toBeVisible();
+});
+
+for (const version of ["0.2.0-devnet.12", "0.2.0-devnet.3"]) {
+  test(`retired SDK ${version} disables new work and explains recovery limits`, async ({
+    page,
+  }) => {
+    await page.route("**/src/lib/sdkVersion.ts*", (route) =>
+      route.fulfill({
+        contentType: "application/javascript",
+        body: `export const SDK_VERSION='${version}'; export const LEGACY_SDK_VERSION='0.2.0-devnet.3'; export const PREVIOUS_SDK_VERSION='0.2.0-devnet.12'; export const RECOVERY_RUNTIME=${version.endsWith(".3")}; export const PREVIOUS_RECOVERY_RUNTIME=${version.endsWith(".12")}; export const RETIRED_RUNTIME=true; export const SDK_STORAGE_VERSION='${version.endsWith(".3") ? version : "0.2.0-devnet.8"}'; export const SDK_STORAGE_NAME='fixture-retired'; export const LEGACY_STORAGE_NAME='fixture-legacy'; export const PREVIOUS_STORAGE_NAME='fixture-previous';`,
+      }),
+    );
+    await page.reload();
+    await expect(
+      page.getByRole("link", {
+        name: "Return to the current app",
+        exact: true,
+      }),
+    ).toHaveAttribute("href", "../");
+    await expect(
+      page.getByRole("button", { name: /^New chat/ }).first(),
+    ).toBeDisabled();
+    await page
+      .getByRole("button", { name: "Connection settings", exact: true })
+      .click();
+    await expect(
+      page.getByText("Retired Pool · existing deposits only", { exact: true }),
+    ).toBeVisible();
+    await expect(
+      page.getByText("recovery and withdrawal are not guaranteed.", {
+        exact: false,
+      }),
+    ).toBeVisible();
+    await connectAccount(page);
+    await expect(
+      page.getByRole("button", { name: "Add deposit", exact: true }),
+    ).toHaveCount(0);
+    await expect(
+      page.getByRole("button", { name: "Review deposit", exact: true }),
+    ).toHaveCount(0);
+    await expect(
+      page.getByRole("region", { name: "Get test tokens", exact: true }),
+    ).toHaveCount(0);
+    await page.getByRole("button", { name: "Close", exact: true }).click();
+    await message(page).fill("Do not send from a retired Pool");
+    await expect(sendButton(page)).toBeDisabled();
+    await message(page).press("Enter");
+    expect(await callAttempts(page)).toEqual([]);
+    await expect(page.locator(".message")).toHaveCount(0);
+  });
+
+  test(`retired SDK ${version} never offers to sign an unfinished deposit but can check a saved transaction`, async ({
+    page,
+  }) => {
+    await page.route("**/src/lib/sdkVersion.ts*", (route) =>
+      route.fulfill({
+        contentType: "application/javascript",
+        body: `export const SDK_VERSION='${version}'; export const LEGACY_SDK_VERSION='0.2.0-devnet.3'; export const PREVIOUS_SDK_VERSION='0.2.0-devnet.12'; export const RECOVERY_RUNTIME=${version.endsWith(".3")}; export const PREVIOUS_RECOVERY_RUNTIME=${version.endsWith(".12")}; export const RETIRED_RUNTIME=true; export const SDK_STORAGE_VERSION='${version.endsWith(".3") ? version : "0.2.0-devnet.8"}'; export const SDK_STORAGE_NAME='fixture-retired'; export const LEGACY_STORAGE_NAME='fixture-legacy'; export const PREVIOUS_STORAGE_NAME='fixture-previous';`,
+      }),
+    );
+    for (const phase of ["ready", "proving", "failed", "signed"]) {
+      await page.route("**/src/lib/zkapi.ts*", (route) =>
+        route.fulfill({
+          contentType: "application/javascript",
+          body: fixture
+            .replace(
+              "wallet:'active',canRequest:true",
+              "wallet:'unfunded',canRequest:false",
+            )
+            .replace(
+              "walletOperation:null",
+              `walletOperation:{kind:'deposit',phase:'${phase === "signed" ? "ready" : phase}',signature:${phase === "signed" ? "'saved-deposit-signature'" : "null"}}`,
+            )
+            .replace(
+              "status:async()=>{",
+              "advanceWallet:async()=>{count('fixture:advanceCalls');return {state:'pending'}},resumeWalletProof:async()=>{count('fixture:resumeCalls')},retryRejectedWalletOperation:async()=>{count('fixture:retryCalls')},status:async()=>{",
+            ),
+        }),
+      );
+      await page.reload();
+      await page
+        .getByRole("button", { name: "Connection settings", exact: true })
+        .click();
+      await connectAccount(page);
+      const panel = page.getByRole("dialog", { name: "Connection settings" });
+      for (const name of [
+        "Approve in wallet",
+        "Resume preparation",
+        "Try this step again",
+      ]) {
+        await expect(
+          panel.getByRole("button", { name, exact: true }),
+        ).toHaveCount(0);
+      }
+      if (phase === "signed") {
+        await expect(
+          panel.getByRole("link", { name: "View transaction", exact: true }),
+        ).toHaveAttribute(
+          "href",
+          "https://explorer.solana.com/tx/saved-deposit-signature?cluster=devnet",
+        );
+        await panel
+          .getByRole("button", { name: "Check transaction", exact: true })
+          .click();
+        await expect
+          .poll(() =>
+            page.evaluate(() => localStorage.getItem("fixture:advanceCalls")),
+          )
+          .toBe("1");
+      } else {
+        await expect(
+          panel.getByText(
+            "This deposit was not submitted before the Pool retired. No new deposit will be signed. Keep its saved data.",
+            { exact: true },
+          ),
+        ).toBeVisible();
+        await expect(
+          panel.getByRole("button", { name: "Check transaction", exact: true }),
+        ).toHaveCount(0);
+        expect(
+          await page.evaluate(() =>
+            localStorage.getItem("fixture:advanceCalls"),
+          ),
+        ).toBeNull();
+      }
+      expect(
+        await page.evaluate(() => ({
+          resume: localStorage.getItem("fixture:resumeCalls"),
+          retry: localStorage.getItem("fixture:retryCalls"),
+        })),
+      ).toEqual({ resume: null, retry: null });
+    }
+  });
+}
+
 test("explicit Check payment releases an unaccepted authorization without changing the deposit or replaying", async ({
   page,
 }) => {

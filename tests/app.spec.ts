@@ -985,6 +985,13 @@ test("first-time browser storage setup keeps the approved address and requires e
     exact: true,
   });
   await expect(setup).toBeEnabled();
+  await expect(
+    page.getByText("This sets up the October 21 Devnet Pool.", {
+      exact: false,
+    }),
+  ).toContainText(
+    "Earlier deposits and balances remain separate in their original Pool; they are not transferred or deleted.",
+  );
   const connected = page.getByRole("button", {
     name: "Connected wallet",
     exact: true,

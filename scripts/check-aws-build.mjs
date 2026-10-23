@@ -103,17 +103,23 @@ await new Promise((resolve, reject) => {
 const origin = `http://127.0.0.1:${server.address().port}`;
 let browser;
 try {
-  const redirect = await fetch(
-    `${origin}/recovery-v3?source=old%20deposit&source=second`,
-    { redirect: "manual" },
-  );
-  assert.equal(redirect.status, 301);
-  assert.equal(
-    redirect.headers.get("location"),
-    "/recovery-v3/?source=old%20deposit&source=second",
-  );
+  for (const directory of ["recovery-v12", "recovery-v3"]) {
+    const redirect = await fetch(
+      `${origin}/${directory}?source=old%20deposit&source=second`,
+      { redirect: "manual" },
+    );
+    assert.equal(redirect.status, 301);
+    assert.equal(
+      redirect.headers.get("location"),
+      `/${directory}/?source=old%20deposit&source=second`,
+    );
+  }
   for (const [base, pin] of [
-    ["/", "ec10c1ab41bb5105222d3e25c7e1eba6b96b1b397abd0f854657030269992a77"],
+    ["/", "5e15d66c6f45265951cf1f8dd6cc0dae6574c4b8dd6756f828f7543ecaa97b9a"],
+    [
+      "/recovery-v12/",
+      "ec10c1ab41bb5105222d3e25c7e1eba6b96b1b397abd0f854657030269992a77",
+    ],
     [
       "/recovery-v3/",
       "449657cc3fe90f12878236b83d68ada8077e3c56e67ccb8268c5f301e69e02e5",
@@ -164,27 +170,38 @@ try {
   await page.evaluate(() =>
     localStorage.setItem("aws-recovery-sentinel", "preserved"),
   );
-  await page
-    .getByRole("button", { name: "Connection settings", exact: true })
-    .click();
-  assert.match(
-    await page.getByRole("dialog").textContent(),
-    /SDK 0\.2\.0-devnet\.12/,
-  );
-  await page.getByText("Have an older deposit?", { exact: true }).click();
-  await page.getByRole("link", { name: "Recover an older deposit" }).click();
-  await page.waitForURL(`${origin}/recovery-v3/`);
-  await page
-    .getByRole("button", { name: "Connection settings", exact: true })
-    .click();
-  assert.match(
-    await page.getByRole("dialog").textContent(),
-    /SDK 0\.2\.0-devnet\.3/,
-  );
-  assert.equal(
-    await page.evaluate(() => localStorage.getItem("aws-recovery-sentinel")),
-    "preserved",
-  );
+  for (const [directory, label, version] of [
+    ["recovery-v12", "Recover October 8 deposits", "12"],
+    ["recovery-v3", "Recover an older deposit", "3"],
+  ]) {
+    await page
+      .getByRole("button", { name: "Connection settings", exact: true })
+      .click();
+    assert.match(
+      await page.getByRole("dialog").textContent(),
+      /SDK 0\.2\.0-devnet\.13/,
+    );
+    await page.getByText("Have an older deposit?", { exact: true }).click();
+    await page.getByRole("link", { name: label, exact: true }).click();
+    await page.waitForURL(`${origin}/${directory}/`);
+    await page
+      .getByRole("button", { name: "Connection settings", exact: true })
+      .click();
+    assert.ok(
+      (await page.getByRole("dialog").textContent()).includes(
+        `SDK 0.2.0-devnet.${version}`,
+      ),
+    );
+    assert.equal(
+      await page.evaluate(() => localStorage.getItem("aws-recovery-sentinel")),
+      "preserved",
+    );
+    await page.getByRole("button", { name: "Close", exact: true }).click();
+    await page
+      .getByRole("link", { name: "Return to the current app", exact: true })
+      .click();
+    await page.waitForURL(`${origin}/`);
+  }
   assert.deepEqual(errors, []);
   assert.deepEqual(serverErrors, []);
   console.log(

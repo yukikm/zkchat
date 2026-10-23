@@ -3,8 +3,7 @@ import { resolve } from "node:path";
 import { build } from "vite";
 import "./verify-sdk.mjs";
 
-function sdkBoundary(legacy) {
-  const expected = legacy ? "@zkapi/solana-sdk-legacy" : "@zkapi/solana-sdk";
+function sdkBoundary(expected) {
   return {
     name: "verify-sdk-runtime-boundary",
     generateBundle() {
@@ -15,9 +14,7 @@ function sdkBoundary(legacy) {
         !sdkModules.length ||
         sdkModules.some((id) => !id.includes(`/node_modules/${expected}/`))
       )
-        throw new Error(
-          `Unexpected SDK in ${legacy ? "recovery" : "current"} bundle`,
-        );
+        throw new Error(`Unexpected SDK in ${expected} bundle`);
     },
   };
 }
@@ -30,14 +27,19 @@ if (!base.startsWith("/") || base.startsWith("//") || /[?#]/.test(base))
   throw new Error("Use an absolute same-origin base path, e.g. /chat/.");
 await build({
   base,
-  plugins: [sdkBoundary(false)],
-  worker: { plugins: () => [sdkBoundary(false)] },
+  plugins: [sdkBoundary("@zkapi/solana-sdk")],
+  worker: { plugins: () => [sdkBoundary("@zkapi/solana-sdk")] },
 });
 // Same origin preserves IndexedDB and profile bindings; the SDKs never share custody.
-await build({
-  mode: "recovery",
-  base: `${base}recovery-v3/`,
-  plugins: [sdkBoundary(true)],
-  worker: { plugins: () => [sdkBoundary(true)] },
-  build: { outDir: resolve("dist/recovery-v3") },
-});
+for (const [mode, directory, sdk] of [
+  ["recovery-v12", "recovery-v12", "@zkapi/solana-sdk-previous"],
+  ["recovery", "recovery-v3", "@zkapi/solana-sdk-legacy"],
+]) {
+  await build({
+    mode,
+    base: `${base}${directory}/`,
+    plugins: [sdkBoundary(sdk)],
+    worker: { plugins: () => [sdkBoundary(sdk)] },
+    build: { outDir: resolve(`dist/${directory}`) },
+  });
+}

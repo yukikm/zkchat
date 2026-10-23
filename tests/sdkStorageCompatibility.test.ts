@@ -5,14 +5,16 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { promisify } from "node:util";
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { EncryptedJournal } from "@zkapi/solana-sdk/journal";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
+import { EncryptedJournal } from "@zkapi/solana-sdk-previous/journal";
 import { PUBLIC_PROFILE_SDK_VERSION } from "@zkapi/solana-sdk/public-profile";
+import { PUBLIC_PROFILE_SDK_VERSION as PREVIOUS_VERSION } from "@zkapi/solana-sdk-previous/public-profile";
 import { createDepositCatalog, ORIGINAL_NOTE_ID } from "../src/lib/deposits";
 import {
   SDK_STORAGE_NAME,
   SDK_STORAGE_VERSION,
   SDK_VERSION,
+  storageVersionFor,
 } from "../src/lib/sdkVersion";
 import { memoryCustody } from "./depositStore";
 
@@ -53,13 +55,19 @@ afterAll(async () => {
   if (extracted) await rm(extracted, { recursive: true, force: true });
 });
 
-describe("SDK .8 to .12 custody compatibility", () => {
-  it("updates the installed runtime while keeping the existing storage and first note identities", () => {
-    expect(PUBLIC_PROFILE_SDK_VERSION).toBe("0.2.0-devnet.12");
-    expect(SDK_VERSION).toBe("0.2.0-devnet.12");
-    expect(SDK_STORAGE_VERSION).toBe("0.2.0-devnet.8");
-    expect(SDK_STORAGE_NAME).toBe("zkchat-sdk-0.2.0-devnet.8");
-    expect(ORIGINAL_NOTE_ID).toBe("zkchat-note-sdk-0.2.0-devnet.8");
+describe("new Pool isolation and retained SDK .12 custody", () => {
+  it("separates the new Pool while preserving both recovery namespace identities", () => {
+    expect(PUBLIC_PROFILE_SDK_VERSION).toBe("0.2.0-devnet.13");
+    expect(PREVIOUS_VERSION).toBe("0.2.0-devnet.12");
+    expect(SDK_VERSION).toBe("0.2.0-devnet.13");
+    expect(SDK_STORAGE_VERSION).toBe("public-devnet-20261021-state-v1");
+    expect(SDK_STORAGE_NAME).toBe("zkchat-sdk-public-devnet-20261021-state-v1");
+    expect(ORIGINAL_NOTE_ID).toBe(
+      "zkchat-note-sdk-public-devnet-20261021-state-v1",
+    );
+    expect(storageVersionFor("0.2.0-devnet.12")).toBe("0.2.0-devnet.8");
+    expect(storageVersionFor("0.2.0-devnet.3")).toBe("0.2.0-devnet.3");
+    expect(() => storageVersionFor("unknown")).toThrow("Unsupported SDK");
   });
 
   it("opens a real .8 encrypted catalog and preserves every financial record while changing selection", async () => {
@@ -113,7 +121,23 @@ describe("SDK .8 to .12 custody compatibility", () => {
     ).create("zkchat-deposit-catalog-v1", savedCatalog);
     const beforeOpen = structuredClone([...storage.records.entries()]);
 
-    const currentCatalog = createDepositCatalog(storage, context);
+    // The main runtime refuses an old catalog instead of adopting it. The
+    // recovery build uses the original note ID and the retained .12 package.
+    await expect(
+      createDepositCatalog(storage, context).read(),
+    ).rejects.toThrow();
+    expect([...storage.records.entries()]).toEqual(beforeOpen);
+    vi.stubEnv("VITE_ZKCHAT_SDK_VERSION", "0.2.0-devnet.12");
+    vi.resetModules();
+    let recoveryCatalog: typeof createDepositCatalog;
+    try {
+      recoveryCatalog = (await import("../src/lib/deposits"))
+        .createDepositCatalog;
+    } finally {
+      vi.unstubAllEnvs();
+      vi.resetModules();
+    }
+    const currentCatalog = recoveryCatalog(storage, context);
     expect(await currentCatalog.read()).toEqual(savedCatalog);
     const currentFinancialJournal = new EncryptedJournal(
       storage.store,
@@ -133,7 +157,7 @@ describe("SDK .8 to .12 custody compatibility", () => {
         selectedId: secondId,
       });
     });
-    expect(await createDepositCatalog(storage, context).read()).toEqual({
+    expect(await recoveryCatalog(storage, context).read()).toEqual({
       ...savedCatalog,
       selectedId: secondId,
     });

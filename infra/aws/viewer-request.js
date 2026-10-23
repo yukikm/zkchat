@@ -3,7 +3,7 @@
 function handler(event) {
   var request = event.request;
 
-  if (request.uri === '/recovery-v3') {
+  if (request.uri === '/recovery-v3' || request.uri === '/recovery-v12') {
     var query = [];
     var parameters = request.querystring || {};
     Object.keys(parameters).forEach(function (name) {
@@ -19,7 +19,7 @@ function handler(event) {
       statusDescription: 'Moved Permanently',
       headers: {
         location: {
-          value: '/recovery-v3/' + (query.length ? '?' + query.join('&') : '')
+          value: request.uri + '/' + (query.length ? '?' + query.join('&') : '')
         },
         'cache-control': { value: 'public, max-age=300' }
       }
@@ -28,8 +28,8 @@ function handler(event) {
 
   if (request.uri === '/') {
     request.uri = '/index.html';
-  } else if (request.uri === '/recovery-v3/') {
-    request.uri = '/recovery-v3/index.html';
+  } else if (request.uri === '/recovery-v3/' || request.uri === '/recovery-v12/') {
+    request.uri += 'index.html';
   }
 
   return request;

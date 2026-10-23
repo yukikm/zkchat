@@ -58,7 +58,7 @@ async function asset(path) {
 }
 
 const checks = [];
-for (const base of ["/", "/recovery-v3/"]) {
+for (const base of ["/", "/recovery-v12/", "/recovery-v3/"]) {
   const html = await readFile(resolve(dist, `.${base}index.html`), "utf8");
   const paths = new Set([
     `${base}index.html`,
@@ -93,14 +93,16 @@ for (const base of ["/", "/recovery-v3/"]) {
 }
 
 const routing = [];
-const redirectPath = "/recovery-v3?source=old%20deposit&source=second";
-const recoveryRedirect = await request(redirectPath);
-assert.equal(recoveryRedirect.status, 301);
-assert.equal(
-  recoveryRedirect.headers.get("location"),
-  "/recovery-v3/?source=old%20deposit&source=second",
-);
-routing.push({ path: redirectPath, status: 301, queryPreserved: true });
+for (const directory of ["recovery-v12", "recovery-v3"]) {
+  const redirectPath = `/${directory}?source=old%20deposit&source=second`;
+  const recoveryRedirect = await request(redirectPath);
+  assert.equal(recoveryRedirect.status, 301);
+  assert.equal(
+    recoveryRedirect.headers.get("location"),
+    `/${directory}/?source=old%20deposit&source=second`,
+  );
+  routing.push({ path: redirectPath, status: 301, queryPreserved: true });
+}
 const http = await fetch(`http://${site.host}/`, {
   redirect: "manual",
   signal: AbortSignal.timeout(30000),
@@ -112,7 +114,7 @@ routing.push({
   status: http.status,
   https: true,
 });
-for (const base of ["/", "/recovery-v3/"]) {
+for (const base of ["/", "/recovery-v12/", "/recovery-v3/"]) {
   for (const name of [
     "assets/release-check-missing.js",
     "release-check-missing.json",
@@ -188,23 +190,35 @@ try {
   await expect(
     page.getByRole("button", { name: "Stop generation", exact: true }),
   ).toHaveCount(0);
-  await page
-    .getByRole("button", { name: "Connection settings", exact: true })
-    .click();
-  await expect(page.getByRole("dialog")).toContainText(`SDK ${values.sdk}`);
-  await page.getByText("Have an older deposit?", { exact: true }).click();
-  await page.getByRole("link", { name: "Recover an older deposit" }).click();
-  await page.waitForURL(`${origin}/recovery-v3/`);
-  await page
-    .getByRole("button", { name: "Connection settings", exact: true })
-    .click();
-  await expect(page.getByRole("dialog")).toContainText("SDK 0.2.0-devnet.3");
-  assert.equal(
-    await page.evaluate(() =>
-      localStorage.getItem("deployment-recovery-sentinel"),
-    ),
-    "preserved",
-  );
+  for (const [directory, label, version] of [
+    ["recovery-v12", "Recover October 8 deposits", "12"],
+    ["recovery-v3", "Recover an older deposit", "3"],
+  ]) {
+    await page
+      .getByRole("button", { name: "Connection settings", exact: true })
+      .click();
+    await expect(page.getByRole("dialog")).toContainText(`SDK ${values.sdk}`);
+    await page.getByText("Have an older deposit?", { exact: true }).click();
+    await page.getByRole("link", { name: label, exact: true }).click();
+    await page.waitForURL(`${origin}/${directory}/`);
+    await page
+      .getByRole("button", { name: "Connection settings", exact: true })
+      .click();
+    await expect(page.getByRole("dialog")).toContainText(
+      `SDK 0.2.0-devnet.${version}`,
+    );
+    assert.equal(
+      await page.evaluate(() =>
+        localStorage.getItem("deployment-recovery-sentinel"),
+      ),
+      "preserved",
+    );
+    await page.getByRole("button", { name: "Close", exact: true }).click();
+    await page
+      .getByRole("link", { name: "Return to the current app", exact: true })
+      .click();
+    await page.waitForURL(`${origin}/`);
+  }
   assert.deepEqual(pageErrors, []);
 } finally {
   await browser?.close();
@@ -221,6 +235,7 @@ const evidence = {
   browser: {
     demo: true,
     currentSdk: true,
+    previousRecovery: true,
     legacyRecovery: true,
     sameOriginStorageSentinel: true,
     configFixture: null,

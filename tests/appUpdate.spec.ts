@@ -65,7 +65,7 @@ const checkAgain = (page: Page) =>
 const reloadButton = (page: Page) =>
   page.getByRole("button", { name: "Reload app", exact: true });
 
-for (const base of ["/", "/recovery-v3/"]) {
+for (const base of ["/", "/recovery-v12/", "/recovery-v3/"]) {
   test(`an update under ${base} is advisory, retains drafts, and stays latched`, async ({
     page,
   }) => {

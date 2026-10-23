@@ -8,7 +8,8 @@ import {
 } from "@zkapi/solana-sdk/public-profile";
 import { BrowserStorageMissing } from "@zkapi/solana-sdk/browser";
 import { checkServiceReadiness, type ServiceReadiness } from "./readiness";
-import { LEGACY_STORAGE_NAME, RECOVERY_RUNTIME } from "./sdkVersion";
+import { SDK_STORAGE_NAME, SDK_VERSION, RETIRED_RUNTIME } from "./sdkVersion";
+import { createRpcReadFetch } from "./rpcReadFetch";
 
 export interface PublicAppConfig {
   schema: 2;
@@ -89,16 +90,35 @@ const loadingProfiles = new Map<
   string,
   Promise<LoadedPublicDeploymentProfile>
 >();
+const profileFetchers = new WeakMap<
+  LoadedPublicDeploymentProfile,
+  typeof fetch
+>();
 const key = (config: PublicAppConfig) =>
   `${config.profileSha256}:${config.profileUrl}`;
+async function loadProfileWithRpcBackoff(
+  config: PublicAppConfig,
+  installedProfileSha256?: string,
+) {
+  // The retry target becomes available only after the SDK authenticates the
+  // pinned profile. The SDK retains this same fetcher for its RPC connection.
+  let rpcUrl: string | undefined;
+  const fetcher = createRpcReadFetch(() => rpcUrl, globalThis.fetch);
+  const loaded = await loadPublicDeploymentProfile(config.profileUrl, {
+    profileSha256: config.profileSha256,
+    installedProfileSha256,
+    fetch: fetcher,
+  });
+  rpcUrl = loaded.profile.rpcUrl;
+  profileFetchers.set(loaded, fetcher);
+  return loaded;
+}
 export async function loadAppProfile(config: PublicAppConfig) {
   const existing = profiles.get(key(config));
   if (existing) return existing;
   const pending = loadingProfiles.get(key(config));
   if (pending) return pending;
-  const request = loadPublicDeploymentProfile(config.profileUrl, {
-    profileSha256: config.profileSha256,
-  })
+  const request = loadProfileWithRpcBackoff(config)
     .then((profile) => {
       profiles.set(key(config), profile);
       return profile;
@@ -116,7 +136,7 @@ export const cachedAppProfile = (config: PublicAppConfig) =>
  * Never wrap quotes, AUTH, inference, wallet actions or failed trust checks. */
 async function checkPreflight(
   loaded: LoadedPublicDeploymentProfile,
-  fetcher: typeof fetch = globalThis.fetch,
+  fetcher: typeof fetch = profileFetchers.get(loaded) ?? globalThis.fetch,
   signal?: AbortSignal,
 ) {
   for (let attempt = 0; ; attempt++) {
@@ -124,8 +144,9 @@ async function checkPreflight(
     const observedFetch: typeof fetch = async (input, init) => {
       try {
         const response = await fetcher(input, init);
-        if ([429, 502, 503, 504].includes(response.status))
-          transportFailed = true;
+        // A rate-limited RPC read already waited and retried once. Never
+        // restart the whole preflight immediately after another HTTP 429.
+        if ([502, 503, 504].includes(response.status)) transportFailed = true;
         return response;
       } catch (error) {
         if (
@@ -247,18 +268,15 @@ export async function existingAppCustody(
     };
   });
 }
-/** Inspect only metadata. A new SDK must never open or sidestep original custody. */
+/** Recovery opens only its original namespace; current setup is explicitly separate. */
 export async function assertRuntimeCustody(account: string) {
+  if (!RETIRED_RUNTIME) return;
   const original =
-    localStorage.getItem(profileBindingKey(LEGACY_STORAGE_NAME, account)) !==
-      null || (await existingAppCustody(LEGACY_STORAGE_NAME, account));
-  if (!RECOVERY_RUNTIME && original)
+    localStorage.getItem(profileBindingKey(SDK_STORAGE_NAME, account)) !==
+      null || (await existingAppCustody(SDK_STORAGE_NAME, account));
+  if (!original)
     throw new PublicOnboardingError(
-      "SDK .3 deposit found. Choose Recover an older deposit and use the original wallet. Keep this browser’s data.",
-    );
-  if (RECOVERY_RUNTIME && !original)
-    throw new PublicOnboardingError(
-      "No original SDK .3 storage was found for this account. Use the current app for a new installation.",
+      `No original SDK ${SDK_VERSION} storage was found for this account. Use the current app for a new installation.`,
     );
 }
 /** Pin before opening new custody; never adopt an existing unbound journal. */
@@ -296,7 +314,6 @@ export async function connectPublicDeployment(
   account: string,
   initialize: boolean,
 ) {
-  const fetcher = globalThis.fetch;
   try {
     const installed = localStorage.getItem(
       profileBindingKey(storageName, account),
@@ -305,11 +322,11 @@ export async function connectPublicDeployment(
       throw new PublicOnboardingError(
         "Profile changed. Reopen the original profile for recovery.",
       );
-    const loaded = await loadPublicDeploymentProfile(config.profileUrl, {
-      profileSha256: config.profileSha256,
-      installedProfileSha256: installed ?? undefined,
-      fetch: fetcher,
-    });
+    const loaded = await loadProfileWithRpcBackoff(
+      config,
+      installed ?? undefined,
+    );
+    const fetcher = profileFetchers.get(loaded)!;
     let preflight: PublicPreflightResult | null = null,
       readiness: ServiceReadiness | null = null,
       closed = false,
@@ -340,6 +357,7 @@ export async function connectPublicDeployment(
     await retainProfileBinding(config, storageName, account, initialize);
     profileRetained = true;
     const canAdmit = () =>
+      !RETIRED_RUNTIME &&
       !closed &&
       preflight?.chainAllowsNewOperations === true &&
       readiness?.servicesAvailable === true &&
@@ -360,6 +378,10 @@ export async function connectPublicDeployment(
         return readiness !== null && readiness.expiresAt > Date.now();
       },
       assertAdmission(prefix = "New work is unavailable.") {
+        if (RETIRED_RUNTIME)
+          throw new PublicOnboardingError(
+            "This Pool is retired. Keep its saved data for recovery and use the current app for new deposits and chats.",
+          );
         if (canAdmit() && readiness && readiness.expiresAt > Date.now()) return;
         let reason = "Choose Refresh status to check the service again.";
         if (closed) reason = "Reconnect the same wallet to continue.";

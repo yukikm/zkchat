@@ -1,5 +1,5 @@
-import { test, expect } from "@playwright/test";
-import { writeFile } from "node:fs/promises";
+import { test, expect, type Request } from "@playwright/test";
+import { readFile, writeFile } from "node:fs/promises";
 
 test("public browser preflight without custody or financial actions", async ({
   page,
@@ -11,34 +11,47 @@ test("public browser preflight without custody or financial actions", async ({
   test.setTimeout(240_000);
   const observations: unknown[] = [];
   const failures: unknown[] = [];
+  const requestFailures: Request[] = [];
+  const responseStatuses = new Map<Request, number>();
+  const responseReads: Promise<void>[] = [];
   page.on("console", (msg) => {
     if (msg.type() === "error") failures.push({ console: msg.text() });
   });
-  page.on("requestfailed", (req) =>
-    failures.push({
-      path: new URL(req.url()).pathname,
-      error: req.failure()?.errorText,
-    }),
-  );
-  page.on("response", async (response) => {
-    if (!response.url().includes("cloudfront.net")) return;
+  page.on("requestfailed", (req) => requestFailures.push(req));
+  page.on("response", (response) => {
     const req = response.request();
-    let rpc = null;
-    if (req.method() === "POST") {
-      try {
-        const body = await response.json();
-        rpc = {
-          method: req.postDataJSON()?.method,
-          error: body.error,
-          resultType: typeof body.result,
-        };
-      } catch {}
+    responseStatuses.set(req, response.status());
+    if (response.status() >= 400) {
+      failures.push({
+        path: new URL(response.url()).pathname,
+        status: response.status(),
+      });
     }
-    observations.push({
+    if (!response.url().includes("cloudfront.net")) return;
+    const observation: {
+      path: string;
+      status: number;
+      rpc: { method?: string; error: unknown; resultType: string } | null;
+    } = {
       path: new URL(response.url()).pathname,
       status: response.status(),
-      rpc,
-    });
+      rpc: null,
+    };
+    observations.push(observation);
+    if (req.method() === "POST") {
+      responseReads.push(
+        response
+          .json()
+          .then((body) => {
+            observation.rpc = {
+              method: req.postDataJSON()?.method,
+              error: body.error,
+              resultType: typeof body.result,
+            };
+          })
+          .catch(() => {}),
+      );
+    }
   });
   await page.route("**/*", async (route) => {
     const req = route.request();
@@ -72,6 +85,66 @@ test("public browser preflight without custody or financial actions", async ({
   await button.click();
   await expect(button).toBeEnabled({ timeout: 90_000 });
   const visibleResult = await page.getByRole("dialog").innerText();
+  await Promise.all(responseReads);
+  const serviceReady = visibleResult.includes(
+    "Service ready. Select a wallet to connect.",
+  );
+  const installedConfig = JSON.parse(
+    await readFile(
+      new URL("../public/zkapi-config.json", import.meta.url),
+      "utf8",
+    ),
+  );
+  // Read the profile already authenticated by the app; do not fetch or trust
+  // another profile solely to explain an otherwise failed network request.
+  const verifiedOrigins = await page.evaluate(async (config) => {
+    // @ts-expect-error Test-only Vite module.
+    const { cachedAppProfile } = await import("/src/lib/publicDeployment.ts");
+    const loaded = cachedAppProfile(config);
+    return loaded
+      ? {
+          control: loaded.assets.verifiedManifest.control_api_origin,
+          indexer: loaded.profile.indexerOrigin,
+        }
+      : null;
+  }, installedConfig);
+  const expectedReaderCancellations: unknown[] = [];
+  for (const req of requestFailures) {
+    const url = new URL(req.url());
+    const failure = {
+      path: url.pathname,
+      method: req.method(),
+      status: responseStatuses.get(req),
+      error: req.failure()?.errorText,
+    };
+    const sdkReadPath =
+      (url.origin === verifiedOrigins?.control &&
+        ["/zkapi/v1/config", "/zkapi/v1/catalog"].includes(url.pathname)) ||
+      (url.origin === verifiedOrigins?.indexer &&
+        (url.pathname === "/zkapi/v1/tree/snapshot" ||
+          /^\/zkapi\/v1\/tree\/snapshots\/[0-9a-f]{64}\.json$/.test(
+            url.pathname,
+          )));
+    // SDK readers cancel in finally, including after validated EOF. Chromium
+    // can report ERR_ABORTED for that cleanup. Exempt only this exact request's
+    // HTTP 200 GET after the full preflight/readiness verification succeeded.
+    if (
+      serviceReady &&
+      sdkReadPath &&
+      url.protocol === "https:" &&
+      !url.username &&
+      !url.password &&
+      !url.search &&
+      !url.hash &&
+      failure.method === "GET" &&
+      failure.status === 200 &&
+      failure.error === "net::ERR_ABORTED"
+    ) {
+      expectedReaderCancellations.push(failure);
+    } else {
+      failures.push(failure);
+    }
+  }
   const report = testInfo.outputPath("public-browser-check.json");
   await writeFile(
     report,
@@ -80,6 +153,7 @@ test("public browser preflight without custody or financial actions", async ({
         timestamp: new Date().toISOString(),
         observations,
         failures,
+        expectedReaderCancellations,
         visibleResult,
       },
       null,
@@ -189,7 +263,7 @@ test("public SDK browser factory creates and reopens unfunded custody with no si
     JSON.stringify(
       {
         observedAt: new Date().toISOString(),
-        sdk: "0.2.0-devnet.12",
+        sdk: "0.2.0-devnet.13",
         result: "initialized and reopened",
         blocked,
         visibleResult: await page.getByRole("dialog").innerText(),
@@ -316,7 +390,7 @@ test("public SDK prepares an inline deposit before any signing", async ({
     JSON.stringify(
       {
         observedAt: new Date().toISOString(),
-        sdk: "0.2.0-devnet.12",
+        sdk: "0.2.0-devnet.13",
         result,
         blocked,
         serviceErrors,

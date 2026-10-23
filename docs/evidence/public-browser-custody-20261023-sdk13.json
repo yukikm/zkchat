@@ -1,0 +1,8 @@
+{
+  "observedAt": "2026-10-23T03:29:48.685Z",
+  "sdk": "0.2.0-devnet.13",
+  "result": "initialized and reopened",
+  "blocked": [],
+  "visibleResult": "Connection settings\nYour wallet\n\nPay for AI with USDC. Keep SOL for network fees.\n\nSolana Devnet\nTest tokens only\nIntegration Test Wallet\n11111111111111111111111111111111\nDeposit balance\n\n0.00 USDC\n\nMinimum to chat: 1.00 USDC\n\nEnter an amount below, then approve the deposit in your wallet.\n\nSaved deposits\nDeposit 1 · 0.00 USDC\n\nChoose a deposit to spend or withdraw. Balances stay separate.\n\nAdd deposit\n\nEnter an amount below to fund this deposit.\n\nKeep your recovery data\n\nYour browser may delete saved data automatically. Keep this browser’s data while funds remain. Return to this URL with the same wallet.\n\nUSDC to deposit\nKeep some SOL in your wallet for fees.\nI will keep this browser’s data\nReview deposit\nRefresh status\n\nWallet connected.\n\nNeed USDC or SOL?\n\nYou need USDC for your deposit and SOL for gas fees. If your wallet does not have enough of either token, get it from a faucet before depositing.\n\nUSDC faucet\nSOL faucet\n\nSelect USDC on Circle and Solana Devnet on both faucets. Send the tokens to 11111111111111111111111111111111.\n\nHave an older deposit?\nConnection details\n\nYour messages go to the AI provider. A proxy operator can also read them.",
+  "scope": "Real published SDK, public profile, public services, bundled Worker/WASM and IndexedDB in isolated Chromium. Fixture Wallet Standard account cannot sign. No deposit, AUTH or inference. Not a Phantom or funded-lifecycle success."
+}

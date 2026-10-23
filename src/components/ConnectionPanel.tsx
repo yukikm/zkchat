@@ -12,7 +12,7 @@ import {
   Unplug,
 } from "lucide-react";
 import type { ClientStatus } from "@zkapi/solana-sdk";
-import { SDK_VERSION, RECOVERY_RUNTIME } from "../lib/sdkVersion";
+import { SDK_VERSION, RETIRED_RUNTIME } from "../lib/sdkVersion";
 import { reusableSession } from "../lib/sdkStatus";
 import {
   BrowserStorageMissing,
@@ -208,6 +208,10 @@ export function ConnectionPanel({
     }
   }
   const disabled = busy || locked || configLoading || !!status?.busy;
+  const retiredDeposit =
+    RETIRED_RUNTIME && status?.walletOperation?.kind === "deposit";
+  const retiredUnsignedDeposit =
+    retiredDeposit && !status?.walletOperation?.signature;
   const servicePaused =
     config?.schema === 2 && !!handle && !handle.publicAdmissionReady;
   const retryServiceCheck = () =>
@@ -249,7 +253,11 @@ export function ConnectionPanel({
                 ? "Your wallet"
                 : "Connect your wallet"}
           </h3>
-          <p>Pay for AI with USDC. Keep SOL for network fees.</p>
+          <p>
+            {RETIRED_RUNTIME
+              ? "Inspect saved deposits from the retired Pool. Keep the original wallet and browser data."
+              : "Pay for AI with USDC. Keep SOL for network fees."}
+          </p>
         </div>
       </div>
       <div className="connection-facts">
@@ -259,6 +267,16 @@ export function ConnectionPanel({
         </span>
         <span>Test tokens only</span>
       </div>
+      {RETIRED_RUNTIME && (
+        <div className="notice" role="status">
+          <strong>Retired Pool · existing deposits only</strong>
+          <p>
+            Keep this browser’s data and use the original wallet. New deposits
+            and messages are disabled. The old service may be unavailable;
+            recovery and withdrawal are not guaranteed.
+          </p>
+        </div>
+      )}
       {connection && (
         <div className="connected-wallet-summary">
           <WalletIcon wallet={connection.wallet} />
@@ -387,13 +405,27 @@ export function ConnectionPanel({
                     This browser saves your payment recovery data. Deleting it
                     can lock you out of your funds.
                   </p>
-                  <button
-                    className="primary"
-                    disabled={disabled}
-                    onClick={() => void connect(true)}
-                  >
-                    Set up this wallet
-                  </button>
+                  {RETIRED_RUNTIME ? (
+                    <p>
+                      No saved deposit was found for this wallet. This retired
+                      Pool cannot create new payment storage.
+                    </p>
+                  ) : (
+                    <>
+                      <p>
+                        This sets up the October 21 Devnet Pool. Earlier
+                        deposits and balances remain separate in their original
+                        Pool; they are not transferred or deleted.
+                      </p>
+                      <button
+                        className="primary"
+                        disabled={disabled}
+                        onClick={() => void connect(true)}
+                      >
+                        Set up this wallet
+                      </button>
+                    </>
+                  )}
                 </div>
               )}
             </>
@@ -412,25 +444,30 @@ export function ConnectionPanel({
                     <strong>{formatUsdc(fundedNoteBalance(status))}</strong>{" "}
                     USDC
                   </p>
-                  <small>
-                    Minimum to chat:{" "}
-                    {formatUsdc(status?.authorizationCapMicroUsdc)} USDC
-                  </small>
+                  {!RETIRED_RUNTIME && (
+                    <small>
+                      Minimum to chat:{" "}
+                      {formatUsdc(status?.authorizationCapMicroUsdc)} USDC
+                    </small>
+                  )}
                 </div>
                 <ShieldCheck size={28} />
               </div>
               <p className="small muted">
-                {status?.wallet === "closed"
-                  ? "Withdrawal complete. Your funds are back in your wallet."
-                  : status?.wallet === "unfunded" || status?.wallet === "empty"
-                    ? "Enter an amount below, then approve the deposit in your wallet."
-                    : reusableSession(status)
-                      ? "Ready to chat. Settle charges before withdrawing."
-                      : status?.session
-                        ? "Check payment below before sending again. Charges are not yet deducted."
-                        : status?.canRequest
-                          ? "Ready to chat."
-                          : "Complete the next step below to start chatting."}
+                {RETIRED_RUNTIME
+                  ? "These balances belong to the retired Pool. Check any saved payment or withdrawal below."
+                  : status?.wallet === "closed"
+                    ? "Withdrawal complete. Your funds are back in your wallet."
+                    : status?.wallet === "unfunded" ||
+                        status?.wallet === "empty"
+                      ? "Enter an amount below, then approve the deposit in your wallet."
+                      : reusableSession(status)
+                        ? "Ready to chat. Settle charges before withdrawing."
+                        : status?.session
+                          ? "Check payment below before sending again. Charges are not yet deducted."
+                          : status?.canRequest
+                            ? "Ready to chat."
+                            : "Complete the next step below to start chatting."}
               </p>
               <section
                 className="deposit-management"
@@ -465,48 +502,55 @@ export function ConnectionPanel({
                   </select>
                 </div>
                 <p className="small muted">
-                  Choose a deposit to spend or withdraw. Balances stay separate.
+                  {RETIRED_RUNTIME
+                    ? "Choose an existing deposit to inspect its saved payment state. Balances stay separate."
+                    : "Choose a deposit to spend or withdraw. Balances stay separate."}
                 </p>
-                {hasLowBalance(status) && (
+                {!RETIRED_RUNTIME && hasLowBalance(status) && (
                   <p className="notice" role="status">
                     At least {formatUsdc(status?.authorizationCapMicroUsdc)}{" "}
                     USDC is needed to chat. Add or select another deposit. You
                     can still withdraw this balance.
                   </p>
                 )}
-                <button
-                  className="primary"
-                  disabled={
-                    disabled ||
-                    !canAddDeposit(status) ||
-                    !handle.publicAdmissionReady
-                  }
-                  onClick={() =>
-                    void action(
-                      async () => {
-                        await handle.addDeposit();
-                        focusNewDeposit.current = true;
-                        setInfo(
-                          "Enter an amount below. No funds have moved yet.",
-                        );
-                      },
-                      "Could not add a deposit. Reconnect to check your saved deposits.",
-                      "Opening a new deposit…",
-                    )
-                  }
-                >
-                  <ArrowDownLeft size={16} />
-                  Add deposit
-                </button>
+                {!RETIRED_RUNTIME && (
+                  <button
+                    className="primary"
+                    disabled={
+                      disabled ||
+                      !canAddDeposit(status) ||
+                      !handle.publicAdmissionReady
+                    }
+                    onClick={() =>
+                      void action(
+                        async () => {
+                          await handle.addDeposit();
+                          focusNewDeposit.current = true;
+                          setInfo(
+                            "Enter an amount below. No funds have moved yet.",
+                          );
+                        },
+                        "Could not add a deposit. Reconnect to check your saved deposits.",
+                        "Opening a new deposit…",
+                      )
+                    }
+                  >
+                    <ArrowDownLeft size={16} />
+                    Add deposit
+                  </button>
+                )}
                 {!canChangeDeposit(status) && (
                   <p className="small muted">
-                    {withdrawalInProgress
-                      ? "Complete the withdrawal below before adding or switching deposits."
-                      : "Finish the step below before adding or switching deposits."}
+                    {RETIRED_RUNTIME
+                      ? "Finish the saved operation before switching deposits."
+                      : withdrawalInProgress
+                        ? "Complete the withdrawal below before adding or switching deposits."
+                        : "Finish the step below before adding or switching deposits."}
                   </p>
                 )}
-                {(status?.wallet === "empty" ||
-                  status?.wallet === "unfunded") &&
+                {!RETIRED_RUNTIME &&
+                  (status?.wallet === "empty" ||
+                    status?.wallet === "unfunded") &&
                   canChangeDeposit(status) && (
                     <p className="small muted">
                       Enter an amount below to fund this deposit.
@@ -518,7 +562,8 @@ export function ConnectionPanel({
                   {status.expiry.message}
                 </p>
               )}
-              {status?.wallet === "active" &&
+              {!RETIRED_RUNTIME &&
+                status?.wallet === "active" &&
                 !status.canRequest &&
                 canChangeDeposit(status) &&
                 !hasLowBalance(status) &&
@@ -533,7 +578,7 @@ export function ConnectionPanel({
                     permanent protection.
                   </p>
                 )}
-              {servicePaused && (
+              {!RETIRED_RUNTIME && servicePaused && (
                 <div className="notice" role="status">
                   <strong>Chat temporarily paused</strong>
                   <p>{servicePauseReason(handle.diagnostic ?? null)}</p>
@@ -561,7 +606,8 @@ export function ConnectionPanel({
                   URL with the same wallet.
                 </p>
               </div>
-              {!status?.walletOperation &&
+              {!RETIRED_RUNTIME &&
+                !status?.walletOperation &&
                 !status?.session &&
                 (status?.wallet === "empty" ||
                   status?.wallet === "unfunded") && (
@@ -631,9 +677,9 @@ export function ConnectionPanel({
                   </h4>
                   {withdrawalInProgress && (
                     <p className="small">
-                      Chat, adding deposits, and switching deposits are paused
-                      until this withdrawal completes. Follow the steps below,
-                      then add a new deposit to chat again.
+                      {RETIRED_RUNTIME
+                        ? "This withdrawal belongs to the retired Pool. Keep its saved data while checking the remaining steps. Completion depends on the old service."
+                        : "Chat, adding deposits, and switching deposits are paused until this withdrawal completes. Follow the steps below, then add a new deposit to chat again."}
                     </p>
                   )}
                   <details className="connection-details">
@@ -644,9 +690,13 @@ export function ConnectionPanel({
                     </code>
                   </details>
                   <p className="small">
-                    {status.walletOperation.signature
-                      ? "Check whether the transaction completed. If an upload expired, your wallet may ask you to approve again."
-                      : "Approve the next step in your wallet. Each transaction costs a SOL fee."}
+                    {retiredUnsignedDeposit
+                      ? "This deposit was not submitted before the Pool retired. No new deposit will be signed. Keep its saved data."
+                      : status.walletOperation.signature
+                        ? retiredDeposit
+                          ? "Check whether the saved transaction completed. This page will not sign a new deposit."
+                          : "Check whether the transaction completed. If an upload expired, your wallet may ask you to approve again."
+                        : "Approve the next step in your wallet. Each transaction costs a SOL fee."}
                   </p>
                   {["mutual_close", "initiate_escape"].includes(
                     status.walletOperation.kind,
@@ -666,68 +716,72 @@ export function ConnectionPanel({
                       View transaction <ExternalLink size={13} />
                     </a>
                   )}
-                  <div className="button-row">
-                    <button
-                      className="primary"
-                      disabled={disabled}
-                      onClick={() =>
-                        void action(async () => {
-                          const p = await handle.client
-                            .advanceWallet()
-                            .catch((e) => {
-                              throw walletStepError(e);
-                            });
-                          setProgressState(p.state);
-                          setInfo(
-                            p.state === "complete"
-                              ? "Step complete."
-                              : "Progress checked. Follow the next step below.",
-                          );
-                        })
-                      }
-                    >
-                      {withdrawalInProgress
-                        ? status.walletOperation.signature
-                          ? "Check withdrawal step"
-                          : "Approve next withdrawal step"
-                        : status.walletOperation.signature
-                          ? "Check transaction"
-                          : "Approve in wallet"}
-                    </button>
-                    {(progressState === "proof_required" ||
-                      status.walletOperation.phase === "proving") && (
+                  {!retiredUnsignedDeposit && (
+                    <div className="button-row">
                       <button
-                        className="secondary"
+                        className="primary"
                         disabled={disabled}
                         onClick={() =>
                           void action(async () => {
-                            await handle.client.resumeWalletProof();
+                            const p = await handle.client
+                              .advanceWallet()
+                              .catch((e) => {
+                                throw walletStepError(e);
+                              });
+                            setProgressState(p.state);
                             setInfo(
-                              "Preparation resumed. Follow the next step below.",
+                              p.state === "complete"
+                                ? "Step complete."
+                                : "Progress checked. Follow the next step below.",
                             );
                           })
                         }
                       >
-                        Resume preparation
+                        {withdrawalInProgress
+                          ? status.walletOperation.signature
+                            ? "Check withdrawal step"
+                            : "Approve next withdrawal step"
+                          : status.walletOperation.signature
+                            ? "Check transaction"
+                            : "Approve in wallet"}
                       </button>
-                    )}
-                    {(progressState === "rejected" ||
-                      ["failed", "stale"].includes(
-                        status.walletOperation.phase,
-                      )) && (
-                      <button
-                        className="secondary"
-                        disabled={disabled}
-                        onClick={() =>
-                          void action(() =>
-                            handle.client.retryRejectedWalletOperation(),
-                          )
-                        }
-                      >
-                        Try this step again
-                      </button>
-                    )}
-                  </div>
+                      {!retiredDeposit &&
+                        (progressState === "proof_required" ||
+                          status.walletOperation.phase === "proving") && (
+                          <button
+                            className="secondary"
+                            disabled={disabled}
+                            onClick={() =>
+                              void action(async () => {
+                                await handle.client.resumeWalletProof();
+                                setInfo(
+                                  "Preparation resumed. Follow the next step below.",
+                                );
+                              })
+                            }
+                          >
+                            Resume preparation
+                          </button>
+                        )}
+                      {!retiredDeposit &&
+                        (progressState === "rejected" ||
+                          ["failed", "stale"].includes(
+                            status.walletOperation.phase,
+                          )) && (
+                          <button
+                            className="secondary"
+                            disabled={disabled}
+                            onClick={() =>
+                              void action(() =>
+                                handle.client.retryRejectedWalletOperation(),
+                              )
+                            }
+                          >
+                            Try this step again
+                          </button>
+                        )}
+                    </div>
+                  )}
                   {progressState === "expired_reconcile_required" &&
                     status.walletOperation.phase === "ready" &&
                     status.walletOperation.signature && (
@@ -786,11 +840,13 @@ export function ConnectionPanel({
                       : "Payment pending"}
                   </h4>
                   <p className="small">
-                    {reusableSession(status)
-                      ? "You can keep chatting in the same conversation. Settle charges before sending in another chat, switching deposits, or withdrawing."
-                      : "Check the payment before sending again. This does not resend your message."}
+                    {RETIRED_RUNTIME
+                      ? "This saved payment belongs to the retired Pool. Checking it does not resend your message."
+                      : reusableSession(status)
+                        ? "You can keep chatting in the same conversation. Settle charges before sending in another chat, switching deposits, or withdrawing."
+                        : "Check the payment before sending again. This does not resend your message."}
                   </p>
-                  {!RECOVERY_RUNTIME &&
+                  {!RETIRED_RUNTIME &&
                     status.canReconcileUnacceptedAuthorization && (
                       <p className="small">
                         If the service confirms the authorization was not
@@ -886,7 +942,9 @@ export function ConnectionPanel({
                             void action(async () => {
                               await handle.client.reconcileUnacceptedAuthorization();
                               setInfo(
-                                "Authorization disabled. Withdraw this deposit’s balance before funding a new deposit. Refresh status cannot re-enable it.",
+                                RETIRED_RUNTIME
+                                  ? "Authorization disabled. Keep this deposit’s saved data while checking withdrawal availability. Refresh status cannot re-enable it."
+                                  : "Authorization disabled. Withdraw this deposit’s balance before funding a new deposit. Refresh status cannot re-enable it.",
                               );
                             })
                           }
@@ -966,8 +1024,9 @@ export function ConnectionPanel({
                       <div className="notice">
                         <p>Withdraw this deposit to your connected wallet.</p>
                         <p>
-                          You will approve several transactions, each with a SOL
-                          fee. Your USDC returns after the final step.
+                          {RETIRED_RUNTIME
+                            ? "Withdrawal may require several transactions and SOL fees. The old service must still support the remaining steps; completion is not guaranteed."
+                            : "You will approve several transactions, each with a SOL fee. Your USDC returns after the final step."}
                         </p>
                         <div className="button-row">
                           <button
@@ -1042,67 +1101,65 @@ export function ConnectionPanel({
           {error}
         </p>
       )}
-      <section className="notice faucet-notice" aria-label="Get test tokens">
-        <strong>Need USDC or SOL?</strong>
-        <p>
-          You need USDC for your deposit and SOL for gas fees. If your wallet
-          does not have enough of either token, get it from a faucet before
-          depositing.
-        </p>
-        <div className="faucet-links">
-          <a
-            href="https://faucet.circle.com/"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            USDC faucet <ExternalLink size={13} aria-hidden="true" />
-          </a>
-          <a
-            href="https://faucet.solana.com/"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            SOL faucet <ExternalLink size={13} aria-hidden="true" />
-          </a>
-        </div>
-        <p className="small">
-          Select USDC on Circle and Solana Devnet on both faucets.
-          {handle ? (
-            <>
-              {" "}
-              Send the tokens to <code>{handle.account.address}</code>.
-            </>
-          ) : (
-            " Send the tokens to the wallet you use here."
-          )}
-        </p>
-      </section>
-      {RECOVERY_RUNTIME ? (
-        <p className="small muted">
-          Recover your older deposits here. Keep this browser’s data until all
-          withdrawals are complete.
-        </p>
-      ) : (
-        !handle && (
-          <details
-            className="connection-details"
-            open={error.includes("SDK .3")}
-          >
-            <summary>Have an older deposit?</summary>
-            {import.meta.env.DEV ? (
-              <p className="small muted">
-                Stop this server, run <code>npm run dev:recovery</code>, and
-                reopen the same URL with your original wallet.
-              </p>
+      {!RETIRED_RUNTIME && (
+        <section className="notice faucet-notice" aria-label="Get test tokens">
+          <strong>Need USDC or SOL?</strong>
+          <p>
+            You need USDC for your deposit and SOL for gas fees. If your wallet
+            does not have enough of either token, get it from a faucet before
+            depositing.
+          </p>
+          <div className="faucet-links">
+            <a
+              href="https://faucet.circle.com/"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              USDC faucet <ExternalLink size={13} aria-hidden="true" />
+            </a>
+            <a
+              href="https://faucet.solana.com/"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              SOL faucet <ExternalLink size={13} aria-hidden="true" />
+            </a>
+          </div>
+          <p className="small">
+            Select USDC on Circle and Solana Devnet on both faucets.
+            {handle ? (
+              <>
+                {" "}
+                Send the tokens to <code>{handle.account.address}</code>.
+              </>
             ) : (
-              <p>
-                <a href={`${import.meta.env.BASE_URL}recovery-v3/`}>
-                  Recover an older deposit
-                </a>
-              </p>
+              " Send the tokens to the wallet you use here."
             )}
-          </details>
-        )
+          </p>
+        </section>
+      )}
+      {!RETIRED_RUNTIME && (
+        <details
+          className="connection-details"
+          open={error.includes("SDK .3") || error.includes("October 8")}
+        >
+          <summary>Have an older deposit?</summary>
+          <p>
+            <a href={`${import.meta.env.BASE_URL}recovery-v12/`}>
+              Recover October 8 deposits
+            </a>
+          </p>
+          <p>
+            <a href={`${import.meta.env.BASE_URL}recovery-v3/`}>
+              Recover an older deposit
+            </a>
+          </p>
+          <p className="small muted">
+            These pages retain the original SDK and saved data for retired
+            Pools. Recovery depends on the old service and is not guaranteed.
+            Keep this browser’s data.
+          </p>
+        </details>
       )}
       <details className="connection-details">
         <summary>Connection details</summary>

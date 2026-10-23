@@ -38,6 +38,7 @@ import type { ServiceReadiness } from "./readiness";
 import { WalletConnectionError } from "./walletErrors";
 import { MAX_OUTPUT_TOKENS } from "./chat";
 import { createIndexerSnapshotFetch } from "./indexerFetch";
+import { recoveryWallet } from "./recoveryWallet";
 import {
   openDepositCatalog,
   ORIGINAL_NOTE_ID,
@@ -50,7 +51,11 @@ import {
 export { BrowserStorageMissing };
 export type { StandardAccount };
 export const CHAIN = "solana:devnet" as const;
-import { RECOVERY_RUNTIME, SDK_STORAGE_NAME } from "./sdkVersion";
+import {
+  RECOVERY_RUNTIME,
+  RETIRED_RUNTIME,
+  SDK_STORAGE_NAME,
+} from "./sdkVersion";
 export const STORAGE_NAME = SDK_STORAGE_NAME;
 export const NOTE_ID = ORIGINAL_NOTE_ID;
 export type AppConfig = LegacyAppConfig | PublicAppConfig;
@@ -430,6 +435,10 @@ export async function connectZkapi(
       "Use HTTPS or localhost with IndexedDB, Web Locks, Web Crypto, and module Workers.",
     );
   const signer = walletStandardAdapter(wallet, account, CHAIN);
+  if (RETIRED_RUNTIME && initializeStorage)
+    throw new Error(
+      "Recovery requires existing storage. No new storage is created for a retired Pool.",
+    );
   await assertRuntimeCustody(signer.publicKey);
   selectConnectedAccount(wallet, account);
   const publicConnection =
@@ -478,8 +487,10 @@ export async function connectZkapi(
     };
   }
   let raw: Awaited<ReturnType<typeof createBrowserClient>>;
-  const openClient = (noteId: string, initialize = false) =>
-    createBrowserClient({
+  const openClient = async (noteId: string, initialize = false) => {
+    // Each wrapper reads its own client's journal, even during note switching.
+    let signingClient: ZkApiClient | undefined;
+    const opened = await createBrowserClient({
       ...(publicOptions ?? {
         deployment: {
           manifest: assets.manifest,
@@ -503,7 +514,9 @@ export async function connectZkapi(
       storageName: STORAGE_NAME,
       noteId,
       initializeStorage: initialize,
-      wallet: signer,
+      wallet: RETIRED_RUNTIME
+        ? recoveryWallet(signer, async () => signingClient?.status())
+        : signer,
       createWorker: () =>
         new Worker(new URL("./prover.worker.ts", import.meta.url), {
           type: "module",
@@ -512,6 +525,9 @@ export async function connectZkapi(
       wasm: assets.wasm,
       wasmSha256: assets.wasmSha256,
     });
+    signingClient = opened.client;
+    return opened;
+  };
   let catalog: DepositCatalog;
   let saved: Awaited<ReturnType<DepositCatalog["read"]>>;
   try {
@@ -563,6 +579,7 @@ export async function connectZkapi(
     }
   };
   const project = (status: ClientStatus): ClientStatus =>
+    RETIRED_RUNTIME ||
     invalidated ||
     switching ||
     !selectedStillActive() ||
@@ -620,6 +637,10 @@ export async function connectZkapi(
     saved = latest;
   };
   const changeDeposit = async (id?: string) => {
+    if (RETIRED_RUNTIME && !id)
+      throw new DepositError(
+        "This Pool is retired. Open the current app to create a new deposit.",
+      );
     const requestedId = selectedId;
     await catalog.withLock(async () => {
       assertActiveAccount();
@@ -724,6 +745,13 @@ export async function connectZkapi(
             const target = raw.client;
             if (guarded.has(property)) assertActiveAccount();
             if (
+              RETIRED_RUNTIME &&
+              ["chat", "request", "prepareDeposit"].includes(String(property))
+            )
+              throw new Error(
+                "This Pool is retired. Only existing payment recovery is available here.",
+              );
+            if (
               publicConnection &&
               ["chat", "request", "prepareDeposit"].includes(String(property))
             ) {
@@ -806,7 +834,7 @@ export async function connectZkapi(
     addDeposit: () => changeDeposit(),
     selectDeposit: (id) => changeDeposit(id),
     get publicAdmissionReady() {
-      return publicConnection?.canAdmit ?? true;
+      return !RETIRED_RUNTIME && (publicConnection?.canAdmit ?? true);
     },
     get diagnostic() {
       return publicConnection?.diagnostic ?? null;

@@ -212,6 +212,8 @@ describe("profile and original custody binding", () => {
     await loadConfig();
     expect(sdk.load).toHaveBeenCalledWith(config.profileUrl, {
       profileSha256: config.profileSha256,
+      installedProfileSha256: undefined,
+      fetch: expect.any(Function),
     });
     expect(configuredModels(config).map((m) => m.id)).toEqual(["model"]);
     expect(configuredStreaming(config, "model")).toBe(false);
@@ -656,6 +658,80 @@ describe("existing application adapter with public profile", () => {
     expect(client.chat).not.toHaveBeenCalled();
     handle.dispose();
   });
+  it.each([200, 429])(
+    "backs off one authenticated RPC read without replaying preflight (retry HTTP %s)",
+    async (status) => {
+      vi.useFakeTimers();
+      try {
+        const { account, wallet, client } = make();
+        const rpcUrl = "https://control.example/rpc";
+        const profile = loaded();
+        Object.assign(profile.profile, { rpcUrl });
+        sdk.load.mockResolvedValue(profile);
+        sdk.readiness.mockImplementation(async () => ({
+          admission: "enabled",
+          invitationRequired: false,
+          recovery: "enabled",
+          servicesAvailable: true,
+          expiresAt: Date.now() + 5000,
+          checkedAt: Date.now(),
+        }));
+        let started!: () => void;
+        const firstRead = new Promise<void>((resolve) => {
+          started = resolve;
+        });
+        const fetcher = vi
+          .fn<typeof fetch>()
+          .mockImplementationOnce(async () => {
+            started();
+            return new Response(null, { status: 429 });
+          })
+          .mockResolvedValueOnce(new Response(null, { status }));
+        vi.stubGlobal("fetch", fetcher);
+        const handle = await connectZkapi(
+          config,
+          wallet as any,
+          account as any,
+        );
+        sdk.preflight.mockClear();
+        sdk.preflight.mockImplementation(async (_loaded, options) => {
+          const response = await options.fetch(rpcUrl, {
+            method: "POST",
+            body: JSON.stringify({
+              jsonrpc: "2.0",
+              id: 1,
+              method: "getBlock",
+              params: [1],
+            }),
+          });
+          if (!response.ok) throw new PublicProfileError("rpc");
+          return { chainAllowsNewOperations: true, paused: false };
+        });
+        const result = handle.client
+          .chat({ model: "model", stream: false, maxOutputTokens: 128 } as any)
+          .catch((error) => error);
+        await Promise.race([
+          firstRead,
+          result.then((error) => {
+            throw error;
+          }),
+        ]);
+        await vi.advanceTimersByTimeAsync(9999);
+        expect(fetcher).toHaveBeenCalledTimes(1);
+        expect(client.chat).not.toHaveBeenCalled();
+        await vi.advanceTimersByTimeAsync(1);
+        const outcome = await result;
+        expect(fetcher).toHaveBeenCalledTimes(2);
+        expect(sdk.preflight).toHaveBeenCalledTimes(1);
+        expect(client.chat).toHaveBeenCalledTimes(status === 200 ? 1 : 0);
+        if (status === 429)
+          expect(outcome.message).toContain("chain connection");
+        handle.dispose();
+      } finally {
+        vi.useRealTimers();
+      }
+    },
+  );
   it.each(["recovered", "unavailable", "stopped"])(
     "handles a transient runtime snapshot within one chat operation: %s",
     async (outcome) => {
@@ -910,11 +986,11 @@ describe("existing application adapter with public profile", () => {
   });
 });
 
-it("SDK .8 profile binding uses fresh custody without adopting the retained R2 binding", async () => {
+it("new Pool profile binding uses separate custody without adopting old bindings", async () => {
   const oldKey = profileBindingKey("zkchat-v1", "account");
   storage.set(oldKey, "b".repeat(64));
-  expect(STORAGE_NAME).toBe("zkchat-sdk-0.2.0-devnet.8");
-  expect(NOTE_ID).toBe("zkchat-note-sdk-0.2.0-devnet.8");
+  expect(STORAGE_NAME).toBe("zkchat-sdk-public-devnet-20261021-state-v1");
+  expect(NOTE_ID).toBe("zkchat-note-sdk-public-devnet-20261021-state-v1");
   const newKey = profileBindingKey(STORAGE_NAME, "account");
   expect(newKey).not.toBe(oldKey);
   const hasNewCustody = vi.fn(async () => false);
@@ -931,56 +1007,97 @@ it("SDK .8 profile binding uses fresh custody without adopting the retained R2 b
   expect(storage.size).toBe(2);
 });
 
-describe("original custody is never opened or bypassed by SDK .8", () => {
-  it("blocks an original profile binding before loading a profile or opening a client", async () => {
-    const account = {
-      address: "account",
-      chains: ["solana:devnet"],
-      features: ["solana:signTransaction"],
-    };
-    const wallet = { accounts: [account] };
-    const original = profileBindingKey(
-      "zkchat-sdk-0.2.0-devnet.3",
-      account.address,
-    );
-    storage.set(original, "original-profile-digest");
-    await expect(
-      connectZkapi(config, wallet as any, account as any, true),
-    ).rejects.toThrow(/Recover an older deposit/);
-    expect(sdk.load).not.toHaveBeenCalled();
-    expect(sdk.browser).not.toHaveBeenCalled();
-    expect(storage.size).toBe(1);
-    expect(storage.get(original)).toBe("original-profile-digest");
-  });
-  it("blocks original unbound databases without opening or rewriting them", async () => {
+describe("retired custody stays separate from the new Pool", () => {
+  it.each(["zkchat-sdk-0.2.0-devnet.3", "zkchat-sdk-0.2.0-devnet.8"])(
+    "preserves %s binding and requires explicit setup for the new namespace",
+    async (previous) => {
+      const original = profileBindingKey(previous, "account");
+      storage.set(original, "original-profile-digest");
+      await expect(assertRuntimeCustody("account")).resolves.toBeUndefined();
+      await expect(
+        connectPublicDeployment(config, STORAGE_NAME, "account", false),
+      ).rejects.toBeInstanceOf(BrowserStorageMissing);
+      expect(storage.size).toBe(1);
+      await connectPublicDeployment(config, STORAGE_NAME, "account", true);
+      expect(storage.get(original)).toBe("original-profile-digest");
+      expect(storage.get(profileBindingKey(STORAGE_NAME, "account"))).toBe(
+        config.profileSha256,
+      );
+      expect(storage.size).toBe(2);
+      expect(sdk.browser).not.toHaveBeenCalled();
+    },
+  );
+  it("does not open or rewrite retired unbound databases", async () => {
     const open = vi.fn();
     vi.stubGlobal("indexedDB", {
       open,
       databases: async () => [
         {
           name: JSON.stringify([
-            "zkchat-sdk-0.2.0-devnet.3",
-            "deployment",
-            "pool",
+            "zkchat-sdk-0.2.0-devnet.8",
+            "old-deployment",
+            "old-pool",
             "account",
           ]),
         },
       ],
     });
-    await expect(assertRuntimeCustody("account")).rejects.toThrow(
-      /Recover an older deposit/,
-    );
+    await assertRuntimeCustody("account");
+    await retainProfileBinding(config, STORAGE_NAME, "account", true);
     expect(open).not.toHaveBeenCalled();
-    expect(storage.size).toBe(0);
-  });
-  it("allows a new account without changing another account's binding", async () => {
-    storage.set(
-      profileBindingKey("zkchat-sdk-0.2.0-devnet.3", "old-account"),
-      "original",
-    );
-    await expect(assertRuntimeCustody("new-account")).resolves.toBeUndefined();
     expect(storage.size).toBe(1);
   });
+  it.each([
+    ["0.2.0-devnet.12", "zkchat-sdk-0.2.0-devnet.8"],
+    ["0.2.0-devnet.3", "zkchat-sdk-0.2.0-devnet.3"],
+  ])(
+    "%s recovery requires original storage and refuses new admission",
+    async (version, namespace) => {
+      vi.stubEnv("VITE_ZKCHAT_SDK_VERSION", version);
+      vi.resetModules();
+      try {
+        const recovery = await import("../src/lib/publicDeployment");
+        await expect(recovery.assertRuntimeCustody("account")).rejects.toThrow(
+          "No original SDK",
+        );
+        storage.set(
+          profileBindingKey(namespace, "account"),
+          config.profileSha256,
+        );
+        await expect(
+          recovery.assertRuntimeCustody("account"),
+        ).resolves.toBeUndefined();
+        const connection = await recovery.connectPublicDeployment(
+          config,
+          namespace,
+          "account",
+          false,
+        );
+        expect(connection.canAdmit).toBe(false);
+        expect(() => connection.assertAdmission()).toThrow("Pool is retired");
+        expect(storage.size).toBe(1);
+        const { connectZkapi: connectRecovery } =
+          await import("../src/lib/zkapi");
+        const account = {
+          address: "account",
+          chains: ["solana:devnet"],
+          features: ["solana:signTransaction"],
+        };
+        await expect(
+          connectRecovery(
+            config,
+            { accounts: [account] } as any,
+            account as any,
+            true,
+          ),
+        ).rejects.toThrow("Recovery requires existing storage");
+        expect(sdk.browser).not.toHaveBeenCalled();
+      } finally {
+        vi.unstubAllEnvs();
+        vi.resetModules();
+      }
+    },
+  );
 });
 
 it("RPC failures do not invent an origin-registration requirement or expose payloads", () => {

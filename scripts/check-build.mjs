@@ -20,7 +20,11 @@ try {
   page.on("pageerror", (error) => errors.push(error.message));
   // Test the emitted profile pins separately; never contact the public deployment.
   const pins = [
-    [base, "ec10c1ab41bb5105222d3e25c7e1eba6b96b1b397abd0f854657030269992a77"],
+    [base, "5e15d66c6f45265951cf1f8dd6cc0dae6574c4b8dd6756f828f7543ecaa97b9a"],
+    [
+      `${base}recovery-v12/`,
+      "ec10c1ab41bb5105222d3e25c7e1eba6b96b1b397abd0f854657030269992a77",
+    ],
     [
       `${base}recovery-v3/`,
       "449657cc3fe90f12878236b83d68ada8077e3c56e67ccb8268c5f301e69e02e5",
@@ -42,32 +46,43 @@ try {
   await page.evaluate(() =>
     localStorage.setItem("original-custody-sentinel", "preserved"),
   );
-  await page
-    .getByRole("button", { name: "Connection settings", exact: true })
-    .click();
-  assert.match(
-    await page.getByRole("dialog").textContent(),
-    /SDK 0\.2\.0-devnet\.12/,
-  );
-  await page.getByText("Have an older deposit?", { exact: true }).click();
-  await page.getByRole("link", { name: "Recover an older deposit" }).click();
-  await page.waitForURL(`${origin}${base}recovery-v3/`);
-  await page
-    .getByRole("button", { name: "Connection settings", exact: true })
-    .click();
-  assert.match(
-    await page.getByRole("dialog").textContent(),
-    /SDK 0\.2\.0-devnet\.3/,
-  );
-  assert.equal(
-    await page.evaluate(() =>
-      localStorage.getItem("original-custody-sentinel"),
-    ),
-    "preserved",
-  );
+  for (const [directory, label, version] of [
+    ["recovery-v12", "Recover October 8 deposits", "12"],
+    ["recovery-v3", "Recover an older deposit", "3"],
+  ]) {
+    await page
+      .getByRole("button", { name: "Connection settings", exact: true })
+      .click();
+    assert.match(
+      await page.getByRole("dialog").textContent(),
+      /SDK 0\.2\.0-devnet\.13/,
+    );
+    await page.getByText("Have an older deposit?", { exact: true }).click();
+    await page.getByRole("link", { name: label, exact: true }).click();
+    await page.waitForURL(`${origin}${base}${directory}/`);
+    await page
+      .getByRole("button", { name: "Connection settings", exact: true })
+      .click();
+    assert.ok(
+      (await page.getByRole("dialog").textContent()).includes(
+        `SDK 0.2.0-devnet.${version}`,
+      ),
+    );
+    assert.equal(
+      await page.evaluate(() =>
+        localStorage.getItem("original-custody-sentinel"),
+      ),
+      "preserved",
+    );
+    await page.getByRole("button", { name: "Close", exact: true }).click();
+    await page
+      .getByRole("link", { name: "Return to the current app", exact: true })
+      .click();
+    await page.waitForURL(`${origin}${base}`);
+  }
   assert.deepEqual(errors, []);
   console.log(
-    `Built app and original recovery passed at ${base}: correct SDK labels, profile pins, same-origin navigation and retained storage. No public API calls.`,
+    `Built app and both recovery builds passed at ${base}: correct SDK labels, profile pins, same-origin navigation and retained storage. No public API calls.`,
   );
 } finally {
   await browser?.close();

@@ -1,0 +1,7 @@
+{
+  "schema": 2,
+  "chain": "solana:devnet",
+  "label": "Solana zkAPI · Public Devnet",
+  "profileUrl": "https://d366buuvadnp3.cloudfront.net/releases/public-devnet-20261008-a/profile-sdk-0.2.0-devnet.8-r6.json",
+  "profileSha256": "ec10c1ab41bb5105222d3e25c7e1eba6b96b1b397abd0f854657030269992a77"
+}

@@ -68,6 +68,7 @@ function aws(args, json = false) {
 const files = await listFiles(dist);
 for (const [prefix, source] of [
   ["", "public/zkapi-config.json"],
+  ["recovery-v12/", "config/zkapi-config.devnet.12.json"],
   ["recovery-v3/", "config/zkapi-config.devnet.3.json"],
 ]) {
   const html = await readFile(resolve(dist, `${prefix}index.html`), "utf8");
@@ -183,7 +184,11 @@ if (!values.apply) {
   }
   const destination = `s3://${output.BucketName}/`;
   // Upload dependencies first. Never --delete: open pages can still need old chunks.
-  for (const prefix of ["assets", "recovery-v3/assets"]) {
+  for (const prefix of [
+    "assets",
+    "recovery-v12/assets",
+    "recovery-v3/assets",
+  ]) {
     aws([
       "s3",
       "sync",
@@ -203,16 +208,24 @@ if (!values.apply) {
     "--exclude",
     "assets/*",
     "--exclude",
+    "recovery-v12/assets/*",
+    "--exclude",
     "recovery-v3/assets/*",
     "--exclude",
     "index.html",
+    "--exclude",
+    "recovery-v12/index.html",
     "--exclude",
     "recovery-v3/index.html",
     "--cache-control",
     mutableCache,
     "--only-show-errors",
   ]);
-  for (const key of ["recovery-v3/index.html", "index.html"]) {
+  for (const key of [
+    "recovery-v12/index.html",
+    "recovery-v3/index.html",
+    "index.html",
+  ]) {
     aws([
       "s3",
       "cp",
@@ -235,6 +248,11 @@ if (!values.apply) {
       "/",
       "/index.html",
       "/zkapi-config.json",
+      "/recovery-v12",
+      "/recovery-v12/",
+      "/recovery-v12/index.html",
+      "/recovery-v12/zkapi-config.json",
+      "/recovery-v3",
       "/recovery-v3/",
       "/recovery-v3/index.html",
       "/recovery-v3/zkapi-config.json",

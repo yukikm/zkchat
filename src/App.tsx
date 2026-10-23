@@ -32,7 +32,11 @@ import {
 import type { ClientStatus } from "@zkapi/solana-sdk";
 import { readChatResponse } from "./lib/chatResponse";
 import { useAppUpdate } from "./lib/appUpdate";
-import { SDK_VERSION, RECOVERY_RUNTIME } from "./lib/sdkVersion";
+import {
+  SDK_VERSION,
+  RECOVERY_RUNTIME,
+  RETIRED_RUNTIME,
+} from "./lib/sdkVersion";
 import { chatFailureMessage, reusableSession } from "./lib/sdkStatus";
 import {
   loadConfig,
@@ -188,6 +192,13 @@ export default function App() {
     models[0]?.id ||
     "";
   const selectedModel = current?.model || model || defaultModel;
+  const selectedModelAvailable = models.some((m) => m.id === selectedModel);
+  const unavailableSavedModel =
+    selectedMode === "live" &&
+    !!current &&
+    !!config &&
+    !configLoading &&
+    !selectedModelAvailable;
   const streamingSupported = configuredStreaming(config, selectedModel);
   const useStreaming = preferences.stream && streamingSupported;
   const outputTokenLimit =
@@ -209,8 +220,9 @@ export default function App() {
     draft.length <= MAX_INPUT &&
     (selectedMode === "demo" ||
       (!!handle &&
+        !RETIRED_RUNTIME &&
         !!status?.canRequest &&
-        !!selectedModel &&
+        selectedModelAvailable &&
         !needsConversationSettlement));
   const refresh = useCallback(async () => {
     if (handle) setStatus(await handle.client.status());
@@ -333,7 +345,7 @@ export default function App() {
         e.key.toLowerCase() === "o"
       ) {
         e.preventDefault();
-        if (!busyRef.current) {
+        if (!busyRef.current && !RETIRED_RUNTIME) {
           setActiveId(null);
           setModel("");
           setDraft("");
@@ -357,7 +369,7 @@ export default function App() {
     setDialog(null);
   }
   function newChat() {
-    if (busyRef.current) return;
+    if (busyRef.current || RETIRED_RUNTIME) return;
     setMode(selectedMode);
     setActiveId(null);
     setModel("");
@@ -389,6 +401,21 @@ export default function App() {
       !online
     )
       return;
+    if (selectedMode === "live" && RETIRED_RUNTIME) {
+      setToast(
+        "This Pool is retired. Return to the current app to start a new chat.",
+      );
+      return;
+    }
+    if (selectedMode === "live" && !selectedModelAvailable) {
+      if (override !== undefined) setDraft(override);
+      setToast(
+        unavailableSavedModel
+          ? "This chat’s model is no longer available. Start a new chat to use an available model. Your saved conversation is kept."
+          : "Choose an available model after the service settings finish loading.",
+      );
+      return;
+    }
     if (needsConversationSettlement) {
       if (override !== undefined) setDraft(override);
       setDialog("connection");
@@ -630,7 +657,11 @@ export default function App() {
         aria-label="Conversations"
       >
         <div className="brand-row">
-          <button className="brand" onClick={newChat} disabled={sending}>
+          <button
+            className="brand"
+            onClick={newChat}
+            disabled={sending || RETIRED_RUNTIME}
+          >
             <Brand />
             <span>
               zkchat<span className="brand-dot">.</span>
@@ -645,7 +676,11 @@ export default function App() {
           </button>
           <span className="preview-tag">PREVIEW</span>
         </div>
-        <button className="new-chat" onClick={newChat} disabled={sending}>
+        <button
+          className="new-chat"
+          onClick={newChat}
+          disabled={sending || RETIRED_RUNTIME}
+        >
           <Plus size={18} />
           <span>New chat</span>
           <kbd>⌘ ⇧ O</kbd>
@@ -769,11 +804,18 @@ export default function App() {
                 {selectedMode === "demo" ? (
                   <option value="demo">Demo assistant</option>
                 ) : models.length ? (
-                  models.map((m) => (
-                    <option key={m.id} value={m.id}>
-                      {m.label || m.id}
-                    </option>
-                  ))
+                  <>
+                    {unavailableSavedModel && (
+                      <option value={selectedModel}>
+                        {selectedModel} (unavailable)
+                      </option>
+                    )}
+                    {models.map((m) => (
+                      <option key={m.id} value={m.id}>
+                        {m.label || m.id}
+                      </option>
+                    ))}
+                  </>
                 ) : (
                   <option value="">Select model</option>
                 )}
@@ -795,7 +837,7 @@ export default function App() {
               disabled={sending || connectionBusy}
             >
               <ArrowDownLeft size={16} />
-              <span>Deposit</span>
+              <span>{RETIRED_RUNTIME ? "Manage deposits" : "Deposit"}</span>
             </button>
             {current && (
               <div className="conversation-menu">
@@ -873,6 +915,26 @@ export default function App() {
             </button>
           </div>
         </header>
+        {RETIRED_RUNTIME && (
+          <div className="settlement-banner" role="status">
+            <span>
+              This Pool is retired. Only existing deposits can be opened here.
+              Recovery depends on the old service and is not guaranteed.
+            </span>
+            <a href="../">Return to the current app</a>
+          </div>
+        )}
+        {unavailableSavedModel && !RETIRED_RUNTIME && (
+          <div className="settlement-banner" role="status">
+            <span>
+              This chat’s model is no longer available. Start a new chat to use
+              an available model. Your saved conversation is kept.
+            </span>
+            <button disabled={sending || connectionBusy} onClick={newChat}>
+              Start a new chat
+            </button>
+          </div>
+        )}
         {updateAvailable && (
           <div className="settlement-banner" role="status">
             <span>
@@ -911,7 +973,7 @@ export default function App() {
             </button>
           </div>
         )}
-        {selectedMode === "live" && status?.session && (
+        {selectedMode === "live" && status?.session && !RETIRED_RUNTIME && (
           <div className="settlement-banner">
             <span>
               <RefreshCw size={14} />
@@ -930,17 +992,19 @@ export default function App() {
             </button>
           </div>
         )}
-        {selectedMode === "live" && hasLowBalance(status) && (
-          <div className="settlement-banner">
-            <span>Low balance · Add funds to chat</span>
-            <button
-              disabled={sending || connectionBusy}
-              onClick={() => setDialog("connection")}
-            >
-              Add funds
-            </button>
-          </div>
-        )}
+        {selectedMode === "live" &&
+          hasLowBalance(status) &&
+          !RETIRED_RUNTIME && (
+            <div className="settlement-banner">
+              <span>Low balance · Add funds to chat</span>
+              <button
+                disabled={sending || connectionBusy}
+                onClick={() => setDialog("connection")}
+              >
+                Add funds
+              </button>
+            </div>
+          )}
         <div
           ref={scrollRef}
           className={`conversation-scroll ${!current?.messages.length ? "empty" : ""}`}
@@ -1112,7 +1176,9 @@ export default function App() {
                                     connectionBusy ||
                                     needsConversationSettlement ||
                                     (selectedMode === "live" &&
-                                      !status?.canRequest)
+                                      (RETIRED_RUNTIME ||
+                                        !selectedModelAvailable ||
+                                        !status?.canRequest))
                                   }
                                   onClick={() =>
                                     void send(current.messages[i - 1]?.content)
@@ -1226,11 +1292,15 @@ export default function App() {
                     aria-label="Send message"
                     disabled={!canSend}
                     title={
-                      needsConversationSettlement
-                        ? "Settle the previous chat before sending here"
-                        : selectedMode === "live" && !status?.canRequest
-                          ? "Open Connection settings to finish setup"
-                          : "Send message"
+                      RETIRED_RUNTIME
+                        ? "This Pool is retired"
+                        : unavailableSavedModel
+                          ? "This model is unavailable. Start a new chat"
+                          : needsConversationSettlement
+                            ? "Settle the previous chat before sending here"
+                            : selectedMode === "live" && !status?.canRequest
+                              ? "Open Connection settings to finish setup"
+                              : "Send message"
                     }
                   >
                     <ArrowUp size={20} />

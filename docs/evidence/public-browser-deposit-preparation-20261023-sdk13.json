@@ -1,0 +1,22 @@
+{
+  "observedAt": "2026-10-23T03:46:38.507Z",
+  "sdk": "0.2.0-devnet.13",
+  "result": {
+    "completed": true,
+    "elapsedMs": 25162.80000001192,
+    "wallet": "unfunded",
+    "operation": {
+      "kind": "deposit",
+      "phase": "ready",
+      "signature": null
+    }
+  },
+  "blocked": [],
+  "serviceErrors": [
+    {
+      "path": "/rpc",
+      "status": 429
+    }
+  ],
+  "scope": "Real published SDK, public profile and services, prover and inline transaction construction in isolated Chromium. Fixture wallet cannot sign; no advance, broadcast, AUTH or inference. No user wallet or funds are accessed."
+}
