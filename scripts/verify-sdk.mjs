@@ -1,6 +1,10 @@
 import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 for (const [version, expected] of Object.entries({
+  "0.2.0-devnet.18":
+    "027a64e110286ea425b9d2d4333d956c9a3d5ebf0a2d7efc140a86375e8ea503",
+  "0.2.0-devnet.17":
+    "d7bbad7f5dfca4800ca11990aff7e7ebdee4a7efceddde40d322a87686821249",
   "0.2.0-devnet.16":
     "29b8f521a95e99d2fd7aae11d6abdb728229a712d5cd4b967e857daaa1449d07",
   "0.2.0-devnet.15":
@@ -26,7 +30,7 @@ for (const [version, expected] of Object.entries({
       `SDK ${version} archive SHA-256 mismatch. Refusing this artifact.`,
     );
   console.log(
-    `Solana zkAPI ${version}: ${version === "0.2.0-devnet.16" ? "local patch" : "published GitHub release"} archive SHA-256 matches.`,
+    `Solana zkAPI ${version}: ${["0.2.0-devnet.16", "0.2.0-devnet.17"].includes(version) ? "local patch" : "published GitHub release"} archive SHA-256 matches.`,
   );
 }
 
@@ -40,7 +44,7 @@ if (
   createHash("sha256").update(verifier).digest("hex") !==
   "395465e39aef68ff1e9fd3167cb80d03a653bab09a54c83c18cbf8df06c60d84"
 )
-  throw new Error("Local verifier patch SHA-256 mismatch.");
+  throw new Error("Published verifier SHA-256 mismatch.");
 console.log(
-  "Local verifier patch SHA-256 matches; original profile remains pinned.",
+  "Published .18 verifier SHA-256 matches the retained bytes; original profile remains pinned.",
 );

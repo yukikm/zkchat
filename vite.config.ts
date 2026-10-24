@@ -16,7 +16,7 @@ export default defineConfig(({ mode }) => {
       `node_modules/.vite-${mode}`,
     define: {
       "import.meta.env.VITE_ZKCHAT_SDK_VERSION": JSON.stringify(
-        `0.2.0-devnet.${recoveryVersion ?? "16"}`,
+        `0.2.0-devnet.${recoveryVersion ?? "18"}`,
       ),
     },
     resolve: {
@@ -29,6 +29,10 @@ export default defineConfig(({ mode }) => {
             {
               find: /^\.\/currentVerifier$/,
               replacement: resolve("src/lib/originalVerifier.ts"),
+            },
+            {
+              find: /^\.\/currentRecovery$/,
+              replacement: resolve("src/lib/originalRecovery.ts"),
             },
           ]
         : [],

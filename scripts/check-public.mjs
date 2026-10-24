@@ -4,6 +4,7 @@ import {
   preflightPublicDeployment,
 } from "@zkapi/solana-sdk/public-profile";
 import { checkServiceReadiness } from "../src/lib/readiness.ts";
+import { expandedModelSelection } from "../src/lib/publicModelSelection.ts";
 const config = JSON.parse(
   await readFile(
     new URL("../public/zkapi-config.json", import.meta.url),
@@ -23,6 +24,7 @@ const report = {
   ).version,
   node: process.version,
   profileSha256: config.profileSha256,
+  modelProfileSha256: config.modelProfile?.sha256,
   checks: [],
   scope:
     "Read-only public HTTP and SDK preflight. No custody, signatures, AUTH or inference.",
@@ -44,6 +46,33 @@ try {
     timeoutMs: 180_000,
   });
   report.checks.push({ stage, passed: true, ...preflight });
+  if (config.modelProfile) {
+    stage = "model_profile";
+    const additional = await loadPublicDeploymentProfile(
+      config.modelProfile.url,
+      { profileSha256: config.modelProfile.sha256 },
+    );
+    report.checks.push({
+      stage,
+      passed: true,
+      profileId: additional.profile.id,
+      profileSha256: config.modelProfile.sha256,
+      models: additional.profile.models.map((model) => model.id),
+    });
+    stage = "model_compatibility";
+    const selection = expandedModelSelection(loaded, additional);
+    report.checks.push({
+      stage,
+      passed: true,
+      custodyProfileSha256: config.profileSha256,
+      models: selection.models.map((model) => model.id),
+    });
+    stage = "model_preflight";
+    const modelPreflight = await preflightPublicDeployment(additional, {
+      timeoutMs: 180_000,
+    });
+    report.checks.push({ stage, passed: true, ...modelPreflight });
+  }
   stage = "readiness";
   const manifest = loaded.assets.verifiedManifest;
   const readiness = await checkServiceReadiness({

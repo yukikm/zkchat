@@ -26,6 +26,7 @@ import {
 
 let original: typeof import("@zkapi/solana-sdk/journal");
 let sdk13: typeof import("@zkapi/solana-sdk/journal");
+let sdk16: typeof import("@zkapi/solana-sdk/journal");
 let sdk15: typeof import("@zkapi/solana-sdk/journal");
 const extractedDirectories: string[] = [];
 
@@ -65,6 +66,10 @@ beforeAll(async () => {
     "0.2.0-devnet.8",
     "cd9226f4526c0b3561a557e4c7beb4f495dcbad6c995c624f4c442b6621414da",
   );
+  sdk16 = await releasedJournal(
+    "0.2.0-devnet.16",
+    "29b8f521a95e99d2fd7aae11d6abdb728229a712d5cd4b967e857daaa1449d07",
+  );
   sdk15 = await releasedJournal(
     "0.2.0-devnet.15",
     "976fd54b7fdcbafea75870728c018d50d821bdc5e5137e4a8b8e7b3c77f15f98",
@@ -85,9 +90,9 @@ afterAll(async () => {
 
 describe("new Pool isolation and retained SDK .12 custody", () => {
   it("separates the new Pool while preserving both recovery namespace identities", () => {
-    expect(PUBLIC_PROFILE_SDK_VERSION).toBe("0.2.0-devnet.16");
+    expect(PUBLIC_PROFILE_SDK_VERSION).toBe("0.2.0-devnet.18");
     expect(PREVIOUS_VERSION).toBe("0.2.0-devnet.12");
-    expect(SDK_VERSION).toBe("0.2.0-devnet.16");
+    expect(SDK_VERSION).toBe("0.2.0-devnet.18");
     expect(SDK_STORAGE_VERSION).toBe("public-devnet-20261021-state-v1");
     expect(SDK_STORAGE_NAME).toBe("zkchat-sdk-public-devnet-20261021-state-v1");
     expect(ORIGINAL_NOTE_ID).toBe(
@@ -98,10 +103,12 @@ describe("new Pool isolation and retained SDK .12 custody", () => {
     expect(storageVersionFor("0.2.0-devnet.13")).toBe(SDK_STORAGE_VERSION);
     expect(storageVersionFor("0.2.0-devnet.15")).toBe(SDK_STORAGE_VERSION);
     expect(storageVersionFor("0.2.0-devnet.16")).toBe(SDK_STORAGE_VERSION);
+    expect(storageVersionFor("0.2.0-devnet.17")).toBe(SDK_STORAGE_VERSION);
+    expect(storageVersionFor("0.2.0-devnet.18")).toBe(SDK_STORAGE_VERSION);
     expect(() => storageVersionFor("unknown")).toThrow("Unsupported SDK");
   });
 
-  it("retains the .13 public-profile binding when reopening the same account with .16", async () => {
+  it("retains the .13 public-profile binding when reopening the same account with .18", async () => {
     const config: PublicAppConfig = JSON.parse(
       await readFile(
         new URL("../public/zkapi-config.json", import.meta.url),
@@ -147,8 +154,8 @@ describe("new Pool isolation and retained SDK .12 custody", () => {
     }
   });
 
-  it.each(["13", "15"])(
-    "opens .%s ciphertext with .16 without changing its unresolved session or catalog",
+  it.each(["13", "15", "16"])(
+    "opens .%s ciphertext with .18 without changing its unresolved session or catalog",
     async (version) => {
       const storage = await memoryCustody();
       const context = {
@@ -184,7 +191,7 @@ describe("new Pool isolation and retained SDK .12 custody", () => {
         ],
       };
       const originalJournal = new (
-        version === "13" ? sdk13 : sdk15
+        version === "13" ? sdk13 : version === "15" ? sdk15 : sdk16
       ).EncryptedJournal(storage.store, storage.key, context, async () => {});
       const noteRecord = await originalJournal.create(
         ORIGINAL_NOTE_ID,

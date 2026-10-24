@@ -10,6 +10,10 @@ import { BrowserStorageMissing } from "@zkapi/solana-sdk/browser";
 import { checkServiceReadiness, type ServiceReadiness } from "./readiness";
 import { SDK_STORAGE_NAME, SDK_VERSION, RETIRED_RUNTIME } from "./sdkVersion";
 import { createRpcReadFetch } from "./rpcReadFetch";
+import {
+  expandedModelSelection,
+  type PublicModelSelection,
+} from "./publicModelSelection";
 
 export interface PublicAppConfig {
   schema: 2;
@@ -17,6 +21,8 @@ export interface PublicAppConfig {
   label: string;
   profileUrl: string;
   profileSha256: string;
+  /** Independent model selection; the original profile remains the custody pin. */
+  modelProfile?: { url: string; sha256: string };
 }
 export class PublicOnboardingError extends Error {}
 
@@ -94,8 +100,49 @@ const profileFetchers = new WeakMap<
   LoadedPublicDeploymentProfile,
   typeof fetch
 >();
+const selections = new WeakMap<
+  LoadedPublicDeploymentProfile,
+  {
+    selection: PublicModelSelection;
+    unavailable: boolean;
+  }
+>();
 const key = (config: PublicAppConfig) =>
-  `${config.profileSha256}:${config.profileUrl}`;
+  JSON.stringify([
+    config.profileSha256,
+    config.profileUrl,
+    config.modelProfile ?? null,
+  ]);
+async function loadModelSelection(
+  config: PublicAppConfig,
+  loaded: LoadedPublicDeploymentProfile,
+) {
+  const original = {
+    models: loaded.profile.models,
+    modelCapabilities: loaded.profile.modelCapabilities,
+  };
+  if (!config.modelProfile) {
+    selections.set(loaded, { selection: original, unavailable: false });
+    return;
+  }
+  try {
+    const additional = await loadPublicDeploymentProfile(
+      config.modelProfile.url,
+      {
+        profileSha256: config.modelProfile.sha256,
+        fetch: profileFetchers.get(loaded),
+      },
+    );
+    selections.set(loaded, {
+      selection: expandedModelSelection(loaded, additional),
+      unavailable: false,
+    });
+  } catch {
+    // A failed optional selection must never hide access to original recovery.
+    // Block new work until a successful reconnect authenticates the selection.
+    selections.set(loaded, { selection: original, unavailable: true });
+  }
+}
 async function loadProfileWithRpcBackoff(
   config: PublicAppConfig,
   installedProfileSha256?: string,
@@ -115,11 +162,16 @@ async function loadProfileWithRpcBackoff(
 }
 export async function loadAppProfile(config: PublicAppConfig) {
   const existing = profiles.get(key(config));
-  if (existing) return existing;
+  if (existing) {
+    if (selections.get(existing)?.unavailable)
+      await loadModelSelection(config, existing);
+    return existing;
+  }
   const pending = loadingProfiles.get(key(config));
   if (pending) return pending;
   const request = loadProfileWithRpcBackoff(config)
-    .then((profile) => {
+    .then(async (profile) => {
+      await loadModelSelection(config, profile);
       profiles.set(key(config), profile);
       return profile;
     })
@@ -131,6 +183,10 @@ export async function loadAppProfile(config: PublicAppConfig) {
 }
 export const cachedAppProfile = (config: PublicAppConfig) =>
   profiles.get(key(config));
+export const cachedAppModelSelection = (config: PublicAppConfig) => {
+  const loaded = cachedAppProfile(config);
+  return loaded ? selections.get(loaded)?.selection : undefined;
+};
 
 /** Retry a failed read-only preflight once only when its transport failed.
  * Never wrap quotes, AUTH, inference, wallet actions or failed trust checks. */
@@ -173,6 +229,8 @@ async function checkPreflight(
 export async function inspectPublicDeployment(config: PublicAppConfig) {
   try {
     const loaded = await loadAppProfile(config);
+    if (selections.get(loaded)?.unavailable)
+      throw new PublicProfileError("models");
     const preflight = await checkPreflight(loaded);
     const readiness = await serviceReadiness(loaded);
     return { preflight, readiness };
@@ -308,6 +366,43 @@ export async function retainProfileBinding(
   });
 }
 
+/** Called only after a complete encrypted recovery has been authenticated
+ * against assets from this independently pinned profile. It does not adopt an
+ * unbound local journal; the recovery adapter has already selected the vault. */
+export async function retainRecoveredProfileBinding(
+  config: PublicAppConfig,
+  storageName: string,
+  account: string,
+) {
+  const binding = profileBindingKey(storageName, account);
+  await navigator.locks.request(binding, { mode: "exclusive" }, async () => {
+    const installed = localStorage.getItem(binding);
+    if (installed !== null && installed !== config.profileSha256)
+      throw new PublicOnboardingError(
+        "This browser is bound to a different profile. Open the original app to restore its deposits.",
+      );
+    localStorage.setItem(binding, config.profileSha256);
+    if (localStorage.getItem(binding) !== config.profileSha256)
+      throw new PublicOnboardingError(
+        "The restored profile could not be saved. Keep your recovery file and try again.",
+      );
+  });
+}
+
+export function assertRecoveryProfileBinding(
+  config: PublicAppConfig,
+  storageName: string,
+  account: string,
+) {
+  const installed = localStorage.getItem(
+    profileBindingKey(storageName, account),
+  );
+  if (installed !== null && installed !== config.profileSha256)
+    throw new PublicOnboardingError(
+      "This browser is bound to a different profile. Open the original app to restore its deposits.",
+    );
+}
+
 export async function connectPublicDeployment(
   config: PublicAppConfig,
   storageName: string,
@@ -327,6 +422,12 @@ export async function connectPublicDeployment(
       installed ?? undefined,
     );
     const fetcher = profileFetchers.get(loaded)!;
+    await loadModelSelection(config, loaded);
+    const selected = selections.get(loaded)!;
+    profiles.set(key(config), loaded);
+    // Existing custody can always open its original profile for recovery.
+    if (selected.unavailable && installed === null)
+      throw new PublicProfileError("models");
     let preflight: PublicPreflightResult | null = null,
       readiness: ServiceReadiness | null = null,
       closed = false,
@@ -351,6 +452,7 @@ export async function connectPublicDeployment(
           signal?.throwIfAborted();
         }
       }
+      if (selected.unavailable) unavailableComponent = "models";
       return { preflight, readiness, unavailableComponent };
     };
     await refreshPreflight();
@@ -358,13 +460,20 @@ export async function connectPublicDeployment(
     profileRetained = true;
     const canAdmit = () =>
       !RETIRED_RUNTIME &&
+      !selected.unavailable &&
       !closed &&
       preflight?.chainAllowsNewOperations === true &&
       readiness?.servicesAvailable === true &&
       readiness.admission === "enabled" &&
       !readiness.invitationRequired;
     return {
-      options: publicProfileClientOptions(loaded),
+      options: {
+        ...publicProfileClientOptions(loaded),
+        ...(config.modelProfile && !selected.unavailable
+          ? { models: structuredClone(selected.selection.models) }
+          : {}),
+      },
+      modelSelection: selected.selection,
       assets: loaded.assets,
       loaded,
       refreshPreflight,
@@ -383,7 +492,11 @@ export async function connectPublicDeployment(
             "This Pool is retired. Keep its saved data for recovery and use the current app for new deposits and chats.",
           );
         if (canAdmit() && readiness && readiness.expiresAt > Date.now()) return;
-        let reason = "Choose Refresh status to check the service again.";
+        let reason = "Choose Retry connection to check the service again.";
+        if (selected.unavailable)
+          throw new PublicOnboardingError(
+            `${prefix} The additional model list could not be verified. Reconnect the same wallet to try again. Recovery remains available.`,
+          );
         if (closed) reason = "Reconnect the same wallet to continue.";
         else if (unavailableComponent) {
           const label = Object.hasOwn(
@@ -392,18 +505,18 @@ export async function connectPublicDeployment(
           )
             ? connectionCheckLabels[unavailableComponent]
             : "service";
-          reason = `Could not verify ${label}. Choose Refresh status to check again.`;
+          reason = `Could not verify ${label}. Choose Retry connection to check again.`;
         } else if (preflight?.paused || readiness?.admission === "suspended")
           reason = "The operator has paused new requests. Check again later.";
         else if (readiness && !readiness.servicesAvailable)
           reason =
-            "A payment service is unavailable. Choose Refresh status to check again.";
+            "A payment service is unavailable. Choose Retry connection to check again.";
         else if (readiness?.invitationRequired)
           reason =
             "The operator has restricted new requests. Check again later.";
         else if (readiness && readiness.expiresAt <= Date.now())
           reason =
-            "The service check expired. Choose Refresh status to check again.";
+            "The service check expired. Choose Retry connection to check again.";
         throw new PublicOnboardingError(
           `${prefix} ${reason} Recovery remains available.`,
         );

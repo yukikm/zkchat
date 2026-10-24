@@ -1,0 +1,91 @@
+{
+  "startedAt": "2026-10-24T16:46:04.558Z",
+  "scope": "Read-only public configuration, authenticated SDK profile/preflight and common Pool snapshot checks. No user wallet storage, note selection, custody, signatures, AUTH, inference or financial transactions.",
+  "publishedConfigs": [
+    {
+      "runtime": "12",
+      "status": 200,
+      "matchesPinnedConfig": true,
+      "profileSha256": "ec10c1ab41bb5105222d3e25c7e1eba6b96b1b397abd0f854657030269992a77"
+    },
+    {
+      "runtime": "3",
+      "status": 200,
+      "matchesPinnedConfig": true,
+      "profileSha256": "449657cc3fe90f12878236b83d68ada8077e3c56e67ccb8268c5f301e69e02e5"
+    }
+  ],
+  "runtimes": [
+    {
+      "sdk": "0.2.0-devnet.12",
+      "profileVerified": true,
+      "expected": {
+        "profileId": "zkapi-public-devnet-20261008-a",
+        "revision": 6,
+        "deploymentId": "public-devnet-20261008-a",
+        "pool": "Cx8DbA49UCuASoc3goLCU9ro25eWVtcGMbvfPPJsSQzV",
+        "manifestHash": "b97e200769be24448a51999346a28d0ca497892d68212f517b2b9bb4cc1a4643",
+        "controlOrigin": "https://d366buuvadnp3.cloudfront.net",
+        "indexerOrigin": "https://d366buuvadnp3.cloudfront.net"
+      },
+      "preflight": {
+        "passed": false,
+        "component": "control",
+        "message": "Public deployment control verification failed."
+      }
+    },
+    {
+      "sdk": "0.2.0-devnet.3",
+      "profileVerified": true,
+      "expected": {
+        "profileId": "zkapi-public-devnet-20261008-a",
+        "revision": 2,
+        "deploymentId": "public-devnet-20261008-a",
+        "pool": "Cx8DbA49UCuASoc3goLCU9ro25eWVtcGMbvfPPJsSQzV",
+        "manifestHash": "b97e200769be24448a51999346a28d0ca497892d68212f517b2b9bb4cc1a4643",
+        "controlOrigin": "https://d366buuvadnp3.cloudfront.net",
+        "indexerOrigin": "https://d366buuvadnp3.cloudfront.net"
+      },
+      "preflight": {
+        "passed": false,
+        "component": "control",
+        "message": "Public deployment control verification failed."
+      }
+    }
+  ],
+  "service": {
+    "/zkapi/v1/config": {
+      "status": 200,
+      "observedAt": "2026-10-24T16:46:18.352Z",
+      "deploymentId": "public-devnet-20261021-state-v1",
+      "manifestHash": "5e3a6120e320f6d688c30f1e505a0fe657be1de0928b5f2d855974ccfc97f51e",
+      "pool": "2zAKvvfiV1RZtWw71EYthWVrR3ZiWgmy92DS75JpmG8R"
+    },
+    "/zkapi/v1/readiness": {
+      "status": 200,
+      "observedAt": "2026-10-24T16:46:18.707Z",
+      "deploymentId": "public-devnet-20261021-state-v1",
+      "manifestHash": "5e3a6120e320f6d688c30f1e505a0fe657be1de0928b5f2d855974ccfc97f51e",
+      "scope": "read_only_capabilities"
+    },
+    "/zkapi/v1/tree/root": {
+      "status": 200,
+      "observedAt": "2026-10-24T16:46:19.042Z",
+      "pool": "2zAKvvfiV1RZtWw71EYthWVrR3ZiWgmy92DS75JpmG8R",
+      "slot": "514672909"
+    },
+    "/zkapi/v1/tree/snapshot": {
+      "status": 200,
+      "observedAt": "2026-10-24T16:46:19.223Z",
+      "pool": "2zAKvvfiV1RZtWw71EYthWVrR3ZiWgmy92DS75JpmG8R",
+      "slot": "514672909"
+    }
+  },
+  "assessment": {
+    "matchingOldControlAvailable": false,
+    "matchingOldIndexerAvailable": false,
+    "conclusion": "Both published legacy configurations are preserved, but their matching old deployment is not served by the current control/indexer endpoints. Current recovery completion is not verified and the available endpoints do not meet the old SDK snapshot identity requirements.",
+    "limitations": "No individual note, its expiry/status, saved signed transaction or user custody was inspected. This does not establish that any particular balance is permanently lost. Historical 2026-10-09 SDK .3 withdrawal success predates Pool retirement and does not verify current recovery."
+  },
+  "completedAt": "2026-10-24T16:46:19.223Z"
+}

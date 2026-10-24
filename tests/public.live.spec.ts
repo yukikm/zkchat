@@ -74,7 +74,7 @@ test("public browser preflight without custody or financial actions", async ({
   });
   await page.goto("/");
   await page
-    .getByRole("button", { name: "Connection settings", exact: true })
+    .getByRole("button", { name: "Wallet & balance", exact: true })
     .click();
   await page.getByText("Connection details", { exact: true }).click();
   const button = page.getByRole("button", {
@@ -211,48 +211,44 @@ test("public SDK browser factory creates and reopens unfunded custody with no si
     registerTestWallet();
   });
   await page
-    .getByRole("button", { name: "Connection settings", exact: true })
+    .getByRole("button", { name: "Wallet & balance", exact: true })
     .click();
   await expect(
     page.getByRole("button", { name: "Select wallet", exact: true }),
   ).toBeEnabled({ timeout: 180_000 });
   await page
-    .getByRole("dialog", { name: "Connection settings" })
+    .getByRole("dialog", { name: "Wallet & balance" })
     .getByRole("button", { name: "Connect wallet", exact: true })
     .click();
   await expect(
     page.getByRole("button", {
-      name: "Set up this wallet",
+      name: "Set up this browser",
       exact: true,
     }),
   ).toBeEnabled({ timeout: 90_000 });
   await page
     .getByRole("button", {
-      name: "Set up this wallet",
+      name: "Set up this browser",
       exact: true,
     })
     .click();
-  await expect(
-    page.getByText("Wallet connected.", {
-      exact: true,
-    }),
-  ).toBeVisible({ timeout: 90_000 });
+  await expect(page.locator(".topbar-status")).toHaveText("ZKAPI", {
+    timeout: 90_000,
+  });
   await expect(
     page.getByRole("button", { name: "Review deposit", exact: true }),
   ).toBeDisabled();
   await page.getByRole("button", { name: "Disconnect", exact: true }).click();
   await page
-    .getByRole("dialog", { name: "Connection settings" })
+    .getByRole("dialog", { name: "Wallet & balance" })
     .getByRole("button", { name: "Connect wallet", exact: true })
     .click();
-  await expect(
-    page.getByText("Wallet connected.", {
-      exact: true,
-    }),
-  ).toBeVisible({ timeout: 90_000 });
+  await expect(page.locator(".topbar-status")).toHaveText("ZKAPI", {
+    timeout: 90_000,
+  });
   await expect(
     page.getByRole("button", {
-      name: "Set up this wallet",
+      name: "Set up this browser",
       exact: true,
     }),
   ).toHaveCount(0);
@@ -263,7 +259,7 @@ test("public SDK browser factory creates and reopens unfunded custody with no si
     JSON.stringify(
       {
         observedAt: new Date().toISOString(),
-        sdk: "0.2.0-devnet.16",
+        sdk: "0.2.0-devnet.18",
         result: "initialized and reopened",
         blocked,
         visibleResult: await page.getByRole("dialog").innerText(),
@@ -390,7 +386,7 @@ test("public SDK prepares an inline deposit before any signing", async ({
     JSON.stringify(
       {
         observedAt: new Date().toISOString(),
-        sdk: "0.2.0-devnet.16",
+        sdk: "0.2.0-devnet.18",
         result,
         blocked,
         serviceErrors,

@@ -4,18 +4,18 @@ import { EncryptedJournal } from "@zkapi/solana-sdk/journal";
 
 import { SDK_STORAGE_VERSION } from "./sdkVersion";
 export const ORIGINAL_NOTE_ID = `zkchat-note-sdk-${SDK_STORAGE_VERSION}`;
-const CATALOG_ID = "zkchat-deposit-catalog-v1";
+export const CATALOG_ID = "zkchat-deposit-catalog-v1";
 export class DepositError extends Error {}
 export interface SavedDeposit {
   id: string;
   createdAt: number | null;
 }
-interface CatalogValue {
+export interface CatalogValue {
   schema: 1;
   selectedId: string;
   deposits: SavedDeposit[];
 }
-function validateCatalog(value: unknown): asserts value is CatalogValue {
+export function validateCatalog(value: unknown): asserts value is CatalogValue {
   const v = value as CatalogValue | null;
   if (
     !v ||

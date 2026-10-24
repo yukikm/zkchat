@@ -41,10 +41,10 @@ export function depositPreparationError(error: unknown): Error {
     );
   if (failure === "snapshot")
     return new DepositError(
-      "Could not verify current chain data for the deposit. No wallet signature was requested. Refresh status, then try Review deposit again later.",
+      "Could not verify current chain data for the deposit. No wallet signature was requested. Open Connection details and choose Recheck connection, then try Review deposit again later.",
     );
   return new DepositError(
-    "Could not prepare the deposit. No wallet signature was requested. Refresh status, then follow the next step.",
+    "Could not prepare the deposit. No wallet signature was requested. Open Connection details and choose Recheck connection, then follow the next step.",
   );
 }
 
@@ -57,9 +57,9 @@ export function walletStepError(error: unknown): Error {
       (failure === "unavailable"
         ? "Could not check the transaction on Solana because the chain indexer is unavailable."
         : "Could not verify current chain data for the transaction on Solana.") +
-        " Keep this browser’s data and choose Refresh status, then follow the saved next step.",
+        " Keep this browser’s data. Open Connection details and choose Recheck connection, then follow the saved next step.",
     );
   return new DepositError(
-    "Could not complete this step. Refresh status, then follow the next action below.",
+    "Could not complete this step. Open Connection details and choose Recheck connection, then follow the next action below.",
   );
 }

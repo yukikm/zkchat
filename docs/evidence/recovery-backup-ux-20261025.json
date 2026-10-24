@@ -1,0 +1,44 @@
+{
+  "kind": "offline-browser-ux-evidence",
+  "syntheticData": true,
+  "noFinancialTransactions": true,
+  "backupWorkflowsPassed": 8,
+  "existingDepositWorkflowsPassed": 14,
+  "lastFocusedRunPassed": 22,
+  "typecheck": "passed",
+  "broaderRun": {
+    "passed": 97,
+    "total": 98,
+    "failure": "An existing exact-copy assertion expected old browser-only recovery guidance. Updated and re-ran successfully with 12 targeted tests."
+  },
+  "screenshots": [
+    "recovery-backup-before-deposit-20261025.png",
+    "recovery-restore-deposits-20261025.png"
+  ],
+  "coverage": [
+    "file download and explicit save acknowledgement before first deposit",
+    "same recovery setup covers additional deposits",
+    "existing funds remain usable without optional enrollment",
+    "missing browser restored without initializing new financial storage",
+    "wrong-file and malformed JSON diagnostics",
+    "interrupted setup continues with original file",
+    "network failure and panel reopening use original file",
+    "375px layout without horizontal overflow"
+  ],
+  "finalIntegratedBrowserRun": {
+    "passed": 101,
+    "skipped": 3,
+    "skippedReason": "Opt-in public-service tests; public SDK preflight is verified separately.",
+    "total": 104
+  },
+  "finalUnitRun": {
+    "passed": 422,
+    "files": 21
+  },
+  "realBrowserDataLoss": {
+    "passed": 2,
+    "erasure": "ALL origin data through Chromium Storage.clearDataForOrigin, then a fresh page",
+    "restored": "Three deposits, selected deposit, latest revisions/balances and unresolved AUTH",
+    "financialRequests": 0
+  }
+}

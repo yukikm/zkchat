@@ -6,12 +6,20 @@ const sdk = vi.hoisted(() => ({
   browser: vi.fn(),
   readiness: vi.fn(),
   catalog: vi.fn(),
+  recovery: vi.fn(),
+  localRecoveryGuard: vi.fn(),
   assertAccount: vi.fn(),
   walletListeners: new Set<() => void>(),
 }));
 vi.mock("../src/lib/deposits", async (original) => ({
   ...(await original<typeof import("../src/lib/deposits")>()),
   openDepositCatalog: sdk.catalog,
+  createDepositCatalog: sdk.catalog,
+}));
+vi.mock("../src/lib/currentRecovery", async (original) => ({
+  ...(await original<typeof import("../src/lib/currentRecovery")>()),
+  getRecoveryStorage: sdk.recovery,
+  assertLocalRecoveryNotMoved: sdk.localRecoveryGuard,
 }));
 vi.mock("../src/lib/readiness", () => ({
   checkServiceReadiness: sdk.readiness,
@@ -40,7 +48,6 @@ vi.mock("@zkapi/solana-sdk/browser", async (original) => ({
   },
 }));
 import { BrowserStorageMissing } from "@zkapi/solana-sdk/browser";
-import { createDepositCatalog } from "../src/lib/deposits";
 import { memoryCustody } from "./depositStore";
 import { PublicProfileError } from "@zkapi/solana-sdk/public-profile";
 import {
@@ -99,9 +106,14 @@ beforeEach(async () => {
   sdk.assertAccount.mockReset();
   sdk.walletListeners.clear();
   const custody = await memoryCustody();
-  sdk.catalog.mockImplementation(async () =>
+  const { createDepositCatalog } = await vi.importActual<
+    typeof import("../src/lib/deposits")
+  >("../src/lib/deposits");
+  sdk.catalog.mockImplementation(() =>
     createDepositCatalog(custody, { deploymentId: "deployment", pool: "pool" }),
   );
+  sdk.recovery.mockResolvedValue({ ...custody, close: vi.fn() });
+  sdk.localRecoveryGuard.mockResolvedValue(undefined);
   storage = new Map();
   vi.stubGlobal("localStorage", {
     getItem: (k: string) => storage.get(k) ?? null,
@@ -311,11 +323,12 @@ describe("existing application adapter with public profile", () => {
       },
     };
     const client = {
-      status: vi.fn(async () => ({ canRequest: true })),
+      status: vi.fn(async () => ({ noteId: NOTE_ID, canRequest: true })),
       chat: vi.fn(async () => new Response()),
       request: vi.fn(),
       prepareDeposit: vi.fn(),
       prepareWithdrawal: vi.fn(),
+      observeWallet: vi.fn(async () => ({ state: "pending" })),
       recover: vi.fn(),
       subscribe: vi.fn(() => () => {}),
     };
@@ -382,6 +395,7 @@ describe("existing application adapter with public profile", () => {
           });
         }),
         prepareWithdrawal: vi.fn(),
+        observeWallet: vi.fn(async () => ({ state: "pending" })),
         chat: vi.fn(),
         recover: vi.fn(),
       };
@@ -392,6 +406,61 @@ describe("existing application adapter with public profile", () => {
     const connect = () => connectZkapi(config, wallet as any, account as any);
     return { connect, states, opened, wallet };
   };
+  it("uses the same backed-up storage for every selected deposit and closes it with the handle", async () => {
+    const f = depositFixture("active");
+    const handle = await f.connect();
+    const remote = await sdk.recovery.mock.results[0].value;
+    expect(handle.recoveryEnabled).toBe(true);
+    await handle.addDeposit();
+    for (const [options] of sdk.browser.mock.calls)
+      expect(options.storage).toBe(remote);
+    expect(remote.close).not.toHaveBeenCalled();
+    handle.dispose();
+    expect(remote.close).toHaveBeenCalledTimes(1);
+    expect(handle.invalidated).toBe(true);
+  });
+  it("requires backup for new funds but keeps existing local chat and withdrawal available", async () => {
+    sdk.recovery.mockResolvedValue(null);
+    const { account, wallet, client } = make();
+    const handle = await connectZkapi(config, wallet as any, account as any);
+    expect(handle.recoveryEnabled).toBe(false);
+    await expect(handle.client.prepareDeposit("2000000")).rejects.toThrow(
+      /recovery file/,
+    );
+    expect(client.prepareDeposit).not.toHaveBeenCalled();
+    await handle.client.chat({
+      model: "model",
+      stream: false,
+      maxOutputTokens: 128,
+    } as any);
+    await handle.client.prepareWithdrawal("account");
+    expect(client.chat).toHaveBeenCalledTimes(1);
+    expect(client.prepareWithdrawal).toHaveBeenCalledTimes(1);
+    expect(sdk.localRecoveryGuard).toHaveBeenCalled();
+    handle.dispose();
+  });
+  it("never falls back to original local custody when opening the saved backup fails", async () => {
+    const { account, wallet } = make();
+    sdk.recovery.mockRejectedValueOnce(new Error("backup unavailable"));
+    await expect(
+      connectZkapi(config, wallet as any, account as any),
+    ).rejects.toThrow("backup unavailable");
+    expect(sdk.browser).not.toHaveBeenCalled();
+    expect(sdk.catalog).not.toHaveBeenCalled();
+  });
+  it("fences an already open local client after backup enrollment begins elsewhere", async () => {
+    sdk.recovery.mockResolvedValue(null);
+    const { account, wallet, client } = make();
+    const handle = await connectZkapi(config, wallet as any, account as any);
+    sdk.localRecoveryGuard.mockRejectedValueOnce(
+      new Error("local custody moved"),
+    );
+    await expect(handle.client.prepareWithdrawal("account")).rejects.toThrow(
+      "local custody moved",
+    );
+    expect(client.prepareWithdrawal).not.toHaveBeenCalled();
+    handle.dispose();
+  });
   it.each(["closed", "active"])(
     "adds funds after %s, restores selected deposit, and retains original balance/history",
     async (state) => {
@@ -455,11 +524,15 @@ describe("existing application adapter with public profile", () => {
     await expect(second.client.chat({} as any)).rejects.toThrow(
       /another operation or tab/,
     );
+    await expect(
+      (second.client as any).observeWallet("saved-signature"),
+    ).rejects.toThrow(/another operation or tab/);
     await expect(second.addDeposit()).rejects.toThrow(
       /another operation or tab/,
     );
     expect(f.opened[1].client.prepareDeposit).not.toHaveBeenCalled();
     expect(f.opened[1].client.chat).not.toHaveBeenCalled();
+    expect(f.opened[1].client.observeWallet).not.toHaveBeenCalled();
     expect((await second.client.status()).canRequest).toBe(false);
     first.dispose();
     second.dispose();
@@ -477,6 +550,142 @@ describe("existing application adapter with public profile", () => {
     expect(f.opened[0].dispose).not.toHaveBeenCalled();
     expect(f.opened.at(-1).dispose).toHaveBeenCalled();
     h.dispose();
+  });
+  it("rejects a delayed status from a deposit replaced during its journal read", async () => {
+    const f = depositFixture("active");
+    const handle = await f.connect();
+    const previous = structuredClone(f.states.get(NOTE_ID));
+    let finish!: (status: typeof previous) => void;
+    f.opened[0].client.status.mockImplementationOnce(
+      () => new Promise((resolve) => (finish = resolve)),
+    );
+    const delayed = handle.client.status().catch((error) => error);
+    await handle.addDeposit();
+    finish(previous);
+    expect(await delayed).toBeInstanceOf(Error);
+    expect((await delayed).message).toMatch(/selected deposit changed/i);
+    expect(await handle.client.status()).toMatchObject({
+      noteId: handle.selectedDepositId,
+      settledBalanceMicroUsdc: "0",
+      canRequest: false,
+    });
+    handle.dispose();
+  });
+  it("does not deliver a slower notification over a newer deposit balance", async () => {
+    const f = depositFixture("active");
+    const handle = await f.connect();
+    const previous = structuredClone(f.states.get(NOTE_ID));
+    let finish!: (status: typeof previous) => void;
+    f.opened[0].client.status.mockImplementationOnce(
+      () => new Promise((resolve) => (finish = resolve)),
+    );
+    const listener = vi.fn();
+    const unsubscribe = handle.client.subscribe(listener);
+    f.states.set(NOTE_ID, {
+      ...previous,
+      settledBalanceMicroUsdc: "150000",
+    });
+    await handle.refreshPreflight();
+    await vi.waitFor(() =>
+      expect(listener).toHaveBeenLastCalledWith(
+        expect.objectContaining({ settledBalanceMicroUsdc: "150000" }),
+      ),
+    );
+    finish(previous);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(listener).toHaveBeenCalledTimes(1);
+    unsubscribe();
+    handle.dispose();
+  });
+  it("rereads the selected journal when a delayed SDK event carries older state", async () => {
+    const f = depositFixture("active");
+    const handle = await f.connect();
+    const previous = structuredClone(f.states.get(NOTE_ID));
+    const listener = vi.fn();
+    handle.client.subscribe(listener);
+    await vi.waitFor(() => expect(listener).toHaveBeenCalledTimes(1));
+    f.states.set(NOTE_ID, {
+      ...previous,
+      settledBalanceMicroUsdc: "0",
+      wallet: "closed",
+    });
+    const sdkEvent = f.opened[0].client.subscribe.mock.calls[0][0];
+    sdkEvent({ ...previous, canRequest: true });
+    await vi.waitFor(() =>
+      expect(listener).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          wallet: "closed",
+          settledBalanceMicroUsdc: "0",
+          canRequest: false,
+        }),
+      ),
+    );
+    handle.dispose();
+  });
+  it("discards a pending notification superseded by an explicit status refresh", async () => {
+    const f = depositFixture("active");
+    const handle = await f.connect();
+    const previous = structuredClone(f.states.get(NOTE_ID));
+    let finish!: (status: typeof previous) => void;
+    f.opened[0].client.status.mockImplementationOnce(
+      () => new Promise((resolve) => (finish = resolve)),
+    );
+    const listener = vi.fn();
+    handle.client.subscribe(listener);
+    f.states.set(NOTE_ID, {
+      ...previous,
+      settledBalanceMicroUsdc: "0",
+      wallet: "closed",
+    });
+    expect(await handle.client.status()).toMatchObject({
+      wallet: "closed",
+      settledBalanceMicroUsdc: "0",
+    });
+    finish(previous);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(listener).not.toHaveBeenCalled();
+    handle.dispose();
+  });
+  it("does not return a pending status after the handle is disposed", async () => {
+    const f = depositFixture("active");
+    const handle = await f.connect();
+    let finish!: (status: unknown) => void;
+    f.opened[0].client.status.mockImplementationOnce(
+      () => new Promise((resolve) => (finish = resolve)),
+    );
+    const delayed = handle.client.status().catch((error) => error);
+    handle.dispose();
+    finish(f.states.get(NOTE_ID));
+    expect(await delayed).toBeInstanceOf(Error);
+  });
+  it("serializes transaction observation and rechecks the account before entering the SDK", async () => {
+    const f = depositFixture("active");
+    const handle = await f.connect();
+    const observe = (signature: string) =>
+      (handle.client as any).observeWallet(signature);
+    await expect(observe("saved-signature")).resolves.toEqual({
+      state: "pending",
+    });
+    expect(f.opened[0].client.observeWallet).toHaveBeenCalledExactlyOnceWith(
+      "saved-signature",
+    );
+    expect(f.opened[0].client.advanceWallet).not.toHaveBeenCalled();
+    const catalog = await sdk.catalog.mock.results[0].value;
+    let release!: () => void;
+    let entered!: () => void;
+    const locked = new Promise<void>((resolve) => (entered = resolve));
+    const lock = catalog.withLock(async () => {
+      entered();
+      await new Promise<void>((resolve) => (release = resolve));
+    });
+    await locked;
+    const queued = observe("saved-signature").catch((error: unknown) => error);
+    f.wallet.accounts = [];
+    release();
+    await lock;
+    expect((await queued).message).toMatch(/changed or disconnected/);
+    expect(f.opened[0].client.observeWallet).toHaveBeenCalledTimes(1);
+    handle.dispose();
   });
   it("rechecks admission for new deposits, but permits returning to previous funds while admission is down", async () => {
     const f = depositFixture("active");
@@ -980,7 +1189,11 @@ describe("existing application adapter with public profile", () => {
     await expect(handle.client.prepareDeposit("2000000")).rejects.toThrow(
       /changed or disconnected/,
     );
+    await expect(
+      (handle.client as any).observeWallet("saved-signature"),
+    ).rejects.toThrow(/changed or disconnected/);
     expect(client.prepareDeposit).not.toHaveBeenCalled();
+    expect(client.observeWallet).not.toHaveBeenCalled();
     handle.dispose();
     expect(sdk.walletListeners.size).toBe(0);
   });
@@ -1107,4 +1320,135 @@ it("RPC failures do not invent an origin-registration requirement or expose payl
   expect(message).toContain("Check your internet connection");
   expect(message).not.toMatch(/CORS|register|origin registration/);
   expect(message).not.toContain("private backend");
+});
+
+describe("optional model selection preserves original custody", () => {
+  const settings = (name: string): PublicAppConfig => ({
+    ...config,
+    profileUrl: `https://assets.example/${name}-original.json`,
+    modelProfile: {
+      url: `https://assets.example/${name}-models.json`,
+      sha256: "e".repeat(64),
+    },
+  });
+  async function mockProfiles(c: PublicAppConfig) {
+    const { modelProfiles } = await import("./modelProfileFixtures");
+    const fixture = modelProfiles();
+    sdk.load.mockImplementation(async (url: string) =>
+      url === c.modelProfile!.url ? fixture.extra : fixture.base,
+    );
+    sdk.options.mockReturnValue({
+      deployment: { original: true },
+      mode: "direct_openrouter",
+      models: fixture.base.profile.models,
+    });
+    return fixture;
+  }
+
+  it("pins additional selection independently while retaining the funded binding and original deployment", async () => {
+    const c = settings("funded"),
+      fixture = await mockProfiles(c);
+    const before = structuredClone(fixture);
+    const binding = profileBindingKey("funded-storage", "account");
+    storage.set(binding, c.profileSha256);
+    const connection = await connectPublicDeployment(
+      c,
+      "funded-storage",
+      "account",
+      false,
+    );
+    expect(sdk.load.mock.calls[0][1].installedProfileSha256).toBe(
+      c.profileSha256,
+    );
+    expect(sdk.load.mock.calls[1]).toEqual([
+      c.modelProfile!.url,
+      {
+        profileSha256: c.modelProfile!.sha256,
+        fetch: expect.any(Function),
+      },
+    ]);
+    expect(connection.options.models.map((m) => m.id)).toEqual([
+      "openai/gpt-4o-mini",
+      "openai/gpt-6.1-sol",
+    ]);
+    expect(connection.options.deployment).toEqual({ original: true });
+    expect(connection.loaded).toBe(fixture.base);
+    expect(storage.get(binding)).toBe(c.profileSha256);
+    expect(storage.size).toBe(1);
+    expect(fixture).toEqual(before);
+    expect(connection.canAdmit).toBe(true);
+    expect(configuredModels(c).map((m) => m.id)).toEqual([
+      "openai/gpt-4o-mini",
+      "openai/gpt-6.1-sol",
+    ]);
+    expect(configuredStreaming(c, "openai/gpt-6.1-sol")).toBe(true);
+  });
+
+  it("keeps original recovery open when extra selection fails, blocking new work until reconnect", async () => {
+    const c = settings("unavailable");
+    const fixture = await mockProfiles(c);
+    const binding = profileBindingKey("funded-storage", "account");
+    storage.set(binding, c.profileSha256);
+    sdk.load.mockImplementation(async (url: string) => {
+      if (url === c.modelProfile!.url) throw new PublicProfileError("profile");
+      return fixture.base;
+    });
+    const connection = await connectPublicDeployment(
+      c,
+      "funded-storage",
+      "account",
+      false,
+    );
+    expect(connection.loaded).toBe(fixture.base);
+    expect(connection.options.models).toEqual(fixture.base.profile.models);
+    expect(connection.canAdmit).toBe(false);
+    expect(connection.diagnostic.unavailableComponent).toBe("models");
+    expect(() => connection.assertAdmission()).toThrow(
+      /Reconnect the same wallet/,
+    );
+    await connection.refreshPreflight();
+    expect(connection.canAdmit).toBe(false);
+    expect(storage.get(binding)).toBe(c.profileSha256);
+    expect(storage.size).toBe(1);
+    expect(sdk.browser).not.toHaveBeenCalled();
+    await mockProfiles(c);
+    const reconnected = await connectPublicDeployment(
+      c,
+      "funded-storage",
+      "account",
+      false,
+    );
+    expect(reconnected.canAdmit).toBe(true);
+    expect(configuredModels(c)).toHaveLength(2);
+    expect(storage.get(binding)).toBe(c.profileSha256);
+  });
+
+  it("rejects mismatched selection before new custody and never replaces an existing pin", async () => {
+    const c = settings("mismatch"),
+      fixture = await mockProfiles(c);
+    fixture.extra.assets.verifiedManifest.pool = "different-pool";
+    await expect(
+      connectPublicDeployment(c, "new-storage", "account", true),
+    ).rejects.toThrow(/model configuration/);
+    expect(storage.size).toBe(0);
+    expect(sdk.browser).not.toHaveBeenCalled();
+    storage.set(profileBindingKey("funded-storage", "account"), "f".repeat(64));
+    sdk.load.mockClear();
+    await expect(
+      connectPublicDeployment(c, "funded-storage", "account", false),
+    ).rejects.toThrow(/Profile changed/);
+    expect(sdk.load).not.toHaveBeenCalled();
+  });
+
+  it("accepts only an independently pinned HTTPS model profile configuration", () => {
+    const c = settings("config");
+    expect(parseConfig(c)).toEqual(c);
+    for (const modelProfile of [
+      { url: "https://assets.example/models.json" },
+      { url: "http://assets.example/models.json", sha256: "e".repeat(64) },
+      { url: "https://assets.example/models.json", sha256: "BAD" },
+      { ...c.modelProfile, models: ["untrusted"] },
+    ])
+      expect(() => parseConfig({ ...c, modelProfile })).toThrow();
+  });
 });

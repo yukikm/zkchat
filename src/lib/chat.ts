@@ -179,7 +179,7 @@ export function demoAnswer(input: string, messages: Message[]): string {
   if (/コード|code|プログラ|typescript/i.test(input))
     return (
       intro +
-      "Here is a TypeScript example that removes duplicate values from an array.\n\n```typescript\nfunction unique<T>(values: T[]): T[] {\n  return [...new Set(values)];\n}\n\nunique([1, 2, 2, 3]); // [1, 2, 3]\n```\n\nTo discuss code with a real model, connect your ZKAPI wallet in Connection settings."
+      "Here is a TypeScript example that removes duplicate values from an array.\n\n```typescript\nfunction unique<T>(values: T[]): T[] {\n  return [...new Set(values)];\n}\n\nunique([1, 2, 2, 3]); // [1, 2, 3]\n```\n\nTo discuss code with a real model, connect your ZKAPI wallet in Wallet & balance."
     );
   if (/zk|ゼロ知識|solana|仕組み/i.test(input))
     return (
@@ -199,7 +199,7 @@ export function demoAnswer(input: string, messages: Message[]): string {
   const turns = contextMessages(messages).length / 2;
   return (
     intro +
-    `Received: “${input.slice(0, 100)}${input.length > 100 ? "…" : ""}”.\n\n${turns > 0 ? `This conversation contains ${turns} completed exchanges.` : "Here you can try sending, stopping the display, Markdown, and conversation history."}\n\nTo use AI, connect your wallet in **Connection settings**.`
+    `Received: “${input.slice(0, 100)}${input.length > 100 ? "…" : ""}”.\n\n${turns > 0 ? `This conversation contains ${turns} completed exchanges.` : "Here you can try sending, stopping the display, Markdown, and conversation history."}\n\nTo use AI, connect your wallet in **Wallet & balance**.`
   );
 }
 export async function streamDemo(

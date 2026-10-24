@@ -44,7 +44,7 @@ describe("SDK .8 session and error presentation", () => {
     const message = providerResponseError(response);
     expect(message).toContain(expected);
     expect(message).toContain("No automatic retry");
-    expect(message).toContain("Choose Check status");
+    expect(message).toContain("Open Wallet & balance");
     expect(message).not.toContain("private provider detail");
     expect(response.bodyUsed).toBe(false);
   });
@@ -75,7 +75,7 @@ describe("SDK .8 session and error presentation", () => {
     http.message = "private quote or credential";
     const message = chatFailureMessage(http);
     expect(message).toContain("payment service returned HTTP 400");
-    expect(message).toContain("Choose Check status");
+    expect(message).toContain("Open Wallet & balance");
     expect(message).not.toMatch(/private|unsent|not charged|Review payment/);
     expect(
       chatFailureMessage(new ClientActionError("not_ready", "private state")),
@@ -95,7 +95,7 @@ describe("SDK .8 session and error presentation", () => {
       const response = new Response("private provider body", { status });
       const message = chatFailureMessage(error, response, true);
       expect(message).toBe(
-        `${reason} Choose Check status before sending again. Nothing is resent automatically.`,
+        `${reason} Open Wallet & balance before sending again. Nothing is resent automatically.`,
       );
       expect(message).not.toMatch(
         /private|not charged|no charge|no funds|not sent/i,
@@ -110,7 +110,7 @@ describe("SDK .8 session and error presentation", () => {
       expect(
         chatFailureMessage(new ChatResponseError("http_error", null, status)),
       ).toBe(
-        "The provider request failed. Choose Check status before sending again. Nothing is resent automatically.",
+        "The provider request failed. Open Wallet & balance before sending again. Nothing is resent automatically.",
       );
     },
   );
@@ -126,7 +126,7 @@ describe("SDK .8 session and error presentation", () => {
       402,
     );
     expect(chatFailureMessage(error, response, true)).toBe(
-      "The provider has no available credit. Adding a deposit will not resolve this. Choose Check status before sending again. No automatic retry.",
+      "The provider has no available credit. Adding a deposit will not resolve this. Open Wallet & balance before sending again. No automatic retry.",
     );
     expect(response.bodyUsed).toBe(false);
   });
@@ -158,7 +158,7 @@ describe("SDK .8 session and error presentation", () => {
     }),
   ])("keeps unknown exceptions private", (error) => {
     expect(chatFailureMessage(error)).toBe(
-      "Reply interrupted. Choose Check status before sending again. Nothing is resent automatically.",
+      "Reply interrupted. Open Wallet & balance before sending again. Nothing is resent automatically.",
     );
   });
 

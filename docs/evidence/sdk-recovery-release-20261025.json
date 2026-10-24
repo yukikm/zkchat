@@ -1,0 +1,92 @@
+{
+  "schema": 1,
+  "release": {
+    "version": "0.2.0-devnet.18",
+    "url": "https://github.com/yukikm/solana-zkapi/releases/tag/v0.2.0-devnet.18",
+    "tag": "v0.2.0-devnet.18",
+    "sourceRevision": "fa51467cc9ab3849e56ac4de29adce5568d99e4e",
+    "immutable": true,
+    "npmRegistryPublished": false,
+    "githubReleaseAttestationVerified": true,
+    "attestationIdentity": "https://dotcom.releases.github.com",
+    "attestationTimestamp": "2026-10-24T18:28:49Z",
+    "assetHashes": {
+      "release-manifest.json": "08425cea534429905b202c93e144d2d78d6d72e054ff747bb29c7618b159ecca",
+      "SHA256SUMS": "33654d38c99ed92b5ea172e10d3f7713684a6a5c0a46089b2f06d901bf494110",
+      "verifier-notices-0.2.0-devnet.18.zip": "0b4adde286bc9df4d50c2d409e035bd8c3216a55d8d997322527585592136095",
+      "verifier-runtime-0.2.0-devnet.18.json": "75cce3d1269ced7b587d27fac9e63f2ab6a1bd71aa87a3e382c7363a11c0bfe9",
+      "zkapi-client-prover-0.2.0-devnet.18.wasm": "395465e39aef68ff1e9fd3167cb80d03a653bab09a54c83c18cbf8df06c60d84",
+      "zkapi-solana-sdk-0.2.0-devnet.18.tgz": "027a64e110286ea425b9d2d4333d956c9a3d5ebf0a2d7efc140a86375e8ea503"
+    },
+    "verifiedDownloadedAssets": [
+      "release-manifest.json",
+      "zkapi-solana-sdk-0.2.0-devnet.18.tgz",
+      "zkapi-client-prover-0.2.0-devnet.18.wasm"
+    ],
+    "installedArchiveMatchesPublicProbeArchive": true,
+    "existingVerifierBytesUnchanged": true
+  },
+  "tests": {
+    "sdk": {
+      "passed": 601,
+      "total": 601,
+      "ci": "https://github.com/yukikm/solana-zkapi/actions/runs/40120616905",
+      "ciStatus": "success"
+    },
+    "recoveryService": {
+      "passed": 12,
+      "total": 12
+    },
+    "isolatedInstalledLifecycle": {
+      "passed": 346,
+      "total": 346
+    },
+    "isolatedInstalledRecovery": {
+      "passed": 1,
+      "total": 1
+    },
+    "zkchatDependencyCompatibility": {
+      "passed": 38,
+      "total": 38
+    }
+  },
+  "publicRecoveryService": {
+    "endpoint": "https://d366buuvadnp3.cloudfront.net/recovery/v1",
+    "verifiedAt": "2026-10-24T18:27:52.054Z",
+    "sdkVersion": "0.2.0-devnet.18",
+    "syntheticOnly": true,
+    "financialOperations": 0,
+    "originalLocalDirectoryDeleted": true,
+    "freshProcessRestoration": true,
+    "restoredLatestRevision": 2,
+    "fullPrivateStateDigestMatched": true,
+    "catalogEntriesRestored": 2,
+    "emptyVaultWrongKeyRejected": true,
+    "oldOwnerFenced": true,
+    "durableOperationLockConflictRejected": true,
+    "retiredOwnerReplayRejected": true,
+    "browserOriginPreflightPassed": true,
+    "untrustedOriginRejected": true,
+    "noStoreAndNoCookies": true
+  },
+  "publicBrowserCors": {
+    "verifiedAt": "2026-10-24T18:21:09.749Z",
+    "browserOrigin": "https://dzt0611ozdx70.cloudfront.net",
+    "isolatedChromium": true,
+    "noWalletConnected": true,
+    "healthStatus": 200,
+    "authorizationRequestAfterBrowserPreflight": {
+      "status": 404,
+      "error": "not_found",
+      "expectedMissingSyntheticVault": true
+    }
+  },
+  "scope": {
+    "realFundedLifecycle": false,
+    "paidProviderInference": false,
+    "chatHistoryIncluded": false,
+    "recoveryRequiresSavedFileAndAvailableService": true,
+    "oneActiveDevice": true,
+    "previousDeviceMustBeStoppedBeforeRestore": true
+  }
+}

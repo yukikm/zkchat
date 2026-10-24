@@ -2,6 +2,10 @@ import { expect, test, type Page } from "@playwright/test";
 
 const fixture = `
 export class BrowserStorageMissing extends Error {}
+export class RecoveryError extends Error {}
+export class RecoverySetupIncomplete extends RecoveryError {}
+export const restoreZkchatDeposits = async () => { throw new Error('Unexpected recovery'); };
+export const finishZkchatRecoverySetup = async () => { throw new Error('Unexpected recovery setup'); };
 const account={address:'11111111111111111111111111111111'};
 const wallet={name:'SDK Upgrade Test Wallet'};
 export const configuredModels=c=>c?.models??[];
@@ -18,7 +22,7 @@ const calls=[];
 let activeConversation=null;
 let authorizationSequence=0;
 const count=name=>localStorage.setItem(name,String(Number(localStorage.getItem(name)||'0')+1));
-export const connectZkapi=async()=>({account,wallet,persistence:'persistent',publicAdmissionReady:true,deposits:[{id:'fixture'}],selectedDepositId:'fixture',deployment:{mint:'fixture-mint'},dispose(){},
+export const connectZkapi=async()=>({account,wallet,recoveryEnabled:true,persistence:'persistent',publicAdmissionReady:true,deposits:[{id:'fixture'},{id:'retained-other-deposit'}],selectedDepositId:'fixture',deployment:{mint:'fixture-mint'},dispose(){},
  refreshPreflight:async()=>{
    count('fixture:preflightCalls');
    if(localStorage.getItem('fixture:holdRefresh')==='1') await new Promise(resolve=>{globalThis.__sdkUpgradeReleaseRefresh=()=>{localStorage.removeItem('fixture:holdRefresh');resolve()}});
@@ -114,7 +118,7 @@ const callAttempts = (page: Page) =>
 
 async function connectAccount(page: Page) {
   await page
-    .getByRole("dialog", { name: "Connection settings" })
+    .getByRole("dialog", { name: "Wallet & balance" })
     .getByRole("button", { name: "Connect wallet", exact: true })
     .click();
   await expect(page.getByLabel("Saved deposits")).toBeVisible();
@@ -132,11 +136,24 @@ async function sendMessage(page: Page, text: string) {
 }
 
 async function settleSession(page: Page) {
+  const panel = page.getByRole("dialog", { name: "Wallet & balance" });
+  if (
+    !(await panel
+      .getByRole("button", { name: "Settle charges", exact: true })
+      .isVisible())
+  ) {
+    await panel
+      .getByRole("button", { name: "Review payment", exact: true })
+      .click();
+  }
   await page
     .getByRole("button", { name: "Settle charges", exact: true })
     .click();
   await expect(
-    page.getByRole("heading", { name: "Active session", exact: true }),
+    page.getByRole("heading", {
+      name: "Finish payment for your previous chat",
+      exact: true,
+    }),
   ).toHaveCount(0);
   await page.getByRole("button", { name: "Close", exact: true }).click();
 }
@@ -160,10 +177,12 @@ test.beforeEach(async ({ page }) => {
   );
   await page.goto("/");
   await page
-    .getByRole("button", { name: "Connection settings", exact: true })
+    .getByRole("button", { name: "Wallet & balance", exact: true })
     .click();
   await connectAccount(page);
-  await page.getByRole("button", { name: "Close", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Return to chat", exact: true })
+    .click();
 });
 
 test("reuses one conversation scope, separates a new chat, and explicitly settles without replay", async ({
@@ -177,7 +196,7 @@ test("reuses one conversation scope, separates a new chat, and explicitly settle
       .getByRole("button", { name: "Send message", exact: true })
       .click();
     await expect(
-      page.getByRole("button", { name: "Manage session", exact: true }),
+      page.getByRole("button", { name: "Wallet & balance", exact: true }),
     ).toBeVisible();
   }
   const calls = await page.evaluate(() =>
@@ -188,7 +207,11 @@ test("reuses one conversation scope, separates a new chat, and explicitly settle
   expect(calls[0].sessionId).toBe(calls[1].sessionId);
   expect(calls[0].operationId).not.toBe(calls[1].operationId);
   await page
-    .getByRole("button", { name: "Manage session", exact: true })
+    .getByRole("button", { name: "Wallet & balance", exact: true })
+    .click();
+  await page
+    .getByRole("dialog")
+    .getByRole("button", { name: "Review payment", exact: true })
     .click();
   await page
     .getByRole("button", { name: "Settle charges", exact: true })
@@ -207,7 +230,7 @@ test("reuses one conversation scope, separates a new chat, and explicitly settle
     .fill("different conversation");
   await page.getByRole("button", { name: "Send message", exact: true }).click();
   await expect(
-    page.getByRole("button", { name: "Manage session", exact: true }),
+    page.getByRole("button", { name: "Wallet & balance", exact: true }),
   ).toBeVisible();
   await expect
     .poll(async () =>
@@ -221,16 +244,26 @@ test("reuses one conversation scope, separates a new chat, and explicitly settle
   );
   expect(finalCalls[2].sessionId).not.toBe(calls[0].sessionId);
   await page
-    .getByRole("button", { name: "Manage session", exact: true })
+    .getByRole("button", { name: "Wallet & balance", exact: true })
+    .click();
+  await page
+    .getByRole("dialog")
+    .getByRole("button", { name: "Review payment", exact: true })
     .click();
   await expect(
-    page.getByRole("heading", { name: "Active session", exact: true }),
+    page.getByRole("heading", {
+      name: "Review payment",
+      exact: true,
+    }),
   ).toBeVisible();
   await page
     .getByRole("button", { name: "Settle charges", exact: true })
     .click();
   await expect(
-    page.getByRole("heading", { name: "Active session", exact: true }),
+    page.getByRole("heading", {
+      name: "Review payment",
+      exact: true,
+    }),
   ).toHaveCount(0);
   expect(
     await page.evaluate(() => localStorage.getItem("fixture:settled")),
@@ -253,14 +286,27 @@ test("a new chat preserves its draft and transcript until explicit settlement, i
     .first()
     .click();
   await message(page).fill(draft);
-  await expect(page.locator(".settlement-banner")).toContainText(
-    "Settle the previous chat before sending here.",
+  await expect(page.locator(".composer-notice")).toContainText(
+    "Finish payment for your previous chat to send here.",
   );
   await expect(sendButton(page)).toBeDisabled();
   await message(page).press("Enter");
   await expect(
-    page.getByRole("dialog", { name: "Connection settings", exact: true }),
+    page.getByRole("dialog", { name: "Wallet & balance", exact: true }),
   ).toBeVisible();
+  const paymentPanel = page.getByRole("dialog", { name: "Wallet & balance" });
+  await expect(
+    paymentPanel.getByRole("heading", {
+      name: "Finish payment for your previous chat",
+      exact: true,
+    }),
+  ).toBeVisible();
+  await expect(
+    paymentPanel.getByRole("heading", { name: "Ready to chat", exact: true }),
+  ).toHaveCount(0);
+  await expect(
+    paymentPanel.getByRole("button", { name: "Return to chat", exact: true }),
+  ).toHaveCount(0);
   await expect(message(page)).toHaveValue(draft);
   await expect(page.locator(".message")).toHaveCount(0);
   await expect(page.locator(".history-item")).toHaveCount(1);
@@ -271,7 +317,7 @@ test("a new chat preserves its draft and transcript until explicit settlement, i
   await page.getByRole("button", { name: "Close", exact: true }).click();
   await expect(sendButton(page)).toBeDisabled();
   await page
-    .getByRole("button", { name: "Review settlement", exact: true })
+    .getByRole("button", { name: "Review payment", exact: true })
     .click();
   await settleSession(page);
   await expect(message(page)).toHaveValue(draft);
@@ -292,7 +338,7 @@ test("a saved chat cannot take another chat's session, and returning to its owne
 }) => {
   await sendMessage(page, "conversation A");
   await page
-    .getByRole("button", { name: "Manage session", exact: true })
+    .getByRole("button", { name: "Wallet & balance", exact: true })
     .click();
   await settleSession(page);
   await page
@@ -306,14 +352,27 @@ test("a saved chat cannot take another chat's session, and returning to its owne
     .click();
   const transcript = await page.locator(".message").allTextContents();
   await message(page).fill("continue A");
-  await expect(page.locator(".settlement-banner")).toContainText(
-    "Settle the previous chat before sending here.",
+  await expect(page.locator(".composer-notice")).toContainText(
+    "Finish payment for your previous chat to send here.",
   );
   await expect(sendButton(page)).toBeDisabled();
   await message(page).press("Enter");
   await expect(
-    page.getByRole("dialog", { name: "Connection settings", exact: true }),
+    page.getByRole("dialog", { name: "Wallet & balance", exact: true }),
   ).toBeVisible();
+  const paymentPanel = page.getByRole("dialog", { name: "Wallet & balance" });
+  await expect(
+    paymentPanel.getByRole("heading", {
+      name: "Finish payment for your previous chat",
+      exact: true,
+    }),
+  ).toBeVisible();
+  await expect(
+    paymentPanel.getByRole("heading", { name: "Ready to chat", exact: true }),
+  ).toHaveCount(0);
+  await expect(
+    paymentPanel.getByRole("button", { name: "Return to chat", exact: true }),
+  ).toHaveCount(0);
   await expect(message(page)).toHaveValue("continue A");
   expect(await page.locator(".message").allTextContents()).toEqual(transcript);
   expect(await callAttempts(page)).toEqual(originalCalls);
@@ -322,10 +381,10 @@ test("a saved chat cannot take another chat's session, and returning to its owne
     .getByRole("button", { name: "conversation B", exact: true })
     .click();
   await expect(
-    page.getByRole("button", { name: "Manage session", exact: true }),
+    page.getByRole("button", { name: "Wallet & balance", exact: true }),
   ).toBeVisible();
   await expect(
-    page.getByRole("button", { name: "Review settlement", exact: true }),
+    page.getByRole("button", { name: "Review payment", exact: true }),
   ).toHaveCount(0);
   await sendMessage(page, "continue B");
   const finalCalls = await callAttempts(page);
@@ -340,20 +399,20 @@ test("reconnecting retains the session guard while demo replies remain available
   await sendMessage(page, "unsettled conversation");
   const originalCalls = await callAttempts(page);
   await page
-    .getByRole("button", { name: "Manage session", exact: true })
+    .getByRole("button", { name: "Wallet & balance", exact: true })
     .click();
   await page.getByRole("button", { name: "Disconnect", exact: true }).click();
   await expect(page.locator(".topbar-status")).toHaveText("Disconnected");
   await connectAccount(page);
   await page.getByRole("button", { name: "Close", exact: true }).click();
   await message(page).fill("draft after reconnect");
-  await expect(page.locator(".settlement-banner")).toContainText(
-    "Settle the previous chat before sending here.",
+  await expect(page.locator(".composer-notice")).toContainText(
+    "Finish payment for your previous chat to send here.",
   );
   await expect(sendButton(page)).toBeDisabled();
   await message(page).press("Enter");
   await expect(
-    page.getByRole("dialog", { name: "Connection settings", exact: true }),
+    page.getByRole("dialog", { name: "Wallet & balance", exact: true }),
   ).toBeVisible();
   expect(await callAttempts(page)).toEqual(originalCalls);
   await page.getByRole("button", { name: "Close", exact: true }).click();
@@ -362,7 +421,7 @@ test("reconnecting retains the session guard while demo replies remain available
     .click();
   await page.getByRole("button", { name: "Demo", exact: true }).click();
   await expect(message(page)).toHaveValue("draft after reconnect");
-  await expect(page.locator(".settlement-banner")).toHaveCount(0);
+  await expect(page.locator(".composer-notice")).toHaveCount(0);
   await expect(sendButton(page)).toBeEnabled();
   await sendButton(page).click();
   await expect(page.locator(".message.assistant")).toContainText(
@@ -388,13 +447,17 @@ test("provider budget errors stay redacted and do not invite more deposits or re
     "private provider message",
   );
   await expect(page.locator(".message.assistant")).toContainText(
-    "Check status",
+    "Resolve payment",
   );
   await expect(
-    page.getByRole("button", { name: "Check status", exact: true }),
+    page
+      .locator(".message.assistant")
+      .getByRole("button", { name: "Resolve payment", exact: true }),
   ).toBeEnabled();
   await expect(
-    page.getByRole("button", { name: "Review payment", exact: true }),
+    page
+      .locator(".composer-notice")
+      .getByRole("button", { name: "Resolve payment", exact: true }),
   ).toBeVisible();
   expect(
     await page.evaluate(
@@ -407,19 +470,19 @@ for (const scenario of [
   {
     prompt: "failure before session",
     error:
-      "Reply interrupted. Choose Check status before sending again. Nothing is resent automatically.",
+      "Reply interrupted. Open Wallet & balance before sending again. Nothing is resent automatically.",
     hidden: "private pre-session failure",
   },
   {
     prompt: "indexer failure before session",
     error:
-      "Could not verify chain data because the indexer is unavailable. Choose Check status before sending again. Nothing is resent automatically.",
+      "Could not verify chain data because the indexer is unavailable. Open Wallet & balance before sending again. Nothing is resent automatically.",
     hidden: "finalized indexer unavailable",
   },
   {
     prompt: "payment HTTP 400 before session",
     error:
-      "The payment service returned HTTP 400. Choose Check status before sending again. Nothing is resent automatically.",
+      "The payment service returned HTTP 400. Open Wallet & balance before sending again. Nothing is resent automatically.",
     hidden: "ControlHttpError",
   },
 ]) {
@@ -434,8 +497,8 @@ for (const scenario of [
     await expect(
       page.getByRole("button", { name: "Review payment", exact: true }),
     ).toHaveCount(0);
-    const checkStatus = page.getByRole("button", {
-      name: "Check status",
+    const checkStatus = page.locator(".message.assistant").getByRole("button", {
+      name: "Review connection",
       exact: true,
     });
     await expect(checkStatus).toBeEnabled();
@@ -443,17 +506,21 @@ for (const scenario of [
     expect(originalCalls).toHaveLength(1);
     await checkStatus.click();
     await expect(
-      page.getByRole("dialog", { name: "Connection settings", exact: true }),
+      page.getByRole("dialog", { name: "Wallet & balance", exact: true }),
     ).toBeVisible();
     await expect(
-      page.getByRole("heading", { name: "Active session", exact: true }),
+      page.getByRole("heading", {
+        name: "Finish payment for your previous chat",
+        exact: true,
+      }),
     ).toHaveCount(0);
     const beforeRefresh = await page.evaluate(() => {
       localStorage.setItem("fixture:holdRefresh", "1");
       return Number(localStorage.getItem("fixture:statusCalls") || "0");
     });
+    await page.getByText("Connection details", { exact: true }).click();
     const refresh = page.getByRole("button", {
-      name: "Refresh status",
+      name: "Recheck connection",
       exact: true,
     });
     await refresh.click();
@@ -505,14 +572,14 @@ test("a failed response stream preserves its partial reply and checks status wit
     ).__sdkUpgradeFailStream();
   });
   await expect(assistant).toContainText(
-    "The response could not be validated. Choose Check status before sending again. Nothing is resent automatically.",
+    "The response could not be validated. Open Wallet & balance before sending again. Nothing is resent automatically.",
   );
   await expect(assistant).toContainText("Partial reply");
   await expect(assistant).not.toContainText(
     "private streamed provider failure",
   );
-  const checkStatus = page.getByRole("button", {
-    name: "Check status",
+  const checkStatus = assistant.getByRole("button", {
+    name: "Resolve payment",
     exact: true,
   });
   await expect(checkStatus).toBeDisabled();
@@ -524,13 +591,14 @@ test("a failed response stream preserves its partial reply and checks status wit
   await expect(checkStatus).toBeEnabled();
   await checkStatus.click();
   await expect(
-    page.getByRole("dialog", { name: "Connection settings", exact: true }),
+    page.getByRole("dialog", { name: "Wallet & balance", exact: true }),
   ).toBeVisible();
   await expect(
-    page.getByRole("heading", { name: "Payment pending", exact: true }),
+    page.getByRole("heading", { name: "Payment needs attention", exact: true }),
   ).toBeVisible();
+  await page.getByText("Connection details", { exact: true }).click();
   const refresh = page.getByRole("button", {
-    name: "Refresh status",
+    name: "Recheck connection",
     exact: true,
   });
   await refresh.click();
@@ -607,15 +675,18 @@ test("Stop reaches the original request after terminal SSE and preserves recover
     .getByRole("button", { name: "Stop generation", exact: true })
     .click();
   await expect(assistant).toContainText(
-    "Stopped. Charges may still apply. Choose Check status.",
+    "Stopped. Charges may still apply. Review the payment before sending again.",
   );
   await expect(assistant).toContainText("Terminal reply");
   await expect(
     page.getByRole("button", { name: "Send again", exact: true }),
   ).toBeDisabled();
-  await page.getByRole("button", { name: "Check status", exact: true }).click();
+  await page
+    .locator(".message.assistant")
+    .getByRole("button", { name: "Resolve payment", exact: true })
+    .click();
   await expect(
-    page.getByRole("heading", { name: "Payment pending", exact: true }),
+    page.getByRole("heading", { name: "Payment needs attention", exact: true }),
   ).toBeVisible();
   expect(await callAttempts(page)).toHaveLength(1);
   expect(
@@ -628,11 +699,11 @@ test("Stop reaches the original request after terminal SSE and preserves recover
   ).toEqual({ abort: "1", recover: null, settled: null, eof: null });
 });
 
-test("new chats prefer the configured GPT model while saved and explicit model choices stay unchanged", async ({
+test("new chats use the configured first model while saved and explicit model choices stay unchanged", async ({
   page,
 }) => {
-  const preferred = "openai/gpt-6.1-sol";
-  const previous = "anthropic/claude-fable-5";
+  const preferred = "anthropic/claude-fable-5";
+  const previous = "openai/gpt-6.1-sol";
   const modelPicker = page.getByRole("combobox", {
     name: "Select model",
     exact: true,
@@ -644,7 +715,7 @@ test("new chats prefer the configured GPT model while saved and explicit model c
       contentType: "application/javascript",
       body: fixture.replace(
         "models:[{id:'test/model',apis:['chat']}]",
-        `models:[{id:'${previous}',apis:['chat']},{id:'${preferred}',apis:['chat']}]`,
+        `models:[{id:'${preferred}',apis:['chat']},{id:'${previous}',apis:['chat']}]`,
       ),
     }),
   );
@@ -654,7 +725,7 @@ test("new chats prefer the configured GPT model while saved and explicit model c
   // An explicit choice remains available even before connecting a wallet.
   await modelPicker.selectOption(previous);
   await page
-    .getByRole("button", { name: "Connection settings", exact: true })
+    .getByRole("button", { name: "Wallet & balance", exact: true })
     .click();
   await connectAccount(page);
   await page.getByRole("button", { name: "Close", exact: true }).click();
@@ -662,7 +733,7 @@ test("new chats prefer the configured GPT model while saved and explicit model c
   await message(page).fill("failure before session");
   await sendButton(page).click();
   await expect(page.locator(".message.assistant")).toContainText(
-    "Reply interrupted. Choose Check status",
+    "Reply interrupted. Open Wallet & balance",
   );
   const originalCalls = await callAttempts(page);
   expect(originalCalls).toHaveLength(1);
@@ -759,7 +830,7 @@ test("removed saved models cannot send or alter history and a new chat uses an a
   );
   await page.reload();
   await page
-    .getByRole("button", { name: "Connection settings", exact: true })
+    .getByRole("button", { name: "Wallet & balance", exact: true })
     .click();
   await connectAccount(page);
   await page.getByRole("button", { name: "Close", exact: true }).click();
@@ -820,18 +891,21 @@ test("current app exposes both original-Pool recovery routes", async ({
   page,
 }) => {
   await page
-    .getByRole("button", { name: "Connected wallet", exact: true })
+    .getByRole("button", { name: "Wallet & balance", exact: true })
     .click();
-  await page.getByText("Have an older deposit?", { exact: true }).click();
+  await page.getByText("Older deposit data", { exact: true }).click();
   await expect(
-    page.getByRole("link", { name: "Recover October 8 deposits", exact: true }),
+    page.getByRole("link", {
+      name: "Open October 8 deposit data",
+      exact: true,
+    }),
   ).toHaveAttribute("href", "/recovery-v12/");
   await expect(
-    page.getByRole("link", { name: "Recover an older deposit", exact: true }),
+    page.getByRole("link", { name: "Open original deposit data", exact: true }),
   ).toHaveAttribute("href", "/recovery-v3/");
   await expect(
     page.getByText(
-      "Recovery depends on the old service and is not guaranteed.",
+      "The old service is no longer connected, so they cannot currently complete recovery.",
       { exact: false },
     ),
   ).toBeVisible();
@@ -844,7 +918,7 @@ for (const version of ["0.2.0-devnet.12", "0.2.0-devnet.3"]) {
     await page.route("**/src/lib/sdkVersion.ts*", (route) =>
       route.fulfill({
         contentType: "application/javascript",
-        body: `export const SDK_VERSION='${version}'; export const LEGACY_SDK_VERSION='0.2.0-devnet.3'; export const PREVIOUS_SDK_VERSION='0.2.0-devnet.12'; export const RECOVERY_RUNTIME=${version.endsWith(".3")}; export const PREVIOUS_RECOVERY_RUNTIME=${version.endsWith(".12")}; export const RETIRED_RUNTIME=true; export const SDK_STORAGE_VERSION='${version.endsWith(".3") ? version : "0.2.0-devnet.8"}'; export const SDK_STORAGE_NAME='fixture-retired'; export const LEGACY_STORAGE_NAME='fixture-legacy'; export const PREVIOUS_STORAGE_NAME='fixture-previous';`,
+        body: `export const SDK_VERSION='${version}'; export const LOCAL_RECOVERY_PREVIEW=false; export const SDK_SOURCE_URL='https://example.invalid/sdk'; export const LEGACY_SDK_VERSION='0.2.0-devnet.3'; export const PREVIOUS_SDK_VERSION='0.2.0-devnet.12'; export const RECOVERY_RUNTIME=${version.endsWith(".3")}; export const PREVIOUS_RECOVERY_RUNTIME=${version.endsWith(".12")}; export const RETIRED_RUNTIME=true; export const SDK_STORAGE_VERSION='${version.endsWith(".3") ? version : "0.2.0-devnet.8"}'; export const SDK_STORAGE_NAME='fixture-retired'; export const LEGACY_STORAGE_NAME='fixture-legacy'; export const PREVIOUS_STORAGE_NAME='fixture-previous';`,
       }),
     );
     await page.reload();
@@ -858,19 +932,22 @@ for (const version of ["0.2.0-devnet.12", "0.2.0-devnet.3"]) {
       page.getByRole("button", { name: /^New chat/ }).first(),
     ).toBeDisabled();
     await page
-      .getByRole("button", { name: "Connection settings", exact: true })
+      .getByRole("button", { name: "Wallet & balance", exact: true })
       .click();
     await expect(
       page.getByText("Retired Pool · existing deposits only", { exact: true }),
     ).toBeVisible();
     await expect(
-      page.getByText("recovery and withdrawal are not guaranteed.", {
-        exact: false,
-      }),
+      page.getByText(
+        "The old service is no longer connected, so this page cannot currently complete recovery.",
+        {
+          exact: false,
+        },
+      ),
     ).toBeVisible();
     await connectAccount(page);
     await expect(
-      page.getByRole("button", { name: "Add deposit", exact: true }),
+      page.getByRole("button", { name: "Add funds", exact: true }),
     ).toHaveCount(0);
     await expect(
       page.getByRole("button", { name: "Review deposit", exact: true }),
@@ -892,7 +969,7 @@ for (const version of ["0.2.0-devnet.12", "0.2.0-devnet.3"]) {
     await page.route("**/src/lib/sdkVersion.ts*", (route) =>
       route.fulfill({
         contentType: "application/javascript",
-        body: `export const SDK_VERSION='${version}'; export const LEGACY_SDK_VERSION='0.2.0-devnet.3'; export const PREVIOUS_SDK_VERSION='0.2.0-devnet.12'; export const RECOVERY_RUNTIME=${version.endsWith(".3")}; export const PREVIOUS_RECOVERY_RUNTIME=${version.endsWith(".12")}; export const RETIRED_RUNTIME=true; export const SDK_STORAGE_VERSION='${version.endsWith(".3") ? version : "0.2.0-devnet.8"}'; export const SDK_STORAGE_NAME='fixture-retired'; export const LEGACY_STORAGE_NAME='fixture-legacy'; export const PREVIOUS_STORAGE_NAME='fixture-previous';`,
+        body: `export const SDK_VERSION='${version}'; export const LOCAL_RECOVERY_PREVIEW=false; export const SDK_SOURCE_URL='https://example.invalid/sdk'; export const LEGACY_SDK_VERSION='0.2.0-devnet.3'; export const PREVIOUS_SDK_VERSION='0.2.0-devnet.12'; export const RECOVERY_RUNTIME=${version.endsWith(".3")}; export const PREVIOUS_RECOVERY_RUNTIME=${version.endsWith(".12")}; export const RETIRED_RUNTIME=true; export const SDK_STORAGE_VERSION='${version.endsWith(".3") ? version : "0.2.0-devnet.8"}'; export const SDK_STORAGE_NAME='fixture-retired'; export const LEGACY_STORAGE_NAME='fixture-legacy'; export const PREVIOUS_STORAGE_NAME='fixture-previous';`,
       }),
     );
     for (const phase of ["ready", "proving", "failed", "signed"]) {
@@ -916,13 +993,13 @@ for (const version of ["0.2.0-devnet.12", "0.2.0-devnet.3"]) {
       );
       await page.reload();
       await page
-        .getByRole("button", { name: "Connection settings", exact: true })
+        .getByRole("button", { name: "Wallet & balance", exact: true })
         .click();
       await connectAccount(page);
-      const panel = page.getByRole("dialog", { name: "Connection settings" });
+      const panel = page.getByRole("dialog", { name: "Wallet & balance" });
       for (const name of [
-        "Approve in wallet",
-        "Resume preparation",
+        "Approve deposit in wallet",
+        "Resume deposit preparation",
         "Try this step again",
       ]) {
         await expect(
@@ -937,7 +1014,10 @@ for (const version of ["0.2.0-devnet.12", "0.2.0-devnet.3"]) {
           "https://explorer.solana.com/tx/saved-deposit-signature?cluster=devnet",
         );
         await panel
-          .getByRole("button", { name: "Check transaction", exact: true })
+          .getByRole("button", {
+            name: "Continue deposit confirmation",
+            exact: true,
+          })
           .click();
         await expect
           .poll(() =>
@@ -952,7 +1032,10 @@ for (const version of ["0.2.0-devnet.12", "0.2.0-devnet.3"]) {
           ),
         ).toBeVisible();
         await expect(
-          panel.getByRole("button", { name: "Check transaction", exact: true }),
+          panel.getByRole("button", {
+            name: "Continue deposit confirmation",
+            exact: true,
+          }),
         ).toHaveCount(0);
         expect(
           await page.evaluate(() =>
@@ -970,7 +1053,7 @@ for (const version of ["0.2.0-devnet.12", "0.2.0-devnet.3"]) {
   });
 }
 
-test("explicit Check payment releases an unaccepted authorization without changing the deposit or replaying", async ({
+test("explicit Resolve payment releases an unaccepted authorization without changing the deposit or replaying", async ({
   page,
 }) => {
   await message(page).fill("uncertain authorization");
@@ -978,14 +1061,14 @@ test("explicit Check payment releases an unaccepted authorization without changi
   await expect(page.locator(".message.assistant")).toContainText(
     "The payment service returned HTTP 503.",
   );
-  await page.getByRole("button", { name: "Check status", exact: true }).click();
-  const panel = page.getByRole("dialog", { name: "Connection settings" });
+  await page
+    .getByRole("button", { name: "Wallet & balance", exact: true })
+    .click();
+  const panel = page.getByRole("dialog", { name: "Wallet & balance" });
   await expect(panel).toContainText(
-    "Check payment can release it so this deposit can be used again.",
+    "Resolve the saved payment before sending again.",
   );
-  await expect(panel).toContainText(
-    "Your balance stays saved and no message is resent.",
-  );
+  await expect(panel).toContainText("Your message will not be resent.");
   const deposits = panel.getByLabel("Saved deposits");
   await expect(deposits).toHaveValue("fixture");
   const depositOptions = await deposits.locator("option").allTextContents();
@@ -998,11 +1081,13 @@ test("explicit Check payment releases an unaccepted authorization without changi
 
   await page.evaluate(() => localStorage.setItem("fixture:allowRelease", "1"));
   await panel
-    .getByRole("button", { name: "Check payment", exact: true })
+    .getByRole("button", { name: "Resolve payment", exact: true })
     .click();
-  await expect(panel).toContainText("Ready to chat.");
   await expect(
-    panel.getByRole("heading", { name: "Payment pending" }),
+    panel.getByRole("button", { name: "Return to chat", exact: true }),
+  ).toBeEnabled();
+  await expect(
+    panel.getByRole("heading", { name: "Payment needs attention" }),
   ).toHaveCount(0);
   await expect(deposits).toHaveValue("fixture");
   expect(await deposits.locator("option").allTextContents()).toEqual(
@@ -1042,8 +1127,13 @@ test("uncertain authorization explains permanent withdrawal-only recovery withou
   await expect(page.locator(".message.assistant")).toContainText(
     "The payment service returned HTTP 503.",
   );
-  await page.getByRole("button", { name: "Check status", exact: true }).click();
-  const panel = page.getByRole("dialog", { name: "Connection settings" });
+  await page
+    .getByRole("button", { name: "Wallet & balance", exact: true })
+    .click();
+  const panel = page.getByRole("dialog", { name: "Wallet & balance" });
+  await panel
+    .getByText("Payment details and recovery", { exact: true })
+    .click();
   await expect(panel).toContainText("This permanently prevents new messages");
   await panel
     .getByRole("button", {
@@ -1054,12 +1144,11 @@ test("uncertain authorization explains permanent withdrawal-only recovery withou
   await expect(panel).toContainText(
     "Authorization disabled. Withdraw this deposit",
   );
+  await panel.getByText("Connection details", { exact: true }).click();
   await panel
-    .getByRole("button", { name: "Refresh status", exact: true })
+    .getByRole("button", { name: "Recheck connection", exact: true })
     .click();
-  await expect(panel).toContainText(
-    "Refresh status cannot undo that permanent protection.",
-  );
+  await expect(panel).toContainText("Refreshing cannot undo that protection.");
   await expect(
     panel.getByRole("button", { name: "Withdraw balance", exact: true }),
   ).toBeEnabled();
@@ -1074,4 +1163,42 @@ test("uncertain authorization explains permanent withdrawal-only recovery withou
       recover: localStorage.getItem("fixture:recoverCalls"),
     })),
   ).toEqual({ clearance: "1", recover: null });
+});
+
+test("going offline in the owned session never asks to settle another chat", async ({
+  page,
+  context,
+}) => {
+  await sendMessage(page, "owned conversation");
+  const originalCalls = await callAttempts(page);
+  await message(page).fill("Keep my offline draft");
+  await context.setOffline(true);
+  await page
+    .getByRole("button", { name: "Wallet & balance", exact: true })
+    .click();
+  const panel = page.getByRole("dialog", { name: "Wallet & balance" });
+  await expect(
+    panel.getByRole("heading", {
+      name: "Finish payment for your previous chat",
+      exact: true,
+    }),
+  ).toHaveCount(0);
+  await expect(
+    panel.getByRole("button", { name: "Settle charges", exact: true }),
+  ).toHaveCount(0);
+  await expect(
+    panel.getByRole("button", { name: "Return to chat", exact: true }),
+  ).toHaveCount(0);
+  expect(
+    await page.evaluate(() => localStorage.getItem("fixture:settled")),
+  ).toBeNull();
+  expect(
+    await page.evaluate(() => localStorage.getItem("fixture:recoverCalls")),
+  ).toBeNull();
+  expect(await callAttempts(page)).toEqual(originalCalls);
+  await panel.getByRole("button", { name: "Close", exact: true }).click();
+  await expect(message(page)).toHaveValue("Keep my offline draft");
+  await expect(sendButton(page)).toBeDisabled();
+  await context.setOffline(false);
+  await expect(sendButton(page)).toBeEnabled();
 });

@@ -44,16 +44,16 @@ test("default is disconnected with no invented balance; demo makes no external r
   await input(page).fill("こんにちは");
   await expect(send(page)).toBeDisabled();
   await page
-    .getByRole("button", { name: "Connection settings", exact: true })
+    .getByRole("button", { name: "Wallet & balance", exact: true })
     .click();
   await expect(
-    page.getByRole("dialog", { name: "Connection settings" }),
-  ).toContainText("Live chat is not set up");
+    page.getByRole("dialog", { name: "Wallet & balance" }),
+  ).toContainText("Live chat is unavailable");
   await expect(
     page.getByRole("button", { name: "Review deposit", exact: true }),
   ).toHaveCount(0);
   await page
-    .getByRole("dialog", { name: "Connection settings" })
+    .getByRole("dialog", { name: "Wallet & balance" })
     .getByRole("button", { name: "Try the demo", exact: true })
     .click();
   await send(page).click();
@@ -257,6 +257,10 @@ test("offline state retains the draft and prevents sending", async ({
 // Test-only adapter. Production contains no fake funds/wallet/inference; published SDK parser is used.
 const liveStub = `
 export class BrowserStorageMissing extends Error {}
+export class RecoveryError extends Error {}
+export class RecoverySetupIncomplete extends RecoveryError {}
+export const restoreZkchatDeposits = async () => { throw new Error('Unexpected recovery'); };
+export const finishZkchatRecoverySetup = async () => { throw new Error('Unexpected recovery setup'); };
 const account = { address: '11111111111111111111111111111111' };
 const wallet = { name: 'Test Wallet' };
 export const configuredModels = config => config?.models ?? [];
@@ -266,12 +270,12 @@ export const loadConfig = async () => ({ label: 'Test Operator', mode: 'proxy', 
 export const listWallets = () => [wallet];
 export const watchWallets = () => () => {};
 export const connectWalletAccount = async () => account;
-let state = { mode: 'proxy', canRequest: true, wallet: 'active', busy: false, session: null, walletOperation: null, settledBalanceMicroUsdc: '2000000', authorizationCapMicroUsdc: '100000' };
+let state = { noteId: 'test-note', mode: 'proxy', canRequest: true, wallet: 'active', busy: false, session: null, walletOperation: null, settledBalanceMicroUsdc: '2000000', authorizationCapMicroUsdc: '100000' };
 const listeners = new Set();
 const update = patch => { state = { ...state, ...patch }; for (const fn of listeners) fn(state); };
 const calls = []; let recoveries = 0;
 const frame = value => 'data: ' + JSON.stringify(value) + '\\n\\n';
-export const connectZkapi = async () => ({ account, persistence: 'persistent', publicAdmissionReady: true, deployment: { mint: 'fixture-mint' }, async refreshPreflight() {}, dispose() {}, client: {
+export const connectZkapi = async () => ({ account, wallet, deposits: [{id:'test-note'},{id:'retained-note'}], selectedDepositId: 'test-note', recoveryEnabled: true, persistence: 'persistent', publicAdmissionReady: true, deployment: { mint: 'fixture-mint' }, async refreshPreflight() {}, dispose() {}, client: {
   status: async () => state,
   subscribe: fn => { listeners.add(fn); return () => listeners.delete(fn); },
   chat: async request => {
@@ -290,13 +294,15 @@ test("live partial failure blocks sends; recovery does not replay; explicit retr
   );
   await page.goto("/");
   await page
-    .getByRole("button", { name: "Connection settings", exact: true })
+    .getByRole("button", { name: "Wallet & balance", exact: true })
     .click();
   await page
-    .getByRole("dialog", { name: "Connection settings" })
+    .getByRole("dialog", { name: "Wallet & balance" })
     .getByRole("button", { name: "Connect wallet", exact: true })
     .click();
-  await expect(page.getByText("Ready to chat.")).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Return to chat", exact: true }),
+  ).toBeVisible();
   await page.getByRole("button", { name: "Close", exact: true }).click();
   await input(page).fill("実接続テスト");
   await send(page).click();
@@ -313,10 +319,12 @@ test("live partial failure blocks sends; recovery does not replay; explicit retr
   await input(page).fill("未精算中の入力");
   await expect(send(page)).toBeDisabled();
   await page
-    .getByRole("button", { name: "Review payment", exact: true })
+    .locator(".message.assistant")
+    .getByRole("button", { name: "Resolve payment", exact: true })
     .click();
   await page
-    .getByRole("button", { name: "Check payment", exact: true })
+    .getByRole("dialog")
+    .getByRole("button", { name: "Resolve payment", exact: true })
     .click();
   await expect(
     page.getByText("This payment is no longer pending. No message was resent."),
@@ -360,13 +368,13 @@ for (const width of [768, 1280]) {
       ),
     ).toBe(true);
     const settings = page.getByRole("button", {
-      name: "Connection settings",
+      name: "Wallet & balance",
       exact: true,
     });
     await settings.focus();
     await page.keyboard.press("Enter");
     await expect(
-      page.getByRole("dialog", { name: "Connection settings" }),
+      page.getByRole("dialog", { name: "Wallet & balance" }),
     ).toBeVisible();
     await page.keyboard.press("Escape");
     await expect(page.getByRole("dialog")).toHaveCount(0);
@@ -380,10 +388,10 @@ async function connectFixture(page: Page, source: string) {
   );
   await page.goto("/");
   await page
-    .getByRole("button", { name: "Connection settings", exact: true })
+    .getByRole("button", { name: "Wallet & balance", exact: true })
     .click();
   await page
-    .getByRole("dialog", { name: "Connection settings" })
+    .getByRole("dialog", { name: "Wallet & balance" })
     .getByRole("button", { name: "Connect wallet", exact: true })
     .click();
 }
@@ -408,7 +416,7 @@ test("saved rejected operation remains recoverable after reopening settings", as
   ).toBeVisible();
   await page.getByRole("button", { name: "Close", exact: true }).click();
   await page
-    .getByRole("button", { name: "Connected wallet", exact: true })
+    .getByRole("button", { name: "Wallet & balance", exact: true })
     .click();
   await page
     .getByRole("button", {
@@ -438,6 +446,7 @@ test("unknown proxy send has explicit absence reconciliation without replay", as
       "status: async () => state, reconcileAbsentOperations: async () => { localStorage.setItem('zkchat:test-absent', '1'); update({session:null}); },",
     );
   await connectFixture(page, source);
+  await page.getByText("Payment details and recovery", { exact: true }).click();
   await page
     .getByRole("button", { name: "Check unsent request", exact: true })
     .click();
@@ -461,8 +470,8 @@ test("public onboarding connects without invitation controls or a token argument
       "schema: 2, label: 'Test Operator', mode:",
     )
     .replace(
-      "async () => ({ account, persistence:",
-      "async (...args) => { window.testConnectArgumentCount = args.length; return ({ account, persistence:",
+      "async () => ({ account,",
+      "async (...args) => { window.testConnectArgumentCount = args.length; return ({ account,",
     )
     .replace(
       "publicAdmissionReady: true,",
@@ -474,19 +483,17 @@ test("public onboarding connects without invitation controls or a token argument
   );
   await page.goto("/");
   await page
-    .getByRole("button", { name: "Connection settings", exact: true })
+    .getByRole("button", { name: "Wallet & balance", exact: true })
     .click();
   await expect(
     page.getByText("Have an invitation?", { exact: true }),
   ).toHaveCount(0);
   await expect(page.getByLabel("Invitation code")).toHaveCount(0);
   await page
-    .getByRole("dialog", { name: "Connection settings" })
+    .getByRole("dialog", { name: "Wallet & balance" })
     .getByRole("button", { name: "Connect wallet", exact: true })
     .click();
-  await expect(
-    page.getByText("Wallet connected.", { exact: true }),
-  ).toBeVisible();
+  await expect(page.locator(".topbar-status")).toHaveText("ZKAPI");
   expect(
     await page.evaluate(() => (window as any).testConnectArgumentCount),
   ).toBe(4);
@@ -494,7 +501,7 @@ test("public onboarding connects without invitation controls or a token argument
   await expect(page.getByLabel("Invitation code")).toHaveCount(0);
   await page.reload();
   await page
-    .getByRole("button", { name: "Connection settings", exact: true })
+    .getByRole("button", { name: "Wallet & balance", exact: true })
     .click();
   await expect(page.getByLabel("Invitation code")).toHaveCount(0);
 });
@@ -509,7 +516,7 @@ for (const unavailableComponent of ["snapshot", "readiness"]) {
         "schema: 2, label: 'Test Operator', mode:",
       )
       .replace(
-        "let state = { mode:",
+        "let state = { noteId: 'test-note', mode:",
         "let state = { noteId: 'existing-funded-note', mode:",
       )
       .replace(
@@ -550,17 +557,17 @@ for (const unavailableComponent of ["snapshot", "readiness"]) {
     );
     await expect(send(page)).toBeDisabled();
     await page
-      .getByRole("button", { name: "Connected wallet", exact: true })
+      .getByRole("button", { name: "Wallet & balance", exact: true })
       .click();
     const banner = page
       .getByRole("status")
-      .filter({ hasText: "Chat temporarily paused" });
+      .filter({ hasText: "New chats and deposits are paused" });
     const retry = banner.getByRole("button", {
-      name: "Retry service check",
+      name: "Retry connection",
       exact: true,
     });
-    const deposit = page.getByRole("button", {
-      name: "Add deposit",
+    const deposit = page.getByRole("dialog").getByRole("button", {
+      name: "Add funds",
       exact: true,
     });
     const withdrawal = page.getByRole("button", {
@@ -573,14 +580,14 @@ for (const unavailableComponent of ["snapshot", "readiness"]) {
         ? "Could not verify the latest confirmed Solana state."
         : "Could not confirm that the payment service is ready.",
     );
+    await expect(banner).toContainText("New chats and deposits are paused.");
     await expect(banner).toContainText(
-      "New messages and deposits are paused until service checks pass.",
-    );
-    await expect(banner).toContainText(
-      "no withdrawal or new deposit is needed to retry",
+      "Your saved funds and recovery options remain available.",
     );
     await expect(retry).toBeEnabled();
-    await expect(deposit).toBeDisabled();
+    await expect(
+      page.getByRole("button", { name: "Review deposit", exact: true }),
+    ).toHaveCount(0);
     await expect(withdrawal).toBeEnabled();
     await expect(
       page.getByText("This deposit cannot authorize new messages.", {
@@ -590,7 +597,9 @@ for (const unavailableComponent of ["snapshot", "readiness"]) {
     await retry.click();
     await expect(retry).toBeEnabled();
     await expect(banner).toBeVisible();
-    await expect(deposit).toBeDisabled();
+    await expect(
+      page.getByRole("button", { name: "Review deposit", exact: true }),
+    ).toHaveCount(0);
     await expect(withdrawal).toBeEnabled();
     expect(
       await page.evaluate(() =>
@@ -599,11 +608,11 @@ for (const unavailableComponent of ["snapshot", "readiness"]) {
     ).toBe("1");
     await retry.click();
     await expect(banner).toHaveCount(0);
-    await expect(page.getByText(/^Service check passed\./)).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: "Return to chat", exact: true }),
+    ).toBeEnabled();
     await expect(deposit).toBeEnabled();
-    await expect(page.getByLabel("Saved deposits")).toHaveValue(
-      "existing-funded-note",
-    );
+    await expect(page.getByLabel("Saved deposits")).toHaveCount(0);
     expect(
       await page.evaluate(() => ({
         checks: localStorage.getItem("zkchat:test-service-checks"),
@@ -706,7 +715,7 @@ test("wallet rejection shows actionable diagnostics and a retry connects without
     "Test Wallet connection was declined",
   );
   const connect = page
-    .getByRole("dialog", { name: "Connection settings" })
+    .getByRole("dialog", { name: "Wallet & balance" })
     .getByRole("button", {
       name: "Connect wallet",
       exact: true,
@@ -716,8 +725,8 @@ test("wallet rejection shows actionable diagnostics and a retry connects without
     page.getByRole("button", { name: "Select wallet", exact: true }),
   ).toBeEnabled();
   await expect(
-    page.getByRole("button", { name: "Connected wallet", exact: true }),
-  ).toHaveCount(0);
+    page.getByRole("button", { name: "Wallet & balance", exact: true }),
+  ).not.toContainText("1111");
   await expect(
     page.getByLabel("2. Select an account", { exact: true }),
   ).toHaveCount(0);
@@ -725,12 +734,10 @@ test("wallet rejection shows actionable diagnostics and a retry connects without
     "Check your balance",
   );
   await connect.click();
+  await expect(page.locator(".topbar-status")).toHaveText("ZKAPI");
   await expect(
-    page.getByText("Wallet connected.", { exact: true }),
-  ).toBeVisible();
-  await expect(
-    page.getByRole("button", { name: "Connected wallet", exact: true }),
-  ).toContainText("1111");
+    page.getByRole("button", { name: "Wallet & balance", exact: true }),
+  ).toHaveAttribute("title", /1111/);
   expect(
     await page.evaluate(() =>
       localStorage.getItem("zkchat:test-connect-attempts"),
@@ -816,10 +823,10 @@ for (const width of [375, 1280]) {
     );
     await page.goto("/");
     const topbar = page.getByRole("button", {
-      name: "Connection settings",
+      name: "Wallet & balance",
       exact: true,
     });
-    await expect(topbar).toHaveText("Connect wallet");
+    await expect(topbar).toContainText("Wallet & balance");
     await topbar.click();
     const dropdown = page.getByRole("button", {
       name: "Select wallet",
@@ -848,15 +855,13 @@ for (const width of [375, 1280]) {
     await page.keyboard.press("Escape");
     await expect(dropdown).toHaveAttribute("aria-expanded", "false");
     await expect(
-      page.getByRole("dialog", { name: "Connection settings" }),
+      page.getByRole("dialog", { name: "Wallet & balance" }),
     ).toBeVisible();
     await page
-      .getByRole("dialog", { name: "Connection settings" })
+      .getByRole("dialog", { name: "Wallet & balance" })
       .getByRole("button", { name: "Connect wallet", exact: true })
       .click();
-    await expect(
-      page.getByText("Wallet connected.", { exact: true }),
-    ).toBeVisible();
+    await expect(page.locator(".topbar-status")).toHaveText("ZKAPI");
     expect(await connectionCalls(page)).toEqual({
       wallets: ["Second Wallet"],
       sdk: [
@@ -868,11 +873,13 @@ for (const width of [375, 1280]) {
       ],
     });
     const connected = page.getByRole("button", {
-      name: "Connected wallet",
+      name: "Wallet & balance",
       exact: true,
     });
-    await expect(connected).toContainText("2222");
-    await expect(connected.locator(".wallet-address")).toBeVisible();
+    await expect(connected).toHaveAttribute("title", /Second Wallet: 2222/);
+    await expect(page.locator(".connected-wallet-summary")).toContainText(
+      "2222",
+    );
     await expect(
       page.getByRole("button", { name: "Copy wallet address", exact: true }),
     ).toBeVisible();
@@ -895,7 +902,7 @@ for (const width of [375, 1280]) {
     });
     await connected.click();
     await page.getByRole("button", { name: "Disconnect", exact: true }).click();
-    await expect(topbar).toHaveText("Connect wallet");
+    await expect(topbar).toContainText("Wallet & balance");
     await expect(
       page.getByRole("button", { name: "Select wallet", exact: true }),
     ).toBeVisible();
@@ -921,12 +928,10 @@ test("pending wallet approval prevents duplicate connects and only opens SDK aft
       window as unknown as { testApproveWallet: () => void }
     ).testApproveWallet(),
   );
+  await expect(page.locator(".topbar-status")).toHaveText("ZKAPI");
   await expect(
-    page.getByText("Wallet connected.", { exact: true }),
-  ).toBeVisible();
-  await expect(
-    page.getByRole("button", { name: "Connected wallet", exact: true }),
-  ).toContainText("1111");
+    page.getByRole("button", { name: "Wallet & balance", exact: true }),
+  ).toHaveAttribute("title", /1111/);
   expect(await connectionCalls(page)).toEqual({
     wallets: ["Test Wallet"],
     sdk: [
@@ -947,18 +952,16 @@ test("SDK setup retry keeps the approved wallet after closing and reopening sett
     "Could not open your saved deposits",
   );
   const connected = page.getByRole("button", {
-    name: "Connected wallet",
+    name: "Wallet & balance",
     exact: true,
   });
-  await expect(connected.locator(".wallet-address")).toBeVisible();
+  await expect(page.locator(".connected-wallet-summary")).toContainText("1111");
   await page.getByRole("button", { name: "Close", exact: true }).click();
   await connected.click();
   await page
     .getByRole("button", { name: "Continue to deposits", exact: true })
     .click();
-  await expect(
-    page.getByText("Wallet connected.", { exact: true }),
-  ).toBeVisible();
+  await expect(page.locator(".topbar-status")).toHaveText("ZKAPI");
   expect(await connectionCalls(page)).toEqual({
     wallets: ["Test Wallet"],
     sdk: [
@@ -981,22 +984,30 @@ test("first-time browser storage setup keeps the approved address and requires e
 }) => {
   await connectFixture(page, connectionFlowStub({ storageMissing: true }));
   const setup = page.getByRole("button", {
-    name: "Set up this wallet",
+    name: "Set up this browser",
     exact: true,
   });
   await expect(setup).toBeEnabled();
   await expect(
-    page.getByText("This sets up the October 21 Devnet Pool.", {
-      exact: false,
+    page.getByText(
+      "Already deposited? Restore from your recovery file, or use the original browser and wallet.",
+      {
+        exact: true,
+      },
+    ),
+  ).toBeVisible();
+  await page.getByText("Older deposit data", { exact: true }).click();
+  await expect(
+    page.getByRole("link", {
+      name: "Open October 8 deposit data",
+      exact: true,
     }),
-  ).toContainText(
-    "Earlier deposits and balances remain separate in their original Pool; they are not transferred or deleted.",
-  );
+  ).toHaveAttribute("href", "/recovery-v12/");
   const connected = page.getByRole("button", {
-    name: "Connected wallet",
+    name: "Wallet & balance",
     exact: true,
   });
-  await expect(connected).toContainText("1111");
+  await expect(connected).toHaveAttribute("title", /1111/);
   expect(await connectionCalls(page)).toEqual({
     wallets: ["Test Wallet"],
     sdk: [
@@ -1011,9 +1022,7 @@ test("first-time browser storage setup keeps the approved address and requires e
   await connected.click();
   await expect(setup).toBeEnabled();
   await setup.click();
-  await expect(
-    page.getByText("Wallet connected.", { exact: true }),
-  ).toBeVisible();
+  await expect(page.locator(".topbar-status")).toHaveText("ZKAPI");
   expect(await connectionCalls(page)).toEqual({
     wallets: ["Test Wallet"],
     sdk: [
@@ -1046,7 +1055,7 @@ test("expiry and emergency recovery remain visible without replaying inference",
     );
   await connectFixture(page, source);
   await expect(
-    page.getByText("This note expires within one day."),
+    page.getByText("This deposit expires within 24 hours"),
   ).toBeVisible();
   await page.getByText("Delayed withdrawal options", { exact: true }).click();
   await page
@@ -1086,6 +1095,7 @@ test("unsent authorization cancellation is explicit and never offered for uncert
       "status: async () => state, cancelUnsentAuthorization: async () => {localStorage.setItem('zkchat:test-cancel', '1'); update({session: {phase:'send_unknown', operations:[]}});},",
     );
   await connectFixture(page, source);
+  await page.getByText("Payment details and recovery", { exact: true }).click();
   await page
     .getByRole("button", { name: "Cancel unused authorization", exact: true })
     .click();
@@ -1123,7 +1133,7 @@ test("unsigned withdrawal fallback and signed setup recovery use separate explic
     page.getByText("Blocked withdrawal options", { exact: true }),
   ).toHaveCount(0);
   await page
-    .getByRole("button", { name: "Resume preparation", exact: true })
+    .getByRole("button", { name: "Resume withdrawal preparation", exact: true })
     .click();
   await page.getByText("Blocked withdrawal options", { exact: true }).click();
   await page
@@ -1139,7 +1149,7 @@ test("unsigned withdrawal fallback and signed setup recovery use separate explic
     page.getByText("Expired setup recovery", { exact: true }),
   ).toHaveCount(0);
   await page
-    .getByRole("button", { name: "Check withdrawal step", exact: true })
+    .getByRole("button", { name: "Continue withdrawal", exact: true })
     .click();
   await page.getByText("Expired setup recovery", { exact: true }).click();
   await page
@@ -1182,13 +1192,13 @@ test("standalone Wallet Standard diagnostic requires explicit choice and surface
   );
 });
 
-test("withdrawal explains multiple approvals and separates signing from saved transaction checks", async ({
+test("withdrawal explains its irreversible start and preserves explicit approvals", async ({
   page,
 }) => {
   const source = liveStub.replace(
     "status: async () => state,",
     `status: async () => state,
-    prepareWithdrawal: async () => update({walletOperation:{kind:'mutual_close',phase:'ready',signature:null},canRequest:false}),
+    prepareWithdrawal: async () => { localStorage.setItem('zkchat:test-withdrawal-started','1'); update({walletOperation:{kind:'mutual_close',phase:'ready',signature:null},canRequest:false}); },
     advanceWallet: async () => {
       const n = Number(localStorage.getItem('zkchat:test-advances') || 0) + 1;
       localStorage.setItem('zkchat:test-advances',String(n));
@@ -1198,44 +1208,107 @@ test("withdrawal explains multiple approvals and separates signing from saved tr
   );
   await connectFixture(page, source);
   await page
+    .getByRole("button", { name: "Return to chat", exact: true })
+    .click();
+  await page
+    .getByRole("button", { name: "Wallet & balance", exact: true })
+    .click();
+  await page
     .getByRole("button", { name: "Withdraw balance", exact: true })
     .click();
   await expect(
     page.getByText(/approve several transactions, each with a SOL fee/),
   ).toBeVisible();
+  await expect(
+    page.getByText(
+      /Starting withdrawal stops this deposit from paying for chats/,
+    ),
+  ).toBeVisible();
+  expect(
+    await page.evaluate(() =>
+      localStorage.getItem("zkchat:test-withdrawal-started"),
+    ),
+  ).toBeNull();
+  await page
+    .getByRole("button", { name: "Keep using this deposit", exact: true })
+    .click();
+  expect(
+    await page.evaluate(() =>
+      localStorage.getItem("zkchat:test-withdrawal-started"),
+    ),
+  ).toBeNull();
+  await page
+    .getByRole("button", { name: "Withdraw balance", exact: true })
+    .click();
   await page
     .getByRole("button", {
-      name: "Review withdrawal",
+      name: "Start withdrawal",
       exact: true,
     })
     .click();
   await expect(
-    page.getByText(/Withdrawal needs several wallet approvals/),
+    page.getByText(/Withdrawal sends a proof in several transactions/),
   ).toBeVisible();
   await expect(
     page.getByRole("heading", { name: "Withdrawal in progress", exact: true }),
   ).toBeVisible();
+  expect(
+    await page.evaluate(() =>
+      localStorage.getItem("zkchat:test-withdrawal-started"),
+    ),
+  ).toBe("1");
+  // Starting withdrawal changes admission before any wallet transaction is signed.
+  expect(
+    await page.evaluate(() => localStorage.getItem("zkchat:test-advances")),
+  ).toBeNull();
+  await page.getByRole("button", { name: "Close", exact: true }).click();
+  await input(page).fill("Keep this draft while withdrawing");
+  await expect(send(page)).toBeDisabled();
   await expect(
-    page.getByText(/Chat, adding deposits, and switching deposits are paused/),
+    page.getByText(
+      "This deposit is being withdrawn and cannot pay for chats. Finish withdrawing, then use another saved deposit or add funds.",
+    ),
   ).toBeVisible();
-  await expect(page.getByLabel("Saved deposits")).toBeDisabled();
-  await expect(
-    page.getByRole("button", { name: "Add deposit", exact: true }),
-  ).toBeDisabled();
   await page
-    .getByRole("button", { name: "Approve next withdrawal step", exact: true })
+    .getByRole("button", { name: "Continue withdrawal", exact: true })
+    .click();
+  await expect(page.getByRole("dialog")).toContainText(
+    "Withdrawal in progress",
+  );
+  await page.getByRole("button", { name: "Close", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Wallet & balance", exact: true })
     .click();
   await expect(
-    page.getByRole("button", {
-      name: "Approve next withdrawal step",
+    page.getByText(/Finish the saved operation before switching deposits/),
+  ).toBeVisible();
+  await expect(page.getByLabel("Saved deposits")).toBeDisabled();
+  await page
+    .getByRole("dialog")
+    .getByRole("button", { name: "Add funds", exact: true })
+    .click();
+  await expect(
+    page.getByRole("button", { name: "Review deposit", exact: true }),
+  ).toHaveCount(0);
+  await page
+    .getByRole("dialog")
+    .getByRole("button", { name: "Continue withdrawal", exact: true })
+    .click();
+  await expect(
+    page.getByRole("dialog").getByRole("button", {
+      name: "Continue withdrawal",
       exact: true,
     }),
-  ).toHaveCount(0);
+  ).toHaveCount(1);
+  await expect(
+    page.getByRole("link", { name: "View latest transaction", exact: true }),
+  ).toBeVisible();
   await expect(
     page.getByText("Expired setup recovery", { exact: true }),
   ).toHaveCount(0);
   await page
-    .getByRole("button", { name: "Check withdrawal step", exact: true })
+    .getByRole("dialog")
+    .getByRole("button", { name: "Continue withdrawal", exact: true })
     .click();
   // A confirmed upload step keeps the withdrawal locked and needs another
   // explicit approval; it must not be presented as a completed withdrawal.
@@ -1243,21 +1316,29 @@ test("withdrawal explains multiple approvals and separates signing from saved tr
     page.getByRole("heading", { name: "Withdrawal in progress", exact: true }),
   ).toBeVisible();
   await expect(
-    page.getByRole("button", { name: "Add deposit", exact: true }),
-  ).toBeDisabled();
+    page.getByRole("button", { name: "Review deposit", exact: true }),
+  ).toHaveCount(0);
   expect(
     await page.evaluate(() => localStorage.getItem("zkchat:test-advances")),
   ).toBe("2");
   await page
-    .getByRole("button", { name: "Approve next withdrawal step", exact: true })
+    .getByRole("dialog")
+    .getByRole("button", { name: "Continue withdrawal", exact: true })
     .click();
   await page
-    .getByRole("button", { name: "Check withdrawal step", exact: true })
+    .getByRole("dialog")
+    .getByRole("button", { name: "Continue withdrawal", exact: true })
+    .click();
+  // The earlier Add funds request resumes only after the withdrawal completes.
+  await expect(
+    page.getByRole("button", { name: "Review deposit", exact: true }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Close", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Wallet & balance", exact: true })
     .click();
   await expect(
-    page.getByText("Withdrawal complete. Your funds are back in your wallet.", {
-      exact: true,
-    }),
+    page.getByRole("heading", { name: "Withdrawal complete", exact: true }),
   ).toBeVisible();
   await expect(page.locator(".balance-panel strong")).toHaveText("0.00");
   await expect(page.locator(".credit-line strong")).toHaveText("0.00");
@@ -1267,4 +1348,163 @@ test("withdrawal explains multiple approvals and separates signing from saved tr
   expect(
     await page.evaluate(() => localStorage.getItem("zkchat:test-advances")),
   ).toBe("4");
+});
+
+test("withdrawal confirmation is automatic, approvals stay explicit, and closing the panel does not stop it", async ({
+  page,
+}) => {
+  const source = liveStub.replace(
+    "status: async () => state,",
+    `status: async () => state,
+    prepareWithdrawal: async () => update({canRequest:false,walletOperation:{kind:'mutual_close',phase:'ready',signature:null}}),
+    advanceWallet: async () => {
+      const count=Number(localStorage.getItem('observation:approvals')||0)+1;
+      localStorage.setItem('observation:approvals',String(count));
+      update({walletOperation:{kind:'mutual_close',phase:'ready',signature:'signed-'+count}});
+      return {state:'pending'};
+    },
+    observeWallet: async signature => {
+      localStorage.setItem('observation:checks',String(Number(localStorage.getItem('observation:checks')||0)+1));
+      if(signature!==state.walletOperation?.signature) throw new Error('stale signature');
+      if(localStorage.getItem('observation:confirm')!==signature) return {state:'pending'};
+      update(signature==='signed-2' ? {wallet:'closed',walletOperation:null} : {walletOperation:{kind:'mutual_close',phase:'ready',signature:null}});
+      return {state:signature==='signed-2'?'complete':'ready'};
+    },`,
+  );
+  await connectFixture(page, source);
+  const dialog = page.getByRole("dialog");
+  await dialog
+    .getByRole("button", { name: "Withdraw balance", exact: true })
+    .click();
+  await dialog
+    .getByRole("button", { name: "Start withdrawal", exact: true })
+    .click();
+  await expect(page.locator(".wallet-caption")).toContainText("Withdrawing");
+  await expect(page.locator(".wallet-summary")).toContainText(
+    "Last confirmed amount",
+  );
+  await dialog
+    .getByRole("button", { name: "Continue withdrawal", exact: true })
+    .click();
+  await expect(
+    dialog.getByRole("button", {
+      name: "Confirming transaction…",
+      exact: true,
+    }),
+  ).toBeDisabled();
+  await expect
+    .poll(() =>
+      page.evaluate(() =>
+        Number(localStorage.getItem("observation:checks") || 0),
+      ),
+    )
+    .toBeGreaterThan(0);
+  await page.getByRole("button", { name: "Close", exact: true }).click();
+  await input(page).fill("Keep my draft while confirming");
+  await page.evaluate(() =>
+    localStorage.setItem("observation:confirm", "signed-1"),
+  );
+  await page
+    .getByRole("button", { name: "Wallet & balance", exact: true })
+    .click();
+  await expect(
+    dialog.getByRole("button", { name: "Continue withdrawal", exact: true }),
+  ).toBeEnabled();
+  await expect(dialog).toContainText("Your next wallet approval is needed.");
+  await dialog.screenshot({
+    path: test.info().outputPath("withdrawal-next-approval.png"),
+  });
+  expect(
+    await page.evaluate(() => localStorage.getItem("observation:approvals")),
+  ).toBe("1");
+  await expect(send(page)).toBeDisabled();
+  await dialog
+    .getByRole("button", { name: "Continue withdrawal", exact: true })
+    .click();
+  await expect(
+    dialog.getByRole("button", {
+      name: "Confirming transaction…",
+      exact: true,
+    }),
+  ).toBeDisabled();
+  await page.getByRole("button", { name: "Close", exact: true }).click();
+  await page.evaluate(() =>
+    localStorage.setItem("observation:confirm", "signed-2"),
+  );
+  await expect(page.locator(".credit-line strong")).toHaveText("0.00");
+  await expect(input(page)).toHaveValue("Keep my draft while confirming");
+  await page
+    .getByRole("button", { name: "Wallet & balance", exact: true })
+    .click();
+  await expect(
+    dialog.getByRole("heading", { name: "Withdrawal complete", exact: true }),
+  ).toBeVisible();
+  await expect(dialog).toContainText("Your funds are back in your wallet.");
+  await dialog.screenshot({
+    path: test.info().outputPath("withdrawal-complete.png"),
+  });
+  await expect(dialog.getByLabel("Saved deposits")).toBeEnabled();
+  expect(
+    await page.evaluate(() => localStorage.getItem("observation:approvals")),
+  ).toBe("2");
+  expect(
+    await page.evaluate(() => localStorage.getItem("zkchat:test-calls")),
+  ).toBeNull();
+});
+
+test("a saved signed withdrawal is checked on reconnect without advancing or guessing a zero balance", async ({
+  page,
+}) => {
+  await page.clock.install();
+  const source = liveStub
+    .replace(
+      "walletOperation: null,",
+      "walletOperation: {kind:'mutual_close',phase:'ready',signature:'already-signed'},",
+    )
+    .replace("canRequest: true,", "canRequest: false,")
+    .replace(
+      "status: async () => state,",
+      `status: async () => state,
+      advanceWallet: async () => { localStorage.setItem('observation:unexpected-advance','1'); throw new Error('must stay explicit'); },
+      observeWallet: async signature => {
+        if(signature!=='already-signed') throw new Error('wrong signature');
+        if(!localStorage.getItem('observation:available')) throw new Error('indexer unavailable');
+        update({wallet:'closed',walletOperation:null});return {state:'complete'};
+      },`,
+    );
+  await connectFixture(page, source);
+  const dialog = page.getByRole("dialog");
+  await expect(
+    dialog.getByRole("heading", {
+      name: "Withdrawal in progress",
+      exact: true,
+    }),
+  ).toBeVisible();
+  await expect(page.locator(".credit-line strong")).toHaveText("2.00");
+  await expect(page.locator(".wallet-summary")).toContainText(
+    "unavailable for chats",
+  );
+  await dialog.screenshot({
+    path: test.info().outputPath("withdrawal-confirming.png"),
+  });
+  await page.clock.runFor(95_000);
+  await expect(
+    dialog.getByRole("button", { name: "Check confirmation", exact: true }),
+  ).toBeEnabled();
+  await expect(dialog).toContainText(
+    "Confirmation is taking longer. Your progress is saved.",
+  );
+  await expect(page.locator(".credit-line strong")).toHaveText("2.00");
+  await page.evaluate(() => localStorage.setItem("observation:available", "1"));
+  await dialog
+    .getByRole("button", { name: "Check confirmation", exact: true })
+    .click();
+  await expect(
+    dialog.getByRole("heading", { name: "Withdrawal complete", exact: true }),
+  ).toBeVisible();
+  expect(
+    await page.evaluate(() =>
+      localStorage.getItem("observation:unexpected-advance"),
+    ),
+  ).toBeNull();
 });

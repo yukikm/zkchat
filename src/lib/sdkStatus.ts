@@ -28,7 +28,7 @@ export function providerResponseError(response?: Response): string | undefined {
   if (!response || response.ok) return undefined;
   const code = response.headers.get("X-Zkapi-Error-Code") ?? "";
   if (!Object.hasOwn(providerErrors, code)) return undefined;
-  return `${providerErrors[code]} Choose Check status before sending again. No automatic retry.`;
+  return `${providerErrors[code]} Open Wallet & balance before sending again. No automatic retry.`;
 }
 
 const chatFailures: Readonly<Record<string, string>> = {
@@ -100,5 +100,5 @@ export function chatFailureMessage(
         break;
     }
   }
-  return `${reason} Choose Check status before sending again. Nothing is resent automatically.`;
+  return `${reason} Open Wallet & balance before sending again. Nothing is resent automatically.`;
 }

@@ -49,7 +49,7 @@ describe("deposit preparation failures", () => {
     "keeps unknown failures private and limits guidance to preparation",
     (error) => {
       expect(depositPreparationError(error).message).toBe(
-        "Could not prepare the deposit. No wallet signature was requested. Refresh status, then follow the next step.",
+        "Could not prepare the deposit. No wallet signature was requested. Open Connection details and choose Recheck connection, then follow the next step.",
       );
     },
   );
@@ -88,13 +88,13 @@ describe("wallet signature and confirmation failures", () => {
     const error = new PublicProfileError("snapshot");
     error.message = "private response";
     expect(walletStepError(error).message).toBe(
-      "Could not complete this step. Refresh status, then follow the next action below.",
+      "Could not complete this step. Open Connection details and choose Recheck connection, then follow the next action below.",
     );
   });
 
   it("does not expose arbitrary wallet or RPC failures", () => {
     expect(walletStepError(new Error("private wallet payload")).message).toBe(
-      "Could not complete this step. Refresh status, then follow the next action below.",
+      "Could not complete this step. Open Connection details and choose Recheck connection, then follow the next action below.",
     );
   });
 

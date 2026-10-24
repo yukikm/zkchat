@@ -171,21 +171,29 @@ try {
     localStorage.setItem("aws-recovery-sentinel", "preserved"),
   );
   for (const [directory, label, version] of [
-    ["recovery-v12", "Recover October 8 deposits", "12"],
-    ["recovery-v3", "Recover an older deposit", "3"],
+    ["recovery-v12", "Open October 8 deposit data", "12"],
+    ["recovery-v3", "Open original deposit data", "3"],
   ]) {
     await page
-      .getByRole("button", { name: "Connection settings", exact: true })
+      .getByRole("button", { name: "Wallet & balance", exact: true })
+      .click();
+    await page
+      .getByRole("dialog")
+      .getByText("Connection details", { exact: true })
       .click();
     assert.match(
       await page.getByRole("dialog").textContent(),
-      /SDK 0\.2\.0-devnet\.16/,
+      /SDK 0\.2\.0-devnet\.18/,
     );
-    await page.getByText("Have an older deposit?", { exact: true }).click();
+    await page.getByText("Older deposit data", { exact: true }).click();
     await page.getByRole("link", { name: label, exact: true }).click();
     await page.waitForURL(`${origin}/${directory}/`);
     await page
-      .getByRole("button", { name: "Connection settings", exact: true })
+      .getByRole("button", { name: "Wallet & balance", exact: true })
+      .click();
+    await page
+      .getByRole("dialog")
+      .getByText("Connection details", { exact: true })
       .click();
     assert.ok(
       (await page.getByRole("dialog").textContent()).includes(

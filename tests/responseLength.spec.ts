@@ -18,6 +18,10 @@ const filterNotice =
 // SSE responses through its real response reader and the installed SDK.
 const fixture = `
 export class BrowserStorageMissing extends Error {}
+export class RecoveryError extends Error {}
+export class RecoverySetupIncomplete extends RecoveryError {}
+export const restoreZkchatDeposits = async () => { throw new Error('Unexpected recovery'); };
+export const finishZkchatRecoverySetup = async () => { throw new Error('Unexpected recovery setup'); };
 const account={address:'11111111111111111111111111111111'};
 const wallet={name:'Response Length Test Wallet'};
 export const configuredModels=()=>[{id:'test/model',apis:['chat']}];
@@ -28,7 +32,7 @@ export const listWallets=()=>[wallet];
 export const watchWallets=()=>()=>{};
 export const connectWalletAccount=async()=>account;
 const state={noteId:'fixture',mode:'direct_openrouter',wallet:'active',canRequest:true,busy:false,session:null,walletOperation:null,emergencyEscape:null,settledBalanceMicroUsdc:'2000000',authorizationCapMicroUsdc:'1000000'};
-export const connectZkapi=async()=>({account,wallet,persistence:'persistent',publicAdmissionReady:true,deposits:[{id:'fixture'}],selectedDepositId:'fixture',deployment:{mint:'fixture-mint'},dispose(){},refreshPreflight:async()=>{},client:{
+export const connectZkapi=async()=>({account,wallet,recoveryEnabled:true,persistence:'persistent',publicAdmissionReady:true,deposits:[{id:'fixture'}],selectedDepositId:'fixture',deployment:{mint:'fixture-mint'},dispose(){},refreshPreflight:async()=>{},client:{
  status:async()=>state,subscribe:()=>()=>{},
  chat:async request=>{
    const calls=JSON.parse(localStorage.getItem('fixture:calls')||'[]');
@@ -51,13 +55,15 @@ export const connectZkapi=async()=>({account,wallet,persistence:'persistent',pub
 
 async function connectAccount(page: Page) {
   await page
-    .getByRole("button", { name: "Connection settings", exact: true })
+    .getByRole("button", { name: "Wallet & balance", exact: true })
     .click();
   await page
-    .getByRole("dialog", { name: "Connection settings" })
+    .getByRole("dialog", { name: "Wallet & balance" })
     .getByRole("button", { name: "Connect wallet", exact: true })
     .click();
-  await expect(page.getByLabel("Saved deposits")).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Return to chat", exact: true }),
+  ).toBeEnabled();
   await page.getByRole("button", { name: "Close", exact: true }).click();
 }
 

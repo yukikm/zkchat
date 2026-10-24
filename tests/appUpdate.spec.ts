@@ -39,7 +39,7 @@ async function updateFixture(page: Page, base = "/") {
   await page.goto(base);
   await expect.poll(() => checks).toBeGreaterThan(0);
   await expect(
-    page.getByRole("button", { name: "Connection settings", exact: true }),
+    page.getByRole("button", { name: "Wallet & balance", exact: true }),
   ).toBeVisible();
   // Complete React's initial check before dispatching the next focus event.
   await page.evaluate(
@@ -134,6 +134,10 @@ for (const pending of [
   }) => {
     const source = `
       export class BrowserStorageMissing extends Error {}
+export class RecoveryError extends Error {}
+export class RecoverySetupIncomplete extends RecoveryError {}
+export const restoreZkchatDeposits = async () => { throw new Error('Unexpected recovery'); };
+export const finishZkchatRecoverySetup = async () => { throw new Error('Unexpected recovery setup'); };
       const account = { address: '11111111111111111111111111111111' };
       const wallet = { name: 'Update Guard Test Wallet' };
       export const configuredModels = () => [{ id: 'test/model', apis: ['chat'] }];
@@ -150,7 +154,7 @@ for (const pending of [
         state = { ...state, wallet: 'active', session: null, walletOperation: null };
         for (const listener of listeners) listener(state);
       };
-      export const connectZkapi = async () => ({ account, wallet, persistence: 'persistent', publicAdmissionReady: true, deposits: [{ id: 'saved-note' }], selectedDepositId: 'saved-note', deployment: { mint: 'fixture-mint' }, dispose() {}, refreshPreflight: async () => {}, client: {
+      export const connectZkapi = async () => ({ account, wallet, recoveryEnabled: true, persistence: 'persistent', publicAdmissionReady: true, deposits: [{ id: 'saved-note' }], selectedDepositId: 'saved-note', deployment: { mint: 'fixture-mint' }, dispose() {}, refreshPreflight: async () => {}, client: {
         status: async () => state,
         subscribe: listener => { listeners.add(listener); return () => listeners.delete(listener); },
         recover: async () => { window.testPaymentActions.push('recover'); },
@@ -163,15 +167,13 @@ for (const pending of [
     );
     const fixture = await updateFixture(page);
     await page
-      .getByRole("button", { name: "Connection settings", exact: true })
+      .getByRole("button", { name: "Wallet & balance", exact: true })
       .click();
     await page
-      .getByRole("dialog", { name: "Connection settings" })
+      .getByRole("dialog", { name: "Wallet & balance" })
       .getByRole("button", { name: "Connect wallet", exact: true })
       .click();
-    await expect(
-      page.getByText("Wallet connected.", { exact: true }),
-    ).toBeVisible();
+    await expect(page.locator(".topbar-status")).toHaveText("ZKAPI");
     await page.getByRole("button", { name: "Close", exact: true }).click();
     fixture.reply({
       status: 200,

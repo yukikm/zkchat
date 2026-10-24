@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { version as APP_VERSION } from "../package.json";
 import {
   ArrowDown,
-  ArrowDownLeft,
   ArrowUp,
   Check,
   ChevronDown,
@@ -12,7 +11,6 @@ import {
   ExternalLink,
   Feather,
   Lightbulb,
-  LoaderCircle,
   Menu,
   MessageCircle,
   MoreHorizontal,
@@ -32,6 +30,7 @@ import {
 import type { ClientStatus } from "@zkapi/solana-sdk";
 import { readChatResponse } from "./lib/chatResponse";
 import { useAppUpdate } from "./lib/appUpdate";
+import { useWalletObservation } from "./lib/walletObservation";
 import {
   SDK_VERSION,
   LOCAL_RECOVERY_PREVIEW,
@@ -145,6 +144,12 @@ export default function App() {
   const [dialog, setDialog] = useState<
     "connection" | "preferences" | "about" | "delete" | "rename" | null
   >(null);
+  const [connectionRequest, setConnectionRequest] = useState<{
+    id: number;
+    intent: "manage" | "add" | "payment";
+  }>({ id: 0, intent: "manage" });
+  const [setupDismissed, setSetupDismissed] = useState(false);
+  const [focusChatRequest, setFocusChatRequest] = useState(0);
   const [rename, setRename] = useState("");
   const [menu, setMenu] = useState(false);
   const [preferences, setPreferences] = useState<Preferences>(() =>
@@ -155,6 +160,9 @@ export default function App() {
   const [configError, setConfigError] = useState("");
   const [handle, setHandle] = useState<BrowserClientHandle | null>(null);
   const [status, setStatus] = useState<ClientStatus | null>(null);
+  const activeHandle = useRef(handle);
+  activeHandle.current = handle;
+  const statusRevision = useRef(0);
   // Conversation scope belongs to this live SDK instance, never to persisted
   // history or status.session.id (which identifies the SDK authorization).
   const [sessionOwner, setSessionOwner] = useState<{
@@ -189,10 +197,9 @@ export default function App() {
   const models = configuredModels(config).filter((m) =>
     m.apis.includes("chat"),
   );
-  const defaultModel =
-    models.find((m) => m.id === "openai/gpt-6.1-sol")?.id ||
-    models[0]?.id ||
-    "";
+  // Keep the original profile's first model as the default when an additional
+  // catalog is installed. Existing conversations retain their selected model.
+  const defaultModel = models[0]?.id || "";
   const selectedModel = current?.model || model || defaultModel;
   const selectedModelAvailable = models.some((m) => m.id === selectedModel);
   const unavailableSavedModel =
@@ -214,21 +221,121 @@ export default function App() {
       sessionOwner?.noteId === status?.noteId &&
       sessionOwner?.conversationId === current?.id
     );
+  const liveChatReady =
+    !!handle &&
+    !handle.invalidated &&
+    !RETIRED_RUNTIME &&
+    !!status?.canRequest &&
+    !status.busy &&
+    !status.walletOperation &&
+    (config?.schema !== 2 || handle.publicAdmissionReady) &&
+    selectedModelAvailable &&
+    !needsConversationSettlement;
+  const showOnboarding =
+    selectedMode === "live" &&
+    !RETIRED_RUNTIME &&
+    !current?.messages.length &&
+    !setupDismissed;
   const canSend =
     !sending &&
     !connectionBusy &&
     online &&
     !!draft.trim() &&
     draft.length <= MAX_INPUT &&
-    (selectedMode === "demo" ||
-      (!!handle &&
-        !RETIRED_RUNTIME &&
-        !!status?.canRequest &&
-        selectedModelAvailable &&
-        !needsConversationSettlement));
+    (selectedMode === "demo" || liveChatReady);
+  const withdrawalPending =
+    status?.wallet === "pending_escape" ||
+    ["mutual_close", "initiate_escape", "finalize_escape"].includes(
+      status?.walletOperation?.kind ?? "",
+    );
+  const connectionBlocker = handle?.invalidated
+    ? {
+        message: "Reconnect the wallet used for this deposit.",
+        label: "Reconnect wallet",
+        intent: "manage" as const,
+      }
+    : status?.walletOperation || status?.wallet === "pending_escape"
+      ? {
+          message: withdrawalPending
+            ? "This deposit is being withdrawn and cannot pay for chats. Finish withdrawing, then use another saved deposit or add funds."
+            : "Finish your saved transaction to continue chatting.",
+          label: withdrawalPending
+            ? "Continue withdrawal"
+            : "Continue transaction",
+          intent: "payment" as const,
+        }
+      : needsConversationSettlement
+        ? {
+            message:
+              "Finish payment for your previous chat to send here. Your draft stays saved.",
+            label: "Review payment",
+            intent: "payment" as const,
+          }
+        : status?.session && !reusableSession(status)
+          ? {
+              message:
+                "Resolve the previous payment before sending another message.",
+              label: "Resolve payment",
+              intent: "payment" as const,
+            }
+          : handle && config?.schema === 2 && !handle.publicAdmissionReady
+            ? {
+                message:
+                  "Chat is temporarily unavailable. Your deposit stays saved.",
+                label: "Retry connection",
+                intent: "manage" as const,
+              }
+            : hasLowBalance(status)
+              ? {
+                  message: `At least ${formatUsdc(status?.authorizationCapMicroUsdc)} USDC is needed to chat.`,
+                  label: "Add funds",
+                  intent: "add" as const,
+                }
+              : !handle
+                ? {
+                    message:
+                      "Connect your wallet and add test USDC to start chatting.",
+                    label: "Continue setup",
+                    intent: "manage" as const,
+                  }
+                : {
+                    message:
+                      "Complete your payment setup to continue chatting.",
+                    label: "Continue setup",
+                    intent: "manage" as const,
+                  };
+  const acceptStatus = useCallback(
+    (next: ClientStatus) => {
+      if (
+        !handle ||
+        activeHandle.current !== handle ||
+        next.noteId !== handle.selectedDepositId
+      )
+        return;
+      statusRevision.current++;
+      setStatus(next);
+    },
+    [handle],
+  );
   const refresh = useCallback(async () => {
-    if (handle) setStatus(await handle.client.status());
-  }, [handle]);
+    if (!handle || activeHandle.current !== handle || handle.invalidated)
+      return;
+    const revision = ++statusRevision.current;
+    let next: ClientStatus;
+    try {
+      next = await handle.client.status();
+    } catch (error) {
+      if (activeHandle.current !== handle || handle.invalidated) return;
+      throw error;
+    }
+    // A subscription or a newer read may already have supplied a newer state.
+    if (revision === statusRevision.current) acceptStatus(next);
+  }, [handle, acceptStatus]);
+  const walletObservation = useWalletObservation({
+    handle,
+    status,
+    onStatus: acceptStatus,
+  });
   const retryConfig = async () => {
     setConfigLoading(true);
     setConfigError("");
@@ -236,7 +343,7 @@ export default function App() {
       setConfig(await loadConfig());
     } catch {
       setConfigError(
-        "Could not load the service. Open Connection settings and try Reload settings.",
+        "Could not load the service. Open Wallet & balance and try Retry connection.",
       );
     } finally {
       setConfigLoading(false);
@@ -263,8 +370,20 @@ export default function App() {
   }, []);
   useEffect(() => {
     if (!handle) return;
-    return handle.client.subscribe(setStatus);
-  }, [handle]);
+    let alive = true;
+    const off = handle.client.subscribe((next) => {
+      if (alive) acceptStatus(next);
+    });
+    void refresh().catch(() => {
+      if (alive && activeHandle.current === handle) {
+        setToast("Open Wallet & balance to check your saved payment.");
+      }
+    });
+    return () => {
+      alive = false;
+      off();
+    };
+  }, [handle, acceptStatus, refresh]);
   useEffect(() => {
     if (!walletConnection || handle) return;
     return watchWallets(() => {
@@ -315,7 +434,12 @@ export default function App() {
     }
   }, [draft]);
   useEffect(() => {
-    if (nearBottom.current)
+    if (!focusChatRequest) return;
+    const frame = requestAnimationFrame(() => textareaRef.current?.focus());
+    return () => cancelAnimationFrame(frame);
+  }, [focusChatRequest]);
+  useEffect(() => {
+    if (current?.messages.length && nearBottom.current)
       scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight });
   }, [current?.messages]);
   useEffect(() => {
@@ -370,6 +494,16 @@ export default function App() {
     setMenu(false);
     setDialog(null);
   }
+  function openConnection(intent: "manage" | "add" | "payment" = "manage") {
+    setConnectionRequest((previous) => ({ id: previous.id + 1, intent }));
+    setDialog("connection");
+    setSidebar(false);
+  }
+  function continueToChat() {
+    setSetupDismissed(true);
+    setDialog(null);
+    setFocusChatRequest((previous) => previous + 1);
+  }
   function newChat() {
     if (busyRef.current || RETIRED_RUNTIME) return;
     setMode(selectedMode);
@@ -420,14 +554,12 @@ export default function App() {
     }
     if (needsConversationSettlement) {
       if (override !== undefined) setDraft(override);
-      setDialog("connection");
+      openConnection("payment");
       return;
     }
-    if (
-      selectedMode === "live" &&
-      (!handle || !status?.canRequest || !selectedModel)
-    ) {
-      setDialog("connection");
+    if (selectedMode === "live" && !liveChatReady) {
+      if (override !== undefined) setDraft(override);
+      openConnection(connectionBlocker.intent);
       return;
     }
     if ((current?.messages.length ?? 0) >= 998) {
@@ -485,7 +617,9 @@ export default function App() {
     setActivity(
       selectedMode === "demo"
         ? "Showing a sample…"
-        : "Checking proof and authorization…",
+        : reusableSession(status)
+          ? "Sending your message…"
+          : "Proving you can pay…",
     );
     const controller = new AbortController();
     abortRef.current = controller;
@@ -548,7 +682,7 @@ export default function App() {
                 error: stopped
                   ? selectedMode === "demo"
                     ? "Display stopped."
-                    : "Stopped. Charges may still apply. Choose Check status."
+                    : "Stopped. Charges may still apply. Review the payment before sending again."
                   : error instanceof PublicOnboardingError ||
                       error instanceof DepositError
                     ? error.message
@@ -572,7 +706,7 @@ export default function App() {
         } catch {
           setStatus(null);
           setToast(
-            "Could not check payment. Open Connection settings and refresh status.",
+            "Could not check payment. Open Wallet & balance to resolve it.",
           );
         }
       }
@@ -617,10 +751,13 @@ export default function App() {
       return;
     }
     setConnectionBusy(true);
+    activeHandle.current = null;
+    statusRevision.current++;
     setHandle(null);
     setStatus(null);
     setSessionOwner(null);
     setWalletConnection(null);
+    setSetupDismissed(false);
     try {
       await disconnectSelectedWallet();
       setToast("Disconnected. Saved data is retained.");
@@ -737,7 +874,11 @@ export default function App() {
             <div className="wallet-caption">
               <span>
                 <Wallet size={14} />
-                Credits
+                {status?.wallet === "pending_escape" ||
+                (status?.walletOperation &&
+                  status.walletOperation.kind !== "deposit")
+                  ? "Withdrawing"
+                  : "Deposit balance"}
               </span>
               <span className="network-label">
                 <span className="status-dot" />
@@ -747,14 +888,24 @@ export default function App() {
             <div className="credit-line">
               <strong>{formatUsdc(fundedNoteBalance(status))}</strong>
               <span>USDC</span>
-              <button
-                className="icon-button"
-                aria-label="Deposit and manage credits"
-                onClick={() => setDialog("connection")}
-              >
-                <Plus size={16} />
-              </button>
+              {!RETIRED_RUNTIME &&
+                handle &&
+                (status?.wallet === "active" ||
+                  status?.wallet === "closed") && (
+                  <button
+                    className="icon-button"
+                    aria-label="Add funds"
+                    onClick={() => openConnection("add")}
+                  >
+                    <Plus size={16} />
+                  </button>
+                )}
             </div>
+            {(status?.wallet === "pending_escape" ||
+              (status?.walletOperation &&
+                status.walletOperation.kind !== "deposit")) && (
+              <p>Last confirmed amount · unavailable for chats</p>
+            )}
             <p>
               {walletConnection
                 ? `${address.slice(0, 4)}…${address.slice(-4)}`
@@ -833,14 +984,6 @@ export default function App() {
             </span>
           </div>
           <div className="topbar-right">
-            <button
-              className="connect-button deposit-button"
-              onClick={() => setDialog("connection")}
-              disabled={sending || connectionBusy}
-            >
-              <ArrowDownLeft size={16} />
-              <span>{RETIRED_RUNTIME ? "Manage deposits" : "Deposit"}</span>
-            </button>
             {current && (
               <div className="conversation-menu">
                 <button
@@ -883,33 +1026,21 @@ export default function App() {
               </div>
             )}
             <button
-              className={`connect-button wallet-connect-button ${walletConnection && !handle?.invalidated ? "connected" : ""}`}
-              aria-label={
-                handle?.invalidated
-                  ? "Wallet changed"
-                  : walletConnection
-                    ? "Connected wallet"
-                    : "Connection settings"
-              }
+              className={`connect-button wallet-connect-button wallet-management-button ${walletConnection && !handle?.invalidated ? "connected" : ""}`}
+              aria-label="Wallet & balance"
               title={
                 walletConnection
                   ? `${handle?.invalidated ? "Wallet changed. Reconnect to continue. " : ""}${walletConnection.wallet.name}: ${address}`
                   : undefined
               }
-              onClick={() => setDialog("connection")}
+              onClick={() => openConnection()}
             >
               {walletConnection ? (
                 <WalletIcon wallet={walletConnection.wallet} />
               ) : (
                 <Wallet size={16} />
               )}
-              <span className={walletConnection ? "wallet-address" : undefined}>
-                {handle?.invalidated
-                  ? "Reconnect wallet"
-                  : walletConnection
-                    ? `${address.slice(0, 4)}…${address.slice(-4)}`
-                    : "Connect wallet"}
-              </span>
+              <span>Wallet &amp; balance</span>
               {walletConnection && !handle?.invalidated && (
                 <span className="status-dot" />
               )}
@@ -921,7 +1052,8 @@ export default function App() {
           <div className="settlement-banner" role="status">
             <span>
               This Pool is retired. Only existing deposits can be opened here.
-              Recovery depends on the old service and is not guaranteed.
+              The old service is no longer connected. Recovery is currently
+              unavailable.
             </span>
             <a href="../">Return to the current app</a>
           </div>
@@ -975,111 +1107,91 @@ export default function App() {
             </button>
           </div>
         )}
-        {selectedMode === "live" && status?.session && !RETIRED_RUNTIME && (
-          <div className="settlement-banner">
-            <span>
-              <RefreshCw size={14} />
-              {needsConversationSettlement
-                ? "Settle the previous chat before sending here."
-                : reusableSession(status)
-                  ? "Chat ready · Charges not yet settled"
-                  : "Check payment before sending again"}
-            </span>
-            <button onClick={() => setDialog("connection")}>
-              {needsConversationSettlement
-                ? "Review settlement"
-                : reusableSession(status)
-                  ? "Manage session"
-                  : "Review payment"}
-            </button>
-          </div>
-        )}
-        {selectedMode === "live" &&
-          hasLowBalance(status) &&
-          !RETIRED_RUNTIME && (
-            <div className="settlement-banner">
-              <span>Low balance · Add funds to chat</span>
-              <button
-                disabled={sending || connectionBusy}
-                onClick={() => setDialog("connection")}
-              >
-                Add funds
-              </button>
-            </div>
-          )}
         <div
           ref={scrollRef}
-          className={`conversation-scroll ${!current?.messages.length ? "empty" : ""}`}
+          className={`conversation-scroll ${showOnboarding ? "onboarding-scroll" : !current?.messages.length ? "empty" : ""}`}
           onScroll={(e) => {
+            if (!current?.messages.length) {
+              nearBottom.current = true;
+              setShowScroll(false);
+              return;
+            }
             const el = e.currentTarget;
             nearBottom.current =
               el.scrollHeight - el.scrollTop - el.clientHeight < 100;
             setShowScroll(!nearBottom.current);
           }}
         >
+          <ConnectionPanel
+            presentation={
+              dialog === "connection"
+                ? "dialog"
+                : showOnboarding
+                  ? "inline"
+                  : "hidden"
+            }
+            request={connectionRequest}
+            onClose={() => setDialog(null)}
+            onContinueChat={continueToChat}
+            onTryDemo={() => changeMode("demo")}
+            chatReady={liveChatReady && online && !sending && !connectionBusy}
+            needsConversationSettlement={needsConversationSettlement}
+            onBusy={setConnectionBusy}
+            walletConnection={walletConnection}
+            onWalletConnect={setWalletConnection}
+            config={config}
+            configError={configError}
+            configLoading={configLoading}
+            onRetryConfig={() => void retryConfig()}
+            handle={handle}
+            status={status}
+            walletObservation={walletObservation}
+            locked={sending || connectionBusy}
+            refresh={refresh}
+            onConnect={(h) => {
+              activeHandle.current = h;
+              statusRevision.current++;
+              setStatus(null);
+              setHandle(h);
+              setSessionOwner(null);
+              setMode("live");
+              if (current?.mode === "demo") setActiveId(null);
+            }}
+            onDisconnect={disconnect}
+          />
           {!current?.messages.length ? (
-            <div className="welcome">
-              <div className="welcome-logo">
-                <Brand />
-              </div>
-              <h1>Start a conversation.</h1>
-              <p className="welcome-description">
-                {selectedMode === "demo"
-                  ? "Try a sample chat. No wallet needed."
-                  : handle
-                    ? "Choose a prompt or type your message below."
-                    : "Connect your wallet, add test USDC, then send a message."}
-              </p>
-              <div className="suggestions">
-                {suggestions.map(({ icon: Icon, title, detail, prompt }) => (
-                  <button
-                    key={title}
-                    className="suggestion"
-                    onClick={() => {
-                      setDraft(prompt);
-                      textareaRef.current?.focus();
-                    }}
-                  >
-                    <Icon size={20} strokeWidth={1.5} />
-                    <strong>{title}</strong>
-                    <span>{detail}</span>
-                    <ArrowUp size={14} className="suggestion-arrow" />
-                  </button>
-                ))}
-              </div>
-              {selectedMode === "live" && (
-                <div className="welcome-connection">
-                  {configLoading ? (
-                    <span className="inline-status">
-                      <LoaderCircle size={14} className="spin" />
-                      Loading service…
-                    </span>
-                  ) : handle ? (
-                    <span>
-                      <Check size={14} />
-                      {needsConversationSettlement
-                        ? "Review settlement before sending in this chat."
-                        : status?.canRequest
-                          ? "Ready. Type a message below."
-                          : "Open Deposit to continue setup."}
-                    </span>
-                  ) : (
-                    <>
-                      {config ? (
-                        <button onClick={() => setDialog("connection")}>
-                          <Wallet size={15} /> Connect wallet
-                        </button>
-                      ) : (
-                        <span>Live chat is unavailable.</span>
-                      )}
-                      <button onClick={() => changeMode("demo")}>
-                        Try the demo <ArrowUp size={13} />
-                      </button>
-                    </>
-                  )}
+            showOnboarding ? null : (
+              <div className="welcome">
+                <div className="welcome-logo">
+                  <Brand />
                 </div>
-              )}
-            </div>
+                <h1>Start a conversation.</h1>
+                <p className="welcome-description">
+                  {selectedMode === "demo"
+                    ? "Try a sample chat. No wallet needed."
+                    : handle
+                      ? "Choose a prompt or type your message below."
+                      : "Connect your wallet, add test USDC, then send a message."}
+                </p>
+                <div className="suggestions">
+                  {suggestions.map(({ icon: Icon, title, detail, prompt }) => (
+                    <button
+                      key={title}
+                      className="suggestion"
+                      onClick={() => {
+                        setDraft(prompt);
+                        textareaRef.current?.focus();
+                      }}
+                    >
+                      <Icon size={20} strokeWidth={1.5} />
+                      <strong>{title}</strong>
+                      <span>{detail}</span>
+                      <ArrowUp size={14} className="suggestion-arrow" />
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )
           ) : (
             <div
               className="messages"
@@ -1153,10 +1265,20 @@ export default function App() {
                                 <button
                                   className="text-button"
                                   disabled={sending || connectionBusy}
-                                  onClick={() => setDialog("connection")}
+                                  onClick={() =>
+                                    openConnection(
+                                      status?.session
+                                        ? "payment"
+                                        : connectionBlocker.intent,
+                                    )
+                                  }
                                 >
                                   <Wallet size={14} />
-                                  Check status
+                                  {status?.session
+                                    ? "Resolve payment"
+                                    : status?.walletOperation
+                                      ? "Continue transaction"
+                                      : "Review connection"}
                                 </button>
                               )}
                             {message.content && (
@@ -1213,7 +1335,26 @@ export default function App() {
             </div>
           )}
         </div>
-        <div className="composer-area">
+        <div
+          className={`composer-area ${showOnboarding ? "setup-composer" : ""}`}
+        >
+          {selectedMode === "live" &&
+            !showOnboarding &&
+            !liveChatReady &&
+            !sending &&
+            !connectionBusy &&
+            !RETIRED_RUNTIME &&
+            !unavailableSavedModel &&
+            online && (
+              <div className="composer-notice" id="chat-blocker" role="status">
+                <span>{connectionBlocker.message}</span>
+                <button
+                  onClick={() => openConnection(connectionBlocker.intent)}
+                >
+                  {connectionBlocker.label}
+                </button>
+              </div>
+            )}
           {showScroll && (
             <button
               className="scroll-bottom icon-button"
@@ -1300,8 +1441,8 @@ export default function App() {
                           ? "This model is unavailable. Start a new chat"
                           : needsConversationSettlement
                             ? "Settle the previous chat before sending here"
-                            : selectedMode === "live" && !status?.canRequest
-                              ? "Open Connection settings to finish setup"
+                            : selectedMode === "live" && !liveChatReady
+                              ? connectionBlocker.message
                               : "Send message"
                     }
                   >
@@ -1330,66 +1471,6 @@ export default function App() {
           <Check size={16} />
           {toast}
         </div>
-      )}
-      {dialog === "connection" && (
-        <Modal
-          title="Connection settings"
-          onClose={() => {
-            if (connectionBusy)
-              setToast(
-                "Wait for this step to finish, or cancel in your wallet.",
-              );
-            else setDialog(null);
-          }}
-          wide
-        >
-          {needsConversationSettlement && (
-            <p className="notice">
-              Settle charges for your previous chat below. Your draft will stay
-              here until you send it.
-            </p>
-          )}
-          <ConnectionPanel
-            onBusy={setConnectionBusy}
-            walletConnection={walletConnection}
-            onWalletConnect={setWalletConnection}
-            config={config}
-            configError={configError}
-            configLoading={configLoading}
-            onRetryConfig={() => void retryConfig()}
-            handle={handle}
-            status={status}
-            locked={sending || connectionBusy}
-            refresh={refresh}
-            onConnect={(h) => {
-              setHandle(h);
-              setSessionOwner(null);
-              setMode("live");
-              setActiveId(null);
-              void h.client
-                .status()
-                .then(setStatus)
-                .catch(() => {
-                  setStatus(null);
-                  setToast("Open Connection settings and refresh status.");
-                });
-            }}
-            onDisconnect={disconnect}
-          />
-          {!handle && (
-            <div className="modal-demo">
-              <span>No wallet? Try a sample chat.</span>
-              <button
-                className="secondary"
-                onClick={() => changeMode("demo")}
-                disabled={sending || connectionBusy}
-              >
-                <FlaskConical size={15} />
-                Try the demo
-              </button>
-            </div>
-          )}
-        </Modal>
       )}
       {dialog === "preferences" && (
         <Modal title="Appearance and chat" onClose={() => setDialog(null)}>

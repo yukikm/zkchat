@@ -458,9 +458,6 @@ textarea {
   height: 32px;
   min-height: 32px;
 }
-.credit-line .icon-button svg {
-  transform: rotate(45deg);
-}
 .wallet-summary p {
   font-size: 9px;
   color: var(--muted);
@@ -1596,7 +1593,7 @@ textarea {
     min-height: 40px;
   }
   .topbar
-    .connect-button:not(.deposit-button)
+    .connect-button:not(.deposit-button):not(.wallet-management-button)
     > span:not(.status-dot):not(.wallet-address) {
     display: none;
   }
@@ -2332,4 +2329,297 @@ textarea {
 }
 .connection-details code {
   overflow-wrap: anywhere;
+}
+
+/* The next payment action stays in one place, both in chat and in the wallet. */
+.conversation-scroll.onboarding-scroll {
+  padding: 24px 24px 40px;
+}
+.onboarding-panel {
+  width: min(100%, 480px);
+  margin: 0 auto;
+  padding: 28px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface);
+}
+.connection-flow {
+  font-size: 14px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+.connection-flow .connection-facts {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 0 0 20px;
+  padding: 0;
+  border: 0;
+  color: var(--muted);
+  font-size: 11px;
+}
+.connection-flow .connection-facts > span:first-child {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+.connection-step-heading {
+  margin-bottom: 16px;
+}
+.connection-step-heading :is(h1, h3) {
+  margin: 0;
+  font-size: 25px;
+  font-weight: 550;
+  line-height: 1.25;
+  letter-spacing: -0.6px;
+}
+.connection-step-heading p {
+  margin: 10px 0 0;
+  color: var(--muted);
+}
+.connection-step > p {
+  margin: 0 0 16px;
+}
+.connection-flow .primary,
+.connection-flow .secondary {
+  min-height: 44px;
+  font-size: 13px;
+}
+.connection-step > .primary,
+.connection-step .connection-actions > .primary {
+  width: 100%;
+}
+.connection-flow .text-button {
+  min-height: 40px;
+  font-size: 12px;
+}
+.connection-flow .small,
+.connection-flow small,
+.connection-flow .check-label,
+.connection-flow .notice,
+.connection-flow .pending-card,
+.connection-flow .privacy-note > p {
+  font-size: 12px;
+  line-height: 1.65;
+}
+.connection-flow .field label {
+  font-size: 13px;
+}
+.connection-flow .field input,
+.connection-flow .field select {
+  min-height: 44px;
+  font-size: 16px;
+}
+.connection-flow .field small {
+  display: block;
+  margin-top: 8px;
+}
+.connection-flow .check-label {
+  min-height: 44px;
+  margin-top: 0;
+}
+.connection-flow .check-label > input {
+  flex-shrink: 0;
+}
+.connection-flow .fund-form {
+  margin: 20px 0;
+}
+.connection-flow .recovery-panel {
+  display: grid;
+  gap: 14px;
+  margin: 20px 0;
+}
+.connection-flow .recovery-panel p {
+  margin: 0;
+}
+.connection-flow .recovery-panel input[type="file"] {
+  max-width: 100%;
+  font-size: 13px;
+}
+.connection-flow .deposit-retention {
+  padding: 12px 14px;
+  margin: 16px 0;
+  border-radius: 8px;
+  background: var(--code);
+}
+.connection-flow .deposit-retention p {
+  margin: 0;
+}
+.connection-flow .pending-card {
+  margin: 20px 0;
+  padding: 16px;
+}
+.connection-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 16px;
+}
+.funding-summary {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 12px 0;
+  margin-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+}
+.funding-summary strong {
+  font-size: 22px;
+  font-weight: 550;
+  font-variant-numeric: tabular-nums;
+}
+.connection-flow .balance-panel {
+  padding: 18px;
+  margin: 16px 0;
+}
+.connection-flow .balance-panel .eyebrow {
+  font-size: 12px;
+}
+.connection-flow .balance-panel p {
+  margin: 4px 0;
+}
+.connection-context,
+.connection-secondary {
+  margin-top: 20px;
+}
+.connection-flow .faucet-inline {
+  margin-top: 20px;
+  padding: 16px 0 12px;
+  border-top: 1px solid var(--border);
+}
+.faucet-inline strong {
+  font-size: 13px;
+  font-weight: 600;
+}
+.faucet-inline p {
+  margin: 4px 0;
+}
+.faucet-inline .faucet-links {
+  gap: 8px;
+  margin: 10px 0;
+}
+.faucet-inline .faucet-links a {
+  flex: 1;
+  min-height: 44px;
+  justify-content: center;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 550;
+}
+.faucet-inline .faucet-links a:hover {
+  background: var(--accent-soft);
+}
+.faucet-wallet {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  font-size: 12px;
+}
+.connection-flow .connection-details {
+  margin: 0;
+  font-size: 12px;
+  border-bottom: 1px solid var(--border);
+}
+.connection-flow .connection-details summary {
+  min-height: 44px;
+  font-weight: 500;
+  color: var(--muted);
+}
+.connection-flow .connection-details[open] {
+  padding-bottom: 12px;
+}
+.connection-flow .privacy-note {
+  padding: 0;
+  margin: 12px 0 12px;
+  border: 0;
+}
+.connection-flow .modal-demo {
+  margin-top: 16px;
+  padding-top: 16px;
+}
+.wallet-management-button {
+  min-height: 44px;
+}
+.setup-composer .composer {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px 10px 20px;
+}
+.setup-composer .composer textarea {
+  min-height: 40px;
+  min-width: 0;
+  flex: 1;
+  padding: 10px 0;
+}
+.setup-composer .composer-bottom {
+  padding: 0;
+  flex-shrink: 0;
+}
+.setup-composer .composer-label,
+.setup-composer .keyboard-hint,
+.setup-composer .composer-footnote {
+  display: none;
+}
+.composer-notice {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  margin-bottom: 10px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.6;
+}
+.composer-notice button {
+  min-height: 44px;
+  flex-shrink: 0;
+  color: var(--accent);
+  font-weight: 600;
+}
+@media (max-width: 640px) {
+  .conversation-scroll.onboarding-scroll {
+    padding: 12px 16px 24px;
+  }
+  .onboarding-panel {
+    padding: 20px;
+  }
+  .connection-step-heading :is(h1, h3) {
+    font-size: 23px;
+  }
+  .composer-notice {
+    flex-wrap: wrap;
+    gap: 2px;
+  }
+  .topbar .wallet-management-button > span:not(.status-dot) {
+    display: inline;
+  }
+  .topbar .wallet-management-button {
+    font-size: 11px;
+    min-height: 44px;
+  }
+  .topbar .model-picker select {
+    width: 100%;
+    min-width: 0;
+    max-width: 120px;
+  }
+  .topbar-left {
+    flex: 1;
+  }
+  .topbar .wallet-management-button > .status-dot,
+  .topbar .wallet-management-button > svg:last-child:not(:first-child) {
+    display: none;
+  }
 }

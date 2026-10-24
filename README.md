@@ -1,6 +1,10 @@
 # zkchat
 
-Solana zkAPIをLLMバックエンドにするReactチャットアプリです。ローカル修正版SDK **0.2.0-devnet.16**（未公開release） と **public-devnet-20261021-state-v1** の認証済み公開Devnet profileを使います。旧Poolの保存データは保持し、SDK `.12` と `.3` の復旧画面を同じoriginに同梱しています。Solanaは **`@solana/kit` 8.4.0**、ウォレット接続は **`@solana/kit-plugin-wallet` 0.21.0 / Wallet Standard**。`web3.js`は使用しません。
+Solana zkAPIをLLMバックエンドにするReactチャットアプリです。公開SDK **[0.2.0-devnet.18](https://github.com/yukikm/solana-zkapi/releases/tag/v0.2.0-devnet.18)** と **public-devnet-20261021-state-v1** の認証済み公開Devnet profileを使います。GitHubのimmutable releaseとSDK・verifierのattestationを検証した配布物を使用しています。旧Poolの保存データは保持し、SDK `.12` と `.3` の復旧画面を同じoriginに同梱しています。Solanaは **`@solana/kit` 8.4.0**、ウォレット接続は **`@solana/kit-plugin-wallet` 0.21.0 / Wallet Standard**。`web3.js`は使用しません。
+
+**2026-10-25 入金バックアップ:** 公開SDK `.18` の復元機能を組み込みました。初回に復元ファイルを保存すると、追加の入金や未確定の処理も暗号化して自動保存します。ブラウザのデータを失った場合は、同じウォレットと復元ファイルで入金一覧を復元できます。復元にはファイルとバックアップサービスの両方が必要です。複数端末の同時利用には対応しません。[設計・検証・制約](docs/SDK-PORTABLE-RECOVERY-20261025.md)。
+
+**2026-10-25 入出金の自動確認:** 署名済みの取引だけを確認する変更は公開SDK `.18` に含まれています。画面を閉じても確認を継続し、次の署名は利用者の操作を待ちます。確認待ちの出金額は利用可能残高と区別します。既存のWASM・profile・Pool・保存領域は維持します。詳細は[現行SDKの統合記録](docs/SDK-PORTABLE-RECOVERY-20261025.md)を参照してください。
 
 **2026-10-24 ローカル復旧プレビュー:** 明示的なoperator免除レシートを暗号検証するため、SDK `.16` と新しいWASMをローカルビルドしました。GitHub releaseとしては未公開です。既存profile・Pool・暗号化保存領域を保持し、未確認のprovider使用量をゼロとして扱いません。[変更内容とローカル検証](docs/SDK-OPERATOR-WAIVER-20261024.md)。
 
@@ -40,41 +44,45 @@ npm run verify:sdk
 npm run dev
 ```
 
-[localhostのアプリ](http://localhost:5173/)を開きます。`Connection settings` → `Connection details` → `Check service`で、資金や署名なしで公開サービスを確認できます。公開APIは現在、localhostおよびHTTPSのorigin登録を必要としません。通信は`credentials: "omit"`です。`Try the demo`はローカルのサンプル応答です。
+[localhostのアプリ](http://localhost:5173/)を開きます。`Wallet & balance` → `Connection details` → `Check service`で、資金や署名なしで公開サービスを確認できます。公開の決済APIは現在、localhostおよびHTTPSのorigin登録を必要としません。バックアップAPIのブラウザ利用は別の許可origin設定で、本番zkChatのoriginを許可しています。ローカルでバックアップ機能を検証する場合はSDKのテスト用サービスを使用してください。通信は`credentials: "omit"`です。`Try the demo`はローカルのサンプル応答です。
 
 **保存先のoriginを固定してください。** `localhost:5173`と`127.0.0.1:5173`は別の保存領域です。今回のSolflare実検証は`http://localhost:5173`を使用しました。残高や未完了操作がある場合は、同じURL・ブラウザprofile・アカウントを使います。
 
 ## 旧Poolの保存領域を開く
 
-旧SDK・profile・note ID・暗号化journal・会話履歴を削除したり、新Poolへ付け替えたりしません。`Connection settings` → `Have an older deposit?` から、保存した世代に合う画面を開きます。
+旧SDK・profile・note ID・暗号化journal・会話履歴を削除したり、新Poolへ付け替えたりしません。`Wallet & balance` → `Older deposit data` から、保存した世代に合う画面を開きます。
 
 | 保存した世代                               | 本番の入口                                      | ローカル起動               |
 | ------------------------------------------ | ----------------------------------------------- | -------------------------- |
-| `.8` 以降の旧Pool（最後の実行SDKは `.12`） | `Recover October 8 deposits` → `/recovery-v12/` | `npm run dev:recovery-v12` |
-| 元の `.3`                                  | `Recover an older deposit` → `/recovery-v3/`    | `npm run dev:recovery`     |
+| `.8` 以降の旧Pool（最後の実行SDKは `.12`） | `Open October 8 deposit data` → `/recovery-v12/` | `npm run dev:recovery-v12` |
+| 元の `.3`                                  | `Open original deposit data` → `/recovery-v3/`    | `npm run dev:recovery`     |
 
 ローカルでは開発サーバーを停止して対象のコマンドを実行し、**元と同じURL・ポート・ブラウザ・アカウント**で再接続します。カスタムポートを使っていた場合は `-- --port 元のポート` を付けます。本番の両入口は本体と同じoriginなので、元のブラウザ保存データを参照できます。
 
-両復旧画面は既存保存領域専用です。新しい保存領域・入金・チャットは作らず、保存済み操作の確認・精算・出金などの復旧経路を残します。旧Poolのサービスは退役しており、画面やデータの保持は出金成功の保証ではありません。[上流のPoCリセット](https://github.com/yukikm/solana-zkapi/blob/1d5b22e5e76ed32719fa130899a22dc187d7487b/docs/getting-started/poc-state-sync.md)は旧テスト残高の移行・復旧を保証していません。
+両復旧画面は既存保存領域専用です。新しい保存領域・入金・チャットは作らず、保存済み操作の確認・精算・出金などの復旧経路を残します。2026-10-25の確認では旧Pool向けサービスとの接続が失われており、この画面から現在出金を完了することはできません。保存データを開けることと、資金を回収できることは別です。[確認記録](docs/evidence/legacy-recovery-availability-20261025.json)。[上流のPoCリセット](https://github.com/yukikm/solana-zkapi/blob/1d5b22e5e76ed32719fa130899a22dc187d7487b/docs/getting-started/poc-state-sync.md)は旧テスト残高の移行・復旧を保証していません。
 
-新Poolは通常画面で `Set up this wallet` を明示的に選び、別の保存領域として初期設定します。同じアカウントに旧データがあっても保持したまま開始できますが、旧残高が新Poolへ引き継がれることはありません。
+新Poolは通常画面で `Set up this browser` を明示的に選び、別の保存領域として初期設定します。同じアカウントに旧データがあっても保持したまま開始できますが、旧残高が新Poolへ引き継がれることはありません。
 
 ## 実際の使い方
 
-1. `Connect wallet`を開き、検出されたウォレットをプルダウンで選んで`Connect wallet`。拡張機能で承認したアカウントのアドレスがヘッダーに表示されます。アプリでアドレスを選び直す必要はありません。初回だけ`Set up this wallet`で入金データの保存設定へ進みます。接続・保存領域作成は送金しません。
+1. チャット画面内でウォレットを選び、`Connect wallet`。保存情報がない場合は`Set up this browser`で入金データの保存設定へ進みます。すでに入金した場合は元のブラウザとウォレットを使います。接続・保存領域作成は送金しません。管理画面はヘッダーの`Wallet & balance`からいつでも開けます。
 2. [Circle faucet](https://faucet.circle.com/)でUSDC / Solana Devnet、[Solana faucet](https://faucet.solana.com/)でDevnet SOLを用意します。認証済みUSDC mintは`4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU`。SOLは手数料・rent用です。
-3. 保存領域の注意事項を読み、例として2 Devnet USDCを`Review deposit`で準備します。`Approve in wallet`でウォレットに進み、内容を確認して署名します。送信後は`Check transaction`で保存済み取引を確認します。`pending`は未確定です。
-4. 「Ready to chat」になったら送信します。現在のprofileは `openai/gpt-4o-mini` を許可します。direct OpenRouterの回答上限は4,096 output tokensで、新規設定も4,096です。`Appearance and chat` → `Response length`で128〜4,096に変更できます。保存済みの設定値は保持します。上限に達した回答には案内を表示し、続きは同じ会話で明示的に依頼できます。Streaming設定は認証済みprofileに従います。旧Poolの復旧画面では新規送信を停止します。
-5. 公開profileを使う現行SDKのdirect OpenRouter sessionは、Gatewayが受け付ける60秒のleaseを明示指定します（SDK標準の300秒はこのGatewayに拒否されます）。同じ会話は同じsession IDを使い、新しい会話では分離します。別の会話へ送信する前には、前の会話のsessionを`Manage session`（別会話では`Review settlement`）→ `Settle charges`で明示的に閉じます。下書きは保持され、精算後に改めて送信します。Deposit切替・出金も精算後に進みます。応答が中断したら`Check status`で接続画面を開き、`Refresh status`と表示された次の操作で確認します。確認待ちのsessionがあれば`Check payment`で復旧します。推論は再送しません。新しい送信は新しいUUIDを使う別の操作です。
-6. 精算後に`Withdraw balance` → `Review withdrawal`で準備します。**現行SDKの出金は複数回の署名が必要**です。証明buffer作成 → 分割アップロード → 封印 → 出金実行の各取引に署名とネットワーク手数料が発生します。アップロード回数はpayload量次第で、公開APIには総数・現在段階がありません。署名ボタンと送信済み確認ボタンを使って一段ずつ進め、`Withdrawal complete`まで同じnoteを保持します。
+3. `Download recovery file` で復元ファイルを別途保管し、保存済みと他のタブ・端末を閉じたことを確認して `Protect deposits and continue` を選びます。以後の追加の入金も自動保存されます。例として2 Devnet USDCを`Review deposit`で準備します。`Approve deposit in wallet`でウォレットに進み、内容を確認して署名します。送信後は保存済み取引を自動確認します。次の承認が必要な場合だけ操作を求めます。確認が長引く場合は`Check confirmation`で再確認できます。未確定の操作はそのまま保存します。
+4. 「Ready to chat」から`Start chatting`で入力欄へ進み、自分でメッセージを送ります。入金完了で下書きを自動送信することはありません。モデル欄でGPT-4o-miniまたは同じPoolの追加モデルを選べます。direct OpenRouterの回答上限は4,096 output tokensで、新規設定も4,096です。`Appearance and chat` → `Response length`で128〜4,096に変更できます。保存済みの設定値は保持します。上限に達した回答には案内を表示し、続きは同じ会話で明示的に依頼できます。Streaming設定は認証済みprofileに従います。旧Poolの復旧画面では新規送信を停止します。
+5. 公開profileを使う現行SDKのdirect OpenRouter sessionは、Gatewayが受け付ける60秒のleaseを明示指定します（SDK標準の300秒はこのGatewayに拒否されます）。同じ会話は同じsession IDを使い、新しい会話では分離します。別の会話へ送信する前には、`Review payment` → `Settle charges`で前の会話の支払いを明示的に確定します。下書きは保持され、精算後に改めて送信します。入金切替・出金も精算後に進みます。応答が中断して支払いが残る場合は`Resolve payment`、接続だけを見直す場合は`Review connection`で該当する操作へ進みます。推論は再送しません。新しい送信は新しいUUIDを使う別の操作です。
+6. 精算後に`Withdraw balance` → `Start withdrawal`で開始します。開始すると署名前でもその入金はチャットに使えなくなり、ここからの取消はできません。**現行SDKの出金は複数回の署名が必要**です。証明buffer作成 → 分割アップロード → 封印 → 出金実行の各取引に署名とネットワーク手数料が発生します。アップロード回数はpayload量次第で、公開APIには総数・現在段階がありません。承認は明示操作で進め、送信済み取引は自動確認します。最終出金の確認後に`Withdrawal complete`となり、別の入金の選択や追加ができます。
 
-新しい会話は現在のprofileに含まれるモデルを初期選択します。現在は `openai/gpt-4o-mini` のみです。選択済み・保存済みの会話モデルと履歴は自動変更しません。旧会話のモデルが利用できない場合は送信・再送を止め、新規チャットを案内します。モデル一覧は利用成功の保証ではありません。送信前の読み取りチェックは通信障害時のみ一度再確認し、検証できない状態では新規送信を止めます。
+新しい会話の初期モデルは引き続き `openai/gpt-4o-mini` です。認証済みの追加profileと合わせて22モデルを選択肢に含めます。選択済み・保存済みの会話モデルと履歴は自動変更しません。旧会話のモデルが利用できない場合は送信・再送を止め、新規チャットを案内します。モデル一覧は利用成功の保証ではありません。送信前の読み取りチェックは通信障害時のみ一度再確認し、検証できない状態では新規送信を止めます。
 
-**追加のDeposit / 出金後の再入金:** 画面上部の`Deposit` → `Add deposit`で新しい入金先を作成し、金額入力 → `Review deposit` → ウォレット署名 → 送信済み取引確認と進みます。同じウォレットで繰り返し利用できます。SDKは既存noteへの継ぎ足し・残高合算に対応しないため、各入金は独立したnoteです。`Saved deposits`で利用・出金する入金を選択します。前の残高と履歴は保持され、出金済みnoteも削除しません。未確定取引・未精算セッション・緊急出金がある間は追加と切替を止め、元の操作を完了します。残高が認証上限を下回ったら`Add funds`の案内から追加できます。
+**データを失った場合:** 同じウォレットに接続して `Restore deposits from a recovery file` から保存したファイルを選びます。以前の端末・タブを停止してから復元してください。入金一覧と未確定の支払いは戻りますが、チャット履歴は対象外です。設定途中で止まった場合は元のブラウザで同じファイルを使って `Finish recovery setup` を選びます。
 
-**モデル:** OpenRouter自体は複数providerのモデルを提供します。zkchatは認証済みZKAPI公開profileのモデル一覧・capabilityを使います。新Poolのprofileは `openai/gpt-4o-mini` のChat Completionsとstreamingを許可します。旧revision-6 profileの21モデルを新Poolで使えるとは扱いません。公開catalogの整合性検査に失敗している間は送信できません。ZDR catalogへの掲載だけでも、providerの権限・予算・推論成功は保証されません。追加モデルはoperatorが公開profileと対応catalogを更新する必要があります。アプリ側で未許可のモデル名を追加して制限を回避しません。
+**追加のDeposit / 出金後の再入金:** `Wallet & balance` → `Add funds`で金額を入力し、`Review deposit`を押した時点で新しい入金を準備します。画面を開くだけでは入金先を増やしません。会話の支払いが残る場合は`Settle and continue`で確定後、同じ追加フォームへ進みます。入金確認後の`Return to chat`で元の会話・モデル・下書きへ戻ります。初回・追加のどちらにもUSDCとSOLのFaucetリンクを用意しています。同じウォレットで繰り返し利用できます。SDKは既存noteへの継ぎ足し・残高合算に対応しないため、各入金は独立したnoteです。`Saved deposits`で利用・出金する入金を選択します。前の残高と履歴は保持され、出金済みnoteも削除しません。未確定取引・未精算セッション・緊急出金がある間は追加と切替を止め、元の操作を完了します。残高が認証上限を下回ったら`Add funds`の案内から追加できます。
 
-送信済み確認は通常追加署名を要求しませんが、現行SDKは期限切れアップロードを更新する場合に再署名を要求することがあります。確認だけを保証するAPIの追加を残課題に記録しています。出金完了後、過去の精算残高を利用可能なcreditsとして表示しません。
+**モデル:** 元の[公開profile](https://d366buuvadnp3.cloudfront.net/releases/public-devnet-20261021-state-v1/profile.json)のGPT-4o-miniに、同じPoolの[追加profile](https://d366buuvadnp3.cloudfront.net/releases/public-devnet-20261021-state-v1/profile-models.json)の21モデルを加えています。`public/zkapi-config.json` の `modelProfile` は独立したSHA-256で固定し、Pool・配布bundle・provider接続先・料金条件が元のprofileと一致することを確認します。すべてdirect OpenRouterのChat Completionsで、各profileのcapabilityに従います。旧Pool用profileからモデルを流用する仕組みではありません。
+
+22件は認証済みの選択肢であり、全モデルの実推論成功を検証したという意味ではありません。送信時には公開catalogとZDRでの利用可否も確認し、利用できないモデルは送信を止めます。ZDR catalogへの掲載だけでも、providerの権限・予算・推論成功は保証されません。追加profileを検証できない場合は新規送信を止め、元の保存データによる復旧を維持します。再取得するには同じウォレットへ再接続してください。
+
+自動確認と`Check confirmation`は署名・送金・再送を行いません。約90秒で自動確認を止め、保存データを保持します。期限切れなどの処理再開は`Transaction details`内の明示操作に限定します。出金中は最後に確認できた金額として表示し、出金完了後はゼロに更新します。
 
 受付停止・Pool pause・readiness失敗では新規入金/送信を止めます。元の保存領域での復旧/出金は残します。SDKの条件に応じて未送信AUTH取消、期限切れsetup照合、未署名出金からescapeへの切替、緊急出金、challenge照合、期限後のfinalizeも表示します。
 
@@ -85,11 +93,11 @@ npm run dev
 - **Phantom `-32603`:** ウォレット内部エラーです。今回、直接Wallet Standardでも再現し、同じoriginのSolflareでは成功しました。追加入金で接続エラーを解決しようとしないでください。
 - **Chain connection:** RPC/ネットワークの確認失敗です。これだけでCORSが原因とは判断できません。
 - **Finalized chain snapshot:** SDKがsnapshotを検証できませんでした。元の保存データを保持し、サービス回復後に接続チェックをやり直します。
-- **未確定取引 / 精算待ち:** 新しい入金や再送ではなく、保存された操作の`Check status` / `Recover`を使います。
+- **未確定取引 / 精算待ち:** 新しい入金や再送ではなく、保存された取引の自動確認を待ち、長引く場合は`Check confirmation`、支払いが残る場合は`Resolve payment`を使います。
 
 開発時の[Wallet Standard単体診断](http://localhost:5173/wallet-check.html)は、明示的に選んだウォレットへの接続だけを行います。Kit/ZKAPI・署名・送金・保存領域作成は使用せず、ウォレット拡張とアプリの問題を切り分けます。この診断ページは通常の本番ビルドに含まれません。
 
-`Refresh status`は接続と保存済み状態の確認です。`Disable authorization for withdrawal`（旧表記`Check authorization`）は未確定の認可を永久に無効化し、その入金を出金専用にします。単なるステータス確認ではありません。実行後は同じ入金でチャットを再開できないため、残高を出金してから新しい入金を作成します。メッセージの再送や出金は自動実行しません。
+`Connection details` → `Recheck connection`は接続と保存済み状態の確認です。`Disable authorization for withdrawal`（旧表記`Check authorization`）は未確定の認可を永久に無効化し、その入金を出金専用にします。単なるステータス確認ではありません。実行後は同じ入金でチャットを再開できないため、残高を出金してから新しい入金を作成します。メッセージの再送や出金は自動実行しません。
 
 公開readinessの待ち時間は1回60秒、読み取りの再試行は1回までです。SDKのフル診断は180秒まで待ちます。停止操作は読み取りも中断します。新Poolの `.13` と旧Poolの `.12` / `.3` は別の保存領域・profileを使います。旧PoolのAUTH・journalは元の復旧画面で扱い、新Poolへ移したり、さらに古いSDKで開き直したりしません。
 
@@ -127,6 +135,8 @@ npm run check:browser
 | 通常 `.16`（ローカルプレビュー） | `public/zkapi-config.json` / `public-devnet-20261021-state-v1` | `zkchat-sdk-public-devnet-20261021-state-v1` / `zkchat-note-sdk-public-devnet-20261021-state-v1` |
 | 復旧 `.12` | `config/zkapi-config.devnet.12.json` / 元のrevision-6 profile  | `zkchat-sdk-0.2.0-devnet.8` / `zkchat-note-sdk-0.2.0-devnet.8`                                   |
 | 復旧 `.3`  | `config/zkapi-config.devnet.3.json` / 元のrevision-2 profile   | `zkchat-sdk-0.2.0-devnet.3` / `zkchat-note-sdk-0.2.0-devnet.3`                                   |
+
+追加モデルの設定は、元のprofile URL・SHA-256・保存領域のbindingを置き換えません。既存の残高、note ID、未精算session、復旧用Verifierはそのまま使用し、保存済み操作を再送しません。
 
 追加noteと選択状態は各SDKの暗号化catalogに保存します。SDK・Worker・profileを混在させず、旧`zkchat-v1`も消去・移行しません。操作と切替はアカウント・deployment別のWeb Lockで直列化し、別タブで選択が変わった古い接続からの操作は拒否します。新Poolの初期設定は明示操作で行い、旧profile bindingを上書きしません。
 

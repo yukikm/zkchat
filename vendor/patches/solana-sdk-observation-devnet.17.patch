@@ -1,0 +1,397 @@
+diff --git a/package-lock.json b/package-lock.json
+index c6ebc58..8befd7c 100644
+--- a/package-lock.json
++++ b/package-lock.json
+@@ -2752,7 +2752,7 @@
+     },
+     "packages/sdk": {
+       "name": "@zkapi/solana-sdk",
+-      "version": "0.2.0-devnet.16",
++      "version": "0.2.0-devnet.17",
+       "license": "MIT",
+       "dependencies": {
+         "@solana/kit": "8.4.0",
+diff --git a/packages/sdk/README.md b/packages/sdk/README.md
+index 83edec7..b116fc0 100644
+--- a/packages/sdk/README.md
++++ b/packages/sdk/README.md
+@@ -1,5 +1,13 @@
+ # Solana zkAPI SDK
+ 
++Source SDK `.17` adds `observeWallet(expectedSignature)` for automatic confirmation
++of a saved transaction. It never requests a signature or sends a transaction.
++It updates the existing journal only after the same finalized receipt and account
++checks used by `advanceWallet()`. Pending, unknown and expired attempts stay saved;
++new approvals still require an explicit `advanceWallet()` action. This is a local
++patch candidate, not a published release; existing custody, profiles and verifier
++inputs remain unchanged.
++
+ Source SDK `.16` is a local patch candidate for [explicit operator waivers](../../docs/releases/direct-waiver-preview.md); no `.16` GitHub release is claimed. It requires the matching independently pinned client verifier.
+ 
+ SDK/native `.15` adds [explicit direct recovery diagnostics](../../docs/getting-started/direct-recovery-upgrade.md) while preserving existing custody and signed settlement.
+diff --git a/packages/sdk/package.json b/packages/sdk/package.json
+index 916a4a4..c869f8a 100644
+--- a/packages/sdk/package.json
++++ b/packages/sdk/package.json
+@@ -1,6 +1,6 @@
+ {
+   "name": "@zkapi/solana-sdk",
+-  "version": "0.2.0-devnet.16",
++  "version": "0.2.0-devnet.17",
+   "private": true,
+   "type": "module",
+   "exports": {
+diff --git a/packages/sdk/src/client.ts b/packages/sdk/src/client.ts
+index 13584d1..2fc0ffd 100644
+--- a/packages/sdk/src/client.ts
++++ b/packages/sdk/src/client.ts
+@@ -249,7 +249,7 @@ export class ZkApiClient {
+   private async publish(): Promise<void> {
+     try { const status = await this.status(); for (const listener of this.listeners) this.notify(listener, status); } catch { /* Explicit status() reports storage failures. */ }
+   }
+-  private async action<T>(fn: () => Promise<T>): Promise<T> {
++  private async action<T>(fn: () => Promise<T>, maintain = true): Promise<T> {
+     if (this.disposed) throw new ClientActionError('closed', 'Client disposed; reopen the same storage and note ID.');
+     if (this.busy) throw new ClientActionError('busy', 'Consume or cancel the current response before another action.');
+     clearTimeout(this.maintenanceTimer); this.maintenanceTimer = undefined;
+@@ -260,7 +260,7 @@ export class ZkApiClient {
+       return await this.options.store.withLock(JSON.stringify(['zkapi-app-client-v1', m.deployment_id, m.pool, this.options.noteId]), async () => {
+         await this.publish(); return fn();
+       });
+-    } finally { this.busy = false; await this.publish(); await this.scheduleMaintenance(); }
++    } finally { this.busy = false; await this.publish(); if (maintain) await this.scheduleMaintenance(); }
+   }
+   private async scheduleMaintenance(): Promise<void> {
+     if (this.disposed || this.busy || this.maintenanceTimer) return;
+@@ -303,6 +303,11 @@ export class ZkApiClient {
+     return this.action(() => this.walletClient.reconcileChallengedEscape(this.options.noteId));
+   }
+   advanceWallet(): ReturnType<WalletClient['advance']> { return this.action(() => this.walletClient.advance(this.options.noteId)); }
++  /** Network-read-only observation of one expected saved signature. May commit
++   * verified finality locally; never signs/sends or schedules session maintenance. */
++  observeWallet(expectedSignature: string): ReturnType<WalletClient['observe']> {
++    return this.action(() => this.walletClient.observe(this.options.noteId, expectedSignature), false);
++  }
+   resumeWalletProof(): Promise<void> { return this.action(() => this.walletClient.resumeProof(this.options.noteId)); }
+   retryRejectedWalletOperation(): Promise<void> { return this.action(() => this.walletClient.retryRejected(this.options.noteId)); }
+   recoverExpiredWalletSetup(): Promise<void> { return this.action(() => this.walletClient.reconcileExpiredCreation(this.options.noteId)); }
+diff --git a/packages/sdk/src/public-profile.ts b/packages/sdk/src/public-profile.ts
+index f977ca6..e1bae76 100644
+--- a/packages/sdk/src/public-profile.ts
++++ b/packages/sdk/src/public-profile.ts
+@@ -103,8 +103,8 @@ function validateProfile(value: unknown): PublicDeploymentProfile {
+     && value.sdkVersions.every((v: unknown) => typeof v === 'string' && /^[0-9]+\.[0-9]+\.[0-9]+(?:-[a-zA-Z0-9.-]+)?$/.test(v))
+     && new Set(value.sdkVersions).size === value.sdkVersions.length);
+   const compatible = value.sdkVersions.includes(PUBLIC_PROFILE_SDK_VERSION)
+-    // Verifier updates preserve the authenticated .13/.14/.15 API selections.
+-    || value.sdkVersions.some((version: string) => ['0.2.0-devnet.13','0.2.0-devnet.14','0.2.0-devnet.15'].includes(version))
++    // Observation/verifier updates preserve authenticated .13 through .16 selections.
++    || value.sdkVersions.some((version: string) => ['0.2.0-devnet.13','0.2.0-devnet.14','0.2.0-devnet.15','0.2.0-devnet.16'].includes(version))
+     || value.schema === 1 && value.sdkVersions.some((version: string) => LEGACY_PROFILE_SDK_VERSIONS.has(version));
+   if (!compatible || value.protocolLayoutVersion !== 2) throw new PublicProfileError('compatibility');
+   fields(value.bundle,['url','sha256']); publicUrl(value.bundle.url); digest(value.bundle.sha256);
+diff --git a/packages/sdk/src/version.ts b/packages/sdk/src/version.ts
+index 0fc9529..ec35aac 100644
+--- a/packages/sdk/src/version.ts
++++ b/packages/sdk/src/version.ts
+@@ -1,2 +1,2 @@
+ /** Generated from packages/sdk/package.json by build.mjs. */
+-export const SDK_VERSION = "0.2.0-devnet.16";
++export const SDK_VERSION = "0.2.0-devnet.17";
+diff --git a/packages/sdk/src/wallet.ts b/packages/sdk/src/wallet.ts
+index f1550d0..60f9620 100644
+--- a/packages/sdk/src/wallet.ts
++++ b/packages/sdk/src/wallet.ts
+@@ -51,6 +51,9 @@ export interface WalletOptions {
+   priorityFeeMicroLamports?:bigint;
+ }
+ function requireTrue(value:unknown,message:string):asserts value {if(!value)throw Error(message);}
++export type WalletProgress = Recovery | { state: 'ready' | 'proof_required' | 'complete' };
++export type WalletObservation = WalletProgress | { state: 'changed' };
++
+ export class WalletClient {
+   private readonly o:WalletOptions;
+   constructor(options:WalletOptions){if(options.priorityFeeMicroLamports!==undefined)u64(options.priorityFeeMicroLamports);this.o={...options,wallets:[...options.wallets]};}
+@@ -478,9 +481,21 @@ export class WalletClient {
+     });
+   }
+   /** One bounded sign/recover step. Call again when pending; never loops inference or switches mode. */
+-  async advance(id:string):Promise<Recovery|{state:'ready'|'proof_required'|'complete'}>{
++  advance(id:string):Promise<WalletProgress>{ return this.progress(id); }
++  /** Observe only the expected saved signature. Never signs, sends, proves,
++   * refreshes an expired upload or requests a new blockhash. Finalized evidence
++   * uses the same receipt/account binding and durable commit as advance(). */
++  observe(id:string,expectedSignature:string):Promise<WalletObservation>{
++    requireTrue(typeof expectedSignature==='string'&&expectedSignature.length>0,'expected saved signature required');
++    return this.progress(id,{expectedSignature});
++  }
++  private progress(id:string):Promise<WalletProgress>;
++  private progress(id:string,observation:{expectedSignature:string}):Promise<WalletObservation>;
++  private async progress(id:string,observation?:{expectedSignature:string}):Promise<WalletObservation>{
+     return this.o.journal.withNoteLock(id,async()=>{
+-      let r=await this.record(id);let op=r.value.wallet!.operation;requireTrue(op,'no financial operation');
++      let r=await this.record(id);let op=r.value.wallet!.operation;
++      if(observation&&(!op||op.current!==observation.expectedSignature))return {state:'changed'};
++      requireTrue(op,'no financial operation');
+       requireTrue(op.phase!=='failed'&&!(op.transport==='v0_inline_deposit_v1'&&op.phase==='stale'),'finalized rejection requires explicit review');
+       if(op.phase==='proving')return {state:'proof_required'};
+       const saveAttempt=async(attempt:FinancialAttempt)=>{
+@@ -488,6 +503,7 @@ export class WalletClient {
+         op!.attempts.push(structuredClone(attempt));op!.current=attempt.signature;r=await this.save(id,r);op=r.value.wallet!.operation!;
+       };
+       let attempt=op.attempts.find(a=>a.signature===op!.current);
++      if(observation)requireTrue(attempt,'missing saved signed attempt');
+       let freshInline=false;
+       if(!attempt){
+         if(op.transport==='v0_inline_deposit_v1'){
+@@ -517,8 +533,8 @@ export class WalletClient {
+           attempt=await prepareAttempt(plan,step,await this.o.chain.blockhash(),this.signers(step.instruction,plan.feePayer),{save:saveAttempt});
+         }
+       }
+-      let recovery=attempt.kind==='deposit_inline'?await recoverInlineDepositAttempt(attempt,this.o.rpc,freshInline):attempt.kind==='finalize'?await recoverFinalizationAttempt(attempt as FinalizationAttempt,this.o.rpc,true):await recoverAttempt(attempt as Attempt,this.o.rpc,true);
+-      if(recovery.state==='expired_reconcile_required'&&!['execute','close','finalize','deposit_inline'].includes(attempt.kind)){
++      let recovery=attempt.kind==='deposit_inline'?await recoverInlineDepositAttempt(attempt,this.o.rpc,freshInline):attempt.kind==='finalize'?await recoverFinalizationAttempt(attempt as FinalizationAttempt,this.o.rpc,!observation):await recoverAttempt(attempt as Attempt,this.o.rpc,!observation);
++      if(!observation&&recovery.state==='expired_reconcile_required'&&!['execute','close','finalize','deposit_inline'].includes(attempt.kind)){
+         const plan=await restorePlan((attempt as Attempt).plan);
+         const tx=getTransactionDecoder().decode(fromHex(attempt.wireHex,attempt.wireHex.length/2)),required=new Set(Object.keys(tx.signatures));
+         const refreshed=await refreshExpiredUpload(attempt as Attempt,this.o.rpc,await this.o.chain.buffer(plan),await this.o.chain.blockhash(),this.o.wallets.filter(w=>required.has(w.publicKey)),{save:saveAttempt});
+diff --git a/packages/sdk/test/client.test.ts b/packages/sdk/test/client.test.ts
+index 3e0ed5d..65bdb7f 100644
+--- a/packages/sdk/test/client.test.ts
++++ b/packages/sdk/test/client.test.ts
+@@ -670,3 +670,24 @@ test('explicit recovery of never-admitted AUTH restores canRequest with the same
+   assert.equal(f.counts.sends,1);assert.equal((await next.status()).settledBalanceMicroUsdc,'199');
+   assert.equal((await f.journal.read('note'))!.value.retiredAuthorizations!.length,1);
+ });
++
++test('observation cannot schedule expired lease maintenance, AUTH or inference even for a stale callback',async t=>{
++  t.mock.timers.enable({apis:['Date'],now:Date.now()});
++  const f=await setup(t,'direct_openrouter');
++  await readChatText(await f.client.chat(chat()));
++  const before=await f.journal.read('note'),counts={...f.counts};
++  t.mock.timers.tick(301_000);
++  assert.deepEqual(await f.client.observeWallet('stale-withdrawal-signature'),{state:'changed'});
++  await new Promise(resolve=>setTimeout(resolve,1_100));
++  assert.deepEqual(f.counts,counts);assert.deepEqual(await f.journal.read('note'),before);
++  assert.equal((await f.client.status()).busy,false);
++});
++
++test('observation respects a held response and never interrupts its action lock',async t=>{
++  const f=await setup(t,'direct_openrouter');f.behavior.streamWaiting=true;
++  const response=await f.client.chat(chat());
++  const before={...f.counts};
++  await assert.rejects(f.client.observeWallet('stale-signature'),/current response/);
++  assert.deepEqual(f.counts,before);
++  await response.body!.cancel();
++});
+diff --git a/packages/sdk/test/inline-deposit.test.ts b/packages/sdk/test/inline-deposit.test.ts
+index c6cec78..3b1cc91 100644
+--- a/packages/sdk/test/inline-deposit.test.ts
++++ b/packages/sdk/test/inline-deposit.test.ts
+@@ -323,3 +323,20 @@ for (const scenario of ['mutual_close','initiate_escape','fallback'] as const) t
+   assert.deepEqual(done.witness,deposited.witness);
+   t.diagnostic('preserved inline history with '+done.wallet!.history.length+' completed/cancelled operations, '+h.counts.sign+' signatures');
+ });
++
++test('observeWallet confirms an inline deposit without signing, replaying, proving or maintenance',async t=>{
++  const h=await setup(t);await h.client.advance('note');const signed=await h.signed();
++  const counts={...h.counts},before=await h.journal.read('note');
++  const client=new ZkApiClient({wallet:h.options,store:h.store,noteId:'note',mode:'proxy',control:{clearEphemeralKeys(){}} as unknown as ControlClient,
++    models:[{id:'fixture',provider:'openrouter',apis:['chat'],tariff:{tariff_hash:'00'.repeat(32),version:'1',provider:'openrouter',model:'fixture',pricing_basis:'fixed_usage_rates',valid_from:'0',valid_until:'9999999999',rates:[],operator_fee_micro_usdc:'0'}}]});
++  t.after(()=>client.dispose());
++  assert.equal((await client.observeWallet(signed.signature)).state,'pending');
++  assert.deepEqual(await h.journal.read('note'),before);assert.deepEqual(h.counts,counts);
++  h.behavior.height=101;
++  assert.equal((await client.observeWallet(signed.signature)).state,'expired_reconcile_required');
++  assert.deepEqual(await h.journal.read('note'),before);assert.deepEqual(h.counts,counts);
++  await h.fund();
++  assert.deepEqual(await client.observeWallet(signed.signature),{state:'complete'});
++  assert.equal((await client.status()).wallet,'active');assert.deepEqual(h.counts,counts);
++  assert.deepEqual(await client.observeWallet(signed.signature),{state:'changed'});
++});
+diff --git a/packages/sdk/test/wallet-observation.test.ts b/packages/sdk/test/wallet-observation.test.ts
+new file mode 100644
+index 0000000..b4a99bb
+--- /dev/null
++++ b/packages/sdk/test/wallet-observation.test.ts
+@@ -0,0 +1,180 @@
++import {createSolanaRpcWithFetch} from '../src/solana.ts';
++import {transactionSignature} from '../src/solana.ts';
++import {kitAddress, fixtureSigner, signWith, decodeTransaction} from './kit-helpers.ts';
++/** Observation-only wallet fixtures, with real v0 signatures and durable
++ * encryption. Synthetic prover/chain responses do not establish SBF acceptance. */
++/** Observation-only wallet fixtures, with real v0 signatures and durable
++ * encryption. Synthetic prover/chain responses do not establish SBF acceptance. */
++import { test, type TestContext } from 'node:test';
++import assert from 'node:assert/strict';
++import { readFileSync } from 'node:fs';
++import { mkdtemp, rm } from 'node:fs/promises';
++import { tmpdir } from 'node:os';
++import { join } from 'node:path';
++
++import bs58 from 'bs58';
++import { WalletClient, type WalletOptions } from '../src/wallet.ts';
++import { NoteProver } from '../src/prover.ts';
++import { EncryptedJournal, importJournalKey } from '../src/journal.ts';
++import { NativeJournalStore } from '../src/journal-node.ts';
++import { validateNoteJournal, type NoteJournal, type PrivateState } from '../src/control.ts';
++import { encodeLayout2Args } from '../src/layout2.ts';
++import { buildUploadPlan, snapshotPlan, prepareAttempt, prepareFinalizationAttempt, vaultAccounts, fetchFinalizedBuffer,
++  type Attempt, type FinalizationAttempt, type FinalizedReceipt, type TransportRpc, type V0Wallet } from '../src/transport.ts';
++import type { WalletSnapshot } from '../src/wallet-chain.ts';
++import type { VerifiedManifest } from '../src/trust.ts';
++const fixture = JSON.parse(readFileSync(new URL('../../../tests/fixtures/vault/genesis-a.json', import.meta.url), 'utf8'));
++const key = (value:string) => kitAddress(Buffer.from(value,'hex'));
++const field = (value:number) => '0x'+value.toString(16).padStart(64,'0');
++
++async function setup(t:TestContext,kind:'deposit'|'mutual_close'|'initiate_escape'|'finalize_escape'='deposit',failedKind:'create'|'execute'='execute') {
++  const directory=await mkdtemp(join(tmpdir(),'zkapi-wallet-recovery-'));t.after(()=>rm(directory,{recursive:true,force:true}));
++  const store=await NativeJournalStore.open(directory),aes=await importJournalKey(new Uint8Array(32).fill(14));
++  const open=()=>new EncryptedJournal<NoteJournal>(store,aes,{deploymentId:'fixture',pool:key(fixture.pool)},validateNoteJournal);
++  const journal=open(),pair=(await fixtureSigner(new Uint8Array(32).fill(1)));
++  const wallet:V0Wallet={publicKey:pair.address,supportedTransactionVersions:new Set([0]),async signTransaction(tx){tx = await signWith(tx, [pair]);return tx;}};
++  const owner=pair.address,destination=key(fixture.destination_owner),roles={uploader:owner,rentPayer:owner,feePayer:owner,payer:owner,tokenOwner:owner};
++  const manifest={program_id:key(fixture.program_id),pool:key(fixture.pool),mint:key(fixture.mint),note_ttl_seconds:String(fixture.ttl)} as unknown as VerifiedManifest;
++  const state:PrivateState={balance_micro_usdc:String(fixture.deposit),balance_blinding:field(3),note_leaf:field(4),commitment:{x:field(5),y:field(6)},anchor:field(1),state_signature:null};
++  const witness={secret:field(2),note_id:0,deposit_micro_usdc:String(fixture.deposit),expiry:String(fixture.expiry)};
++  const nullifier=fixture.auth.escape.public_inputs[11],clearance={nullifier,phase:'verified' as const,signature:{r_x:field(9),r_y:field(10),s:field(11)}};
++  const snapshot:WalletSnapshot={root:fixture.trees[0].public_inputs[1],siblings:Array(32).fill(field(0)),slot:100,sequence:'2',nextNoteId:1,clock:String(fixture.now+86400),paused:false,treasuryOwner:owner,
++    note:{note_id:0,registration_commitment:'0x'+fixture.commitment,deposit_micro_usdc:witness.deposit_micro_usdc,expiry:witness.expiry,status:kind==='finalize_escape'?'pending_escape':'active'},
++    pending:{nullifier,balance_micro_usdc:state.balance_micro_usdc,destinationOwner:destination,deadline:String(fixture.now)}};
++  const operation=kind==='deposit'?'deposit':kind==='initiate_escape'?'initiate_escape':'mutual_close';
++  const financial=(await vaultAccounts({programId:key(fixture.program_id),pool:key(fixture.pool),mint:key(fixture.mint),payer:pair.address,tokenOwner:pair.address,operation:kind,noteId:0,destinationOwner:key(fixture.destination_owner),treasuryOwner:pair.address,nullifier:Buffer.from(nullifier.slice(2),'hex')}));
++  const payload=operation==='deposit'?encodeLayout2Args({operation,expectedId:0,expectedRoot:fixture.trees[0].public_inputs[1],expiry:BigInt(fixture.expiry),commitment:'0x'+fixture.commitment,amount:BigInt(fixture.deposit),tree:fixture.trees[0]}):encodeLayout2Args({operation,auth:kind==='initiate_escape'?fixture.auth.escape:fixture.auth.withdrawal,tree:fixture.trees[1]});
++  const plan=await buildUploadPlan({programId:key(fixture.program_id),pool:key(fixture.pool),uploader:pair.address,rentPayer:pair.address,feePayer:pair.address,nonce:new Uint8Array(32).fill(2),expires:BigInt(fixture.now+3600),operation,payload,financial,snapshot:{slot:20,sequence:1n}});
++  const oldHash={blockhash:kitAddress(new Uint8Array(32).fill(7)),lastValidBlockHeight:100};
++  const attempt=kind==='finalize_escape'?await prepareFinalizationAttempt({programId:plan.programId,pool:plan.pool,noteId:0,feePayer:pair.address,financial,snapshot:plan.snapshot},oldHash,[wallet],{save:async()=>{}}):await prepareAttempt(plan,plan.steps.find(s=>s.kind===failedKind)!,oldHash,[wallet],{save:async()=>{}});
++  const makeReceipt=(a:Attempt|FinalizationAttempt,err:unknown|null):FinalizedReceipt=>({signature:a.signature,message:new Uint8Array(decodeTransaction(Buffer.from(a.wireHex,'hex')).messageBytes),slot:80,err});
++  let receipt:FinalizedReceipt|null=makeReceipt(attempt,{InstructionError:[1,{Custom:6011}]});
++  let absent=false,minimumBufferSlot:number|undefined,minimumSnapshotSlot:number|undefined;
++  const rpc:TransportRpc={signatureStatus:async()=>null,finalizedReceipt:async()=>receipt,finalizedBlockHeight:async()=>50,sendRawTransaction:async bytes=>transactionSignature(decodeTransaction(bytes))};
++  let rebaseCalls=0;
++  const prover={inspect:async()=>({nullifier,registration_commitment:'0x'+fixture.commitment}),verifyClearance:async()=>{},
++    rebaseDeposit:async(w:typeof witness,noteId:number,expiry:string)=>{rebaseCalls++;return {witness:{...w,note_id:noteId,expiry},state,registration_commitment:'0x'+fixture.commitment};},
++    tree:async(note:{note_id:number})=>{const proof=structuredClone(fixture.trees[operation==='deposit'?0:1]);proof.public_inputs[3]=field(note.note_id);return proof;},withdrawal:async()=>fixture.auth.withdrawal} as unknown as NoteProver;
++  const options:WalletOptions={manifest,journal,prover,rpc,wallets:[wallet],chain:{snapshot:async(_id,_path,min)=>{minimumSnapshotSlot=min;return structuredClone(snapshot);},buffer:async(_plan,min)=>{minimumBufferSlot=min;return absent?null:{address:plan.buffer,owner:plan.programId,data:new Uint8Array(),slot:100,commitment:'finalized'};},blockhash:async()=>({blockhash:kitAddress(new Uint8Array(32).fill(8)),lastValidBlockHeight:200})}};
++  await journal.create('note',{schema:1,state,witness,pending:null,history:[],wallet:{status:kind==='deposit'?'unfunded':kind==='finalize_escape'?'pending_escape':'active',history:[],...(kind==='mutual_close'?{clearance}:{}),operation:{id:crypto.randomUUID(),kind,phase:'ready',current:attempt.signature,roles,destinationOwner:kind==='deposit'?undefined:destination,step:plan.steps.findIndex(s=>s.kind===failedKind),attempts:[attempt],finalized:[],...(kind==='finalize_escape'?{finalization:(attempt as FinalizationAttempt).finalization}:{plan:snapshotPlan(plan)})}}});
++  return {options,journal,plan,snapshot,attempt,client:new WalletClient(options),restart:()=>new WalletClient({...options,journal:open()}),setAbsent:()=>{absent=true;},setReceipt:(value:FinalizedReceipt|null)=>{receipt=value;},makeReceipt,getMinimumBufferSlot:()=>minimumBufferSlot,getMinimumSnapshotSlot:()=>minimumSnapshotSlot,getRebaseCalls:()=>rebaseCalls};
++}
++
++function observeOnly(h:Awaited<ReturnType<typeof setup>>) {
++  const forbidden:string[]=[];
++  const fail=(name:string)=>{forbidden.push(name);throw Error('unexpected '+name);};
++  h.options.wallets=[{...h.options.wallets[0],signTransaction:async()=>fail('sign')}];
++  h.options.rpc.sendRawTransaction=async()=>fail('send');
++  h.options.chain.blockhash=async()=>fail('blockhash');
++  h.options.chain.buffer=async()=>fail('buffer refresh');
++  h.options.fetch=async()=>fail('HTTP write');
++  for(const key of ['tree','withdrawal','rebaseDeposit','deposit'] as const)
++    (h.options.prover as any)[key]=async()=>fail('prove');
++  return {client:new WalletClient(h.options),forbidden};
++}
++for(const kind of ['deposit','mutual_close','initiate_escape','finalize_escape'] as const) {
++  test(`observation commits finalized ${kind} with the exact saved signature and existing bindings`,async t=>{
++    const h=await setup(t,kind),{client,forbidden}=observeOnly(h);
++    h.setReceipt(h.makeReceipt(h.attempt,null));
++    h.snapshot.note!.status=kind==='deposit'?'active':kind==='initiate_escape'?'pending_escape':'closed';
++    const before=(await h.journal.read('note'))!;
++    assert.deepEqual(await client.observe('note',h.attempt.signature),{state:'complete'});
++    const after=(await h.journal.read('note'))!;
++    assert.equal(after.value.wallet!.status,h.snapshot.note!.status);
++    assert.equal(after.value.wallet!.operation,undefined);
++    assert.equal(after.value.wallet!.history.at(-1)!.finalized.at(-1)!.signature,h.attempt.signature);
++    assert.deepEqual(after.value.witness,before.value.witness);
++    assert.deepEqual(after.value.wallet!.clearance,before.value.wallet!.clearance);
++    assert.equal(h.getMinimumSnapshotSlot(),80);
++    assert.deepEqual(await client.observe('note',h.attempt.signature),{state:'changed'});
++    assert.deepEqual(forbidden,[]);
++  });
++}
++for(const state of ['pending','unknown','expired_reconcile_required'] as const) {
++  test(`observation leaves ${state} upload bytes and journal revision unchanged without signing or sending`,async t=>{
++    const h=await setup(t,'mutual_close','create'),{client,forbidden}=observeOnly(h);
++    h.setReceipt(null);
++    h.options.rpc.signatureStatus=async()=>state==='pending'?{confirmationStatus:'confirmed',slot:70,err:null}:null;
++    if(state==='unknown')h.options.rpc.finalizedReceipt=async()=>{throw Error('RPC unavailable');};
++    h.options.rpc.finalizedBlockHeight=async()=>200;
++    const before=await h.journal.read('note');
++    assert.equal((await client.observe('note',h.attempt.signature)).state,state);
++    assert.deepEqual(await h.journal.read('note'),before);
++    assert.deepEqual(forbidden,[]);
++  });
++}
++test('a live unobserved signature is never resent by observation',async t=>{
++  const h=await setup(t),{client,forbidden}=observeOnly(h);h.setReceipt(null);
++  const before=await h.journal.read('note');
++  assert.equal((await client.observe('note',h.attempt.signature)).state,'pending');
++  assert.deepEqual(await h.journal.read('note'),before);assert.deepEqual(forbidden,[]);
++});
++test('signature fence and unsigned next step stop observation without network work',async t=>{
++  const h=await setup(t,'mutual_close','create'),{client,forbidden}=observeOnly(h);
++  h.options.rpc.signatureStatus=async()=>{throw Error('should not read another signature');};
++  const before=await h.journal.read('note');
++  assert.deepEqual(await client.observe('note','another-signature'),{state:'changed'});
++  assert.deepEqual(await h.journal.read('note'),before);
++  h.options.rpc.signatureStatus=async()=>null;h.setReceipt(h.makeReceipt(h.attempt,null));
++  assert.deepEqual(await client.observe('note',h.attempt.signature),{state:'ready'});
++  const after=await h.journal.read('note');
++  assert.equal(after!.value.wallet!.operation!.current,undefined);
++  assert.equal(after!.value.wallet!.operation!.step,before!.value.wallet!.operation!.step+1);
++  assert.deepEqual(await client.observe('note',h.attempt.signature),{state:'changed'});
++  assert.deepEqual(await h.journal.read('note'),after);assert.deepEqual(forbidden,[]);
++  assert.throws(()=>client.observe('note',undefined as unknown as string),/expected saved signature/);
++});
++test('wrong signed receipt cannot clear an operation',async t=>{
++  const h=await setup(t,'mutual_close'),{client,forbidden}=observeOnly(h);
++  const receipt=h.makeReceipt(h.attempt,null);receipt.message[0]^=1;h.setReceipt(receipt);
++  const before=await h.journal.read('note');
++  assert.equal((await client.observe('note',h.attempt.signature)).state,'unknown');
++  assert.deepEqual(await h.journal.read('note'),before);assert.deepEqual(forbidden,[]);
++});
++for(const invalid of ['slot','status','witness','snapshot-failure','escape-pending'] as const) {
++  test(`invalid ${invalid} after a successful receipt preserves the complete original journal`,async t=>{
++    const h=await setup(t,invalid==='escape-pending'?'initiate_escape':'mutual_close'),{client,forbidden}=observeOnly(h);
++    h.setReceipt(h.makeReceipt(h.attempt,null));h.snapshot.note!.status=invalid==='escape-pending'?'pending_escape':'closed';
++    if(invalid==='slot')h.snapshot.slot=79;
++    if(invalid==='status')h.snapshot.note!.status='active';
++    if(invalid==='witness')h.snapshot.note!.expiry='1';
++    if(invalid==='snapshot-failure')h.options.chain.snapshot=async()=>{throw Error('indexer unavailable');};
++    if(invalid==='escape-pending')h.snapshot.pending!.balance_micro_usdc='1';
++    const before=await h.journal.read('note');
++    await assert.rejects(client.observe('note',h.attempt.signature));
++    assert.deepEqual(await h.journal.read('note'),before);assert.deepEqual(forbidden,[]);
++  });
++}
++test('finalized rejection is saved for explicit review, without retries or new proving',async t=>{
++  const h=await setup(t,'mutual_close'),{client,forbidden}=observeOnly(h);
++  const before=(await h.journal.read('note'))!.value;
++  assert.equal((await client.observe('note',h.attempt.signature)).state,'rejected');
++  const after=(await h.journal.read('note'))!.value;
++  assert.equal(after.wallet!.operation!.phase,'failed');assert.equal(after.wallet!.operation!.current,undefined);
++  assert.deepEqual(after.wallet!.operation!.attempts,before.wallet!.operation!.attempts);
++  assert.deepEqual(after.wallet!.clearance,before.wallet!.clearance);assert.deepEqual(forbidden,[]);
++});
++test('observation rechecks its signature after acquiring the journal lock',async t=>{
++  const h=await setup(t,'mutual_close'),{client,forbidden}=observeOnly(h);
++  let observed:ReturnType<WalletClient['observe']>|undefined;
++  await h.journal.withNoteLock('note',async()=>{
++    observed=client.observe('note',h.attempt.signature);
++    const r=(await h.journal.read('note'))!;
++    delete r.value.wallet!.operation!.current;r.value.wallet!.operation!.phase='failed';
++    await h.journal.compareAndSwap('note',r.revision,r.value);
++  });
++  const before=await h.journal.read('note');
++  assert.deepEqual(await observed,{state:'changed'});assert.deepEqual(await h.journal.read('note'),before);
++  assert.deepEqual(forbidden,[]);
++});
++test('a failed durable commit leaves the saved final transaction available for later observation',async t=>{
++  const h=await setup(t,'mutual_close'),{client,forbidden}=observeOnly(h);
++  h.setReceipt(h.makeReceipt(h.attempt,null));h.snapshot.note!.status='closed';
++  const before=await h.journal.read('note');
++  const save=t.mock.method(h.journal,'compareAndSwap',async()=>{throw Error('disk full');});
++  await assert.rejects(client.observe('note',h.attempt.signature),/disk full/);
++  assert.deepEqual(await h.journal.read('note'),before);
++  save.mock.restore();
++  assert.deepEqual(await client.observe('note',h.attempt.signature),{state:'complete'});
++  assert.deepEqual(forbidden,[]);
++});

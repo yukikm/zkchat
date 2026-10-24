@@ -16,6 +16,10 @@ async function openPayment(
       contentType: "application/javascript",
       body: `
 export class BrowserStorageMissing extends Error {}
+export class RecoveryError extends Error {}
+export class RecoverySetupIncomplete extends RecoveryError {}
+export const restoreZkchatDeposits = async () => { throw new Error('Unexpected recovery'); };
+export const finishZkchatRecoverySetup = async () => { throw new Error('Unexpected recovery setup'); };
 const account = { address: '11111111111111111111111111111111' };
 const wallet = { name: 'Payment Recovery Test Wallet' };
 const recovery = ${JSON.stringify(recovery ?? null)};
@@ -35,8 +39,8 @@ let state = { noteId: 'saved-deposit', mode: 'direct_openrouter', wallet: 'activ
 const listeners = new Set();
 const calls = [];
 const record = name => { calls.push(name); localStorage.setItem('payment-recovery:calls', JSON.stringify(calls)); };
-export const connectZkapi = async () => ({ account, wallet, persistence: 'persistent', publicAdmissionReady: true,
-  deposits: [{ id: 'saved-deposit' }], selectedDepositId: 'saved-deposit', deployment: { mint: 'fixture-mint' },
+export const connectZkapi = async () => ({ account, wallet, recoveryEnabled: true, persistence: 'persistent', publicAdmissionReady: true,
+  deposits: [{ id: 'saved-deposit' }, { id: 'retained-other-deposit' }], selectedDepositId: 'saved-deposit', deployment: { mint: 'fixture-mint' },
   async refreshPreflight() {}, dispose() {}, client: {
     status: async () => state,
     subscribe: listener => { listeners.add(listener); return () => listeners.delete(listener); },
@@ -56,9 +60,9 @@ export const connectZkapi = async () => ({ account, wallet, persistence: 'persis
   );
   await page.goto("/");
   await page
-    .getByRole("button", { name: "Connection settings", exact: true })
+    .getByRole("button", { name: "Wallet & balance", exact: true })
     .click();
-  const panel = page.getByRole("dialog", { name: "Connection settings" });
+  const panel = page.getByRole("dialog", { name: "Wallet & balance" });
   await panel
     .getByRole("button", { name: "Connect wallet", exact: true })
     .click();
@@ -74,7 +78,7 @@ for (const phase of ["closing", "send_unknown"] as const) {
     const balance = await panel.locator(".balance-panel strong").innerText();
     await expect(
       panel.getByRole("heading", {
-        name: phase === "closing" ? "Settlement pending" : "Payment pending",
+        name: "Payment needs attention",
         exact: true,
       }),
     ).toBeVisible();
@@ -83,7 +87,7 @@ for (const phase of ["closing", "send_unknown"] as const) {
       .click();
     await expect(panel).toContainText("Optional withdrawal — not started.");
     await panel
-      .getByRole("button", { name: "Check payment", exact: true })
+      .getByRole("button", { name: "Resolve payment", exact: true })
       .click();
     await expect(panel.getByRole("alert")).toContainText(
       phase === "closing"
@@ -119,14 +123,17 @@ test("cleared payment reports resolution and permits a new message without sendi
   const panel = await openPayment(page, "cleared");
   const balance = await panel.locator(".balance-panel strong").innerText();
   await panel
-    .getByRole("button", { name: "Check payment", exact: true })
+    .getByRole("button", { name: "Resolve payment", exact: true })
     .click();
   await expect(panel).toContainText(
     "This payment is no longer pending. No message was resent.",
   );
   await expect(panel.getByRole("alert")).toHaveCount(0);
   await expect(
-    panel.getByRole("heading", { name: "Settlement pending", exact: true }),
+    panel.getByRole("heading", {
+      name: "Payment needs attention",
+      exact: true,
+    }),
   ).toHaveCount(0);
   await expect(
     panel.getByRole("button", {
@@ -182,7 +189,9 @@ for (const [reasonCode, explanation, operator] of [
             }),
       },
     });
-    await panel.getByText("Payment details", { exact: true }).click();
+    await panel
+      .getByText("Payment details and recovery", { exact: true })
+      .click();
     await expect(panel.getByText("Payment reference:")).toHaveText(
       "Payment reference: saved-payment",
     );
@@ -201,7 +210,7 @@ for (const [reasonCode, explanation, operator] of [
         "Latest lookup: The provider request timed out.",
       );
     await panel
-      .getByRole("button", { name: "Check payment", exact: true })
+      .getByRole("button", { name: "Resolve payment", exact: true })
       .click();
     await expect(panel.getByRole("alert")).toContainText(explanation);
     await expect(panel.getByRole("alert")).toContainText(
@@ -238,10 +247,12 @@ test("SDK .15 failed recovery is not reported as a successful check", async ({
     recovery: null,
   });
   await panel
-    .getByRole("button", { name: "Check payment", exact: true })
+    .getByRole("button", { name: "Resolve payment", exact: true })
     .click();
   await expect(panel.getByRole("alert")).toContainText("Payment check failed.");
-  await panel.getByText("Payment details", { exact: true }).click();
+  await panel
+    .getByText("Payment details and recovery", { exact: true })
+    .click();
   await expect(panel).toContainText("Payment service: HTTP 503.");
   await expect(panel.getByRole("alert")).toContainText(
     "The payment service could not be reached reliably.",
@@ -265,7 +276,7 @@ test("SDK .15 completed recovery uses the cleared session without replay", async
     recovery: null,
   });
   await panel
-    .getByRole("button", { name: "Check payment", exact: true })
+    .getByRole("button", { name: "Resolve payment", exact: true })
     .click();
   await expect(panel).toContainText(
     "This payment is no longer pending. No message was resent.",

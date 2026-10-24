@@ -28,11 +28,25 @@ import {
 import { parseStrictJson } from "@zkapi/solana-sdk/trust";
 import {
   cachedAppProfile,
+  cachedAppModelSelection,
   connectPublicDeployment,
   loadAppProfile,
   assertRuntimeCustody,
+  retainRecoveredProfileBinding,
+  assertRecoveryProfileBinding,
   type PublicAppConfig,
 } from "./publicDeployment";
+import {
+  createRecoveryFile,
+  getRecoveryStorage,
+  enrollRecovery,
+  restoreDeposits,
+  openLocalRecoverySource,
+  assertLocalRecoveryNotMoved,
+  RecoveryError,
+  type DepositRecoveryContext,
+} from "./currentRecovery";
+export { RecoveryError, RecoverySetupIncomplete } from "./currentRecovery";
 import type { PublicPreflightResult } from "@zkapi/solana-sdk/public-profile";
 import type { ServiceReadiness } from "./readiness";
 import { WalletConnectionError } from "./walletErrors";
@@ -42,6 +56,7 @@ import { recoveryWallet } from "./recoveryWallet";
 import { currentVerifier } from "./currentVerifier";
 import {
   openDepositCatalog,
+  createDepositCatalog,
   ORIGINAL_NOTE_ID,
   canChangeDeposit,
   canAddDeposit,
@@ -87,6 +102,9 @@ export interface BrowserClientHandle {
   persistence: BrowserStoragePersistence;
   readonly deposits: readonly SavedDeposit[];
   readonly selectedDepositId: string;
+  readonly recoveryEnabled: boolean;
+  createRecoveryFile(): string;
+  enableRecovery(fileText: string): Promise<BrowserClientHandle>;
   addDeposit(): Promise<void>;
   selectDeposit(id: string): Promise<void>;
   readonly invalidated: boolean;
@@ -153,7 +171,9 @@ export function parseConfig(value: unknown): AppConfig {
   if (c.schema === 2) {
     const keys = ["schema", "chain", "label", "profileUrl", "profileSha256"];
     if (
-      Object.keys(c).length !== keys.length ||
+      Object.keys(c).some(
+        (name) => ![...keys, "modelProfile"].includes(name),
+      ) ||
       !keys.every((name) => Object.hasOwn(c, name)) ||
       c.chain !== CHAIN
     )
@@ -165,6 +185,19 @@ export function parseConfig(value: unknown): AppConfig {
     if (new URL(c.profileUrl as string).protocol !== "https:")
       throw new Error("Public profile must use HTTPS.");
     digest(c.profileSha256, "Public profile SHA-256");
+    if (Object.hasOwn(c, "modelProfile")) {
+      const model = object(c.modelProfile, "Model profile");
+      if (
+        Object.keys(model).length !== 2 ||
+        !Object.hasOwn(model, "url") ||
+        !Object.hasOwn(model, "sha256")
+      )
+        throw new Error("Model profile fields are invalid.");
+      endpoint(model.url, "Model profile URL");
+      if (new URL(model.url as string).protocol !== "https:")
+        throw new Error("Model profile must use HTTPS.");
+      digest(model.sha256, "Model profile SHA-256");
+    }
     return structuredClone(c) as unknown as PublicAppConfig;
   }
   const allowed = [
@@ -401,7 +434,7 @@ export function configuredModels(
   if (!config) return [];
   return config.schema === 1
     ? config.models
-    : (cachedAppProfile(config)?.profile.models ?? []);
+    : (cachedAppModelSelection(config)?.models ?? []);
 }
 export function configuredMode(config: AppConfig): Mode | undefined {
   return config.schema === 1
@@ -414,7 +447,7 @@ export function configuredStreaming(
 ): boolean {
   if (!config || config.schema === 1) return true;
   return (
-    cachedAppProfile(config)?.profile.modelCapabilities[model]?.streaming ===
+    cachedAppModelSelection(config)?.modelCapabilities[model]?.streaming ===
     true
   );
 }
@@ -489,6 +522,17 @@ export async function connectZkapi(
   }
   let raw: Awaited<ReturnType<typeof createBrowserClient>>;
   let verifier: Awaited<ReturnType<typeof currentVerifier>>;
+  const recoveryContext: DepositRecoveryContext | null =
+    installed.schema === 2 && !RETIRED_RUNTIME
+      ? {
+          storageName: STORAGE_NAME,
+          deploymentId: assets.verifiedManifest.deployment_id,
+          pool: assets.verifiedManifest.pool,
+          wallet: signer.publicKey,
+          profileSha256: installed.profileSha256,
+        }
+      : null;
+  let recoveryStorage: Awaited<ReturnType<typeof getRecoveryStorage>> = null;
   const openClient = async (noteId: string, initialize = false) => {
     // Each wrapper reads its own client's journal, even during note switching.
     let signingClient: ZkApiClient | undefined;
@@ -514,6 +558,7 @@ export async function connectZkapi(
         ? { keyReuseSeconds: 60 }
         : {}),
       storageName: STORAGE_NAME,
+      ...(recoveryStorage ? { storage: recoveryStorage } : {}),
       noteId,
       initializeStorage: initialize,
       wallet: RETIRED_RUNTIME
@@ -534,19 +579,27 @@ export async function connectZkapi(
   let saved: Awaited<ReturnType<DepositCatalog["read"]>>;
   try {
     verifier = await currentVerifier(installed, assets);
+    if (recoveryContext)
+      recoveryStorage = await getRecoveryStorage(recoveryContext);
     raw = await openClient(NOTE_ID, initializeStorage);
   } catch (error) {
+    recoveryStorage?.close();
     publicConnection?.clear();
     selectConnectedAccount(wallet, account);
     throw error;
   }
   try {
-    catalog = await openDepositCatalog(
-      STORAGE_NAME,
-      assets.verifiedManifest.deployment_id,
-      assets.verifiedManifest.pool,
-      signer.publicKey,
-    );
+    catalog = recoveryStorage
+      ? createDepositCatalog(recoveryStorage, {
+          deploymentId: assets.verifiedManifest.deployment_id,
+          pool: assets.verifiedManifest.pool,
+        })
+      : await openDepositCatalog(
+          STORAGE_NAME,
+          assets.verifiedManifest.deployment_id,
+          assets.verifiedManifest.pool,
+          signer.publicKey,
+        );
     saved = await catalog.read();
     if (saved.selectedId !== NOTE_ID) {
       const selected = await openClient(saved.selectedId);
@@ -556,6 +609,7 @@ export async function connectZkapi(
   } catch (error) {
     raw.dispose();
     catalog!?.close();
+    recoveryStorage?.close();
     publicConnection?.clear();
     selectConnectedAccount(wallet, account);
     throw error;
@@ -597,15 +651,36 @@ export async function connectZkapi(
       );
     }
   };
-  const notifyObservers = () => {
+  const readSelectedStatus = async () => {
     const current = raw.client;
-    void current
-      .status()
+    const requestedId = selectedId;
+    const status = await current.status();
+    const latest = await catalog.read();
+    // A journal read can finish after a different note has been opened. Never
+    // label that old balance as the currently selected deposit.
+    if (
+      disposed ||
+      current !== raw.client ||
+      requestedId !== selectedId ||
+      status.noteId !== requestedId
+    )
+      throw new DepositError(
+        "The selected deposit changed while its status was being read. Refresh the current deposit to continue.",
+      );
+    const projected = project(status);
+    return latest.selectedId === requestedId
+      ? projected
+      : { ...projected, canRequest: false };
+  };
+  let notificationRevision = 0;
+  const notifyObservers = () => {
+    const revision = ++notificationRevision;
+    void readSelectedStatus()
       .then((status) => {
-        if (current !== raw.client || disposed) return;
+        if (revision !== notificationRevision || disposed) return;
         for (const listener of observers) {
           try {
-            listener(project(status));
+            listener(status);
           } catch {
             /* Observers cannot interrupt financial state. */
           }
@@ -615,19 +690,17 @@ export async function connectZkapi(
   };
   const subscribeRaw = () => {
     const current = raw.client;
-    return current.subscribe((status) => {
+    return current.subscribe(() => {
       if (current !== raw.client || disposed) return;
-      for (const listener of observers) {
-        try {
-          listener(project(status));
-        } catch {
-          /* Isolate UI observers. */
-        }
-      }
+      // SDK notifications can themselves complete out of order. Read the
+      // selected journal again instead of forwarding their older snapshot.
+      notifyObservers();
     });
   };
   let offClient = subscribeRaw();
   const assertSelectedDeposit = async (requestedId: string) => {
+    if (recoveryContext && !recoveryStorage)
+      await assertLocalRecoveryNotMoved(recoveryContext);
     const latest = await catalog.read();
     if (
       disposed ||
@@ -649,6 +722,8 @@ export async function connectZkapi(
       assertActiveAccount();
       await assertSelectedDeposit(requestedId);
       if (id === selectedId) return;
+      if (!id && recoveryContext && !recoveryStorage)
+        throw new RecoveryError("Set up recovery before adding funds.");
       const status = await raw.client.status();
       if (!canChangeDeposit(status) || (!id && !canAddDeposit(status)))
         throw new DepositError(
@@ -711,6 +786,7 @@ export async function connectZkapi(
     "prepareWithdrawal",
     "prepareEmergencyEscape",
     "advanceWallet",
+    "observeWallet",
     "resumeWalletProof",
     "retryRejectedWalletOperation",
     "recoverExpiredWalletSetup",
@@ -722,13 +798,10 @@ export async function connectZkapi(
     get(_target, property) {
       const target = raw.client;
       if (property === "status")
-        return async () => {
-          const current = raw.client;
-          const latest = await catalog.read();
-          const status = project(await current.status());
-          return latest.selectedId === selectedId
-            ? status
-            : { ...status, canRequest: false };
+        return () => {
+          // An explicit refresh also supersedes earlier queued notifications.
+          notificationRevision++;
+          return readSelectedStatus();
         };
       if (property === "subscribe")
         return (listener: (status: ClientStatus) => void) => {
@@ -774,7 +847,7 @@ export async function connectZkapi(
                   maxOutputTokens?: number;
                 };
                 const capability =
-                  publicConnection.loaded.profile.modelCapabilities[
+                  publicConnection.modelSelection.modelCapabilities[
                     input.model ?? ""
                   ];
                 if (!capability || (input.stream && !capability.streaming))
@@ -798,6 +871,14 @@ export async function connectZkapi(
               ? (args[0] as { signal?: AbortSignal }).signal
               : undefined;
             try {
+              if (
+                property === "prepareDeposit" &&
+                recoveryContext &&
+                !recoveryStorage
+              )
+                throw new RecoveryError(
+                  "Save your recovery file and enable backup before depositing.",
+                );
               return await Reflect.apply(
                 Reflect.get(target, property, target),
                 target,
@@ -820,10 +901,11 @@ export async function connectZkapi(
     offClient();
     raw.dispose();
     catalog.close();
+    recoveryStorage?.close();
     publicConnection?.clear();
     throw error;
   }
-  return {
+  const handle: BrowserClientHandle = {
     client,
     account,
     wallet,
@@ -833,6 +915,47 @@ export async function connectZkapi(
     },
     get selectedDepositId() {
       return selectedId;
+    },
+    recoveryEnabled: !!recoveryStorage,
+    createRecoveryFile() {
+      assertActiveAccount();
+      if (!recoveryContext || recoveryStorage)
+        throw new RecoveryError(
+          "Recovery is already set up, or unavailable for this deposit version.",
+        );
+      return createRecoveryFile(recoveryContext);
+    },
+    async enableRecovery(fileText) {
+      assertActiveAccount();
+      if (!recoveryContext || recoveryStorage)
+        throw new RecoveryError(
+          "Reconnect to your saved deposits before setting up recovery.",
+        );
+      const status = await raw.client.status();
+      if (status.busy || switching)
+        throw new RecoveryError(
+          "Wait for the current action to finish before setting up recovery.",
+        );
+      // Stop the client before copying. The adapter holds the catalog lock and
+      // freezes local custody before copying any financial records.
+      invalidated = true;
+      handle.dispose();
+      const source = await openLocalRecoverySource(recoveryContext);
+      try {
+        const recovered = await enrollRecovery(
+          recoveryContext,
+          fileText,
+          source,
+          {
+            previousOwnerStopped: true,
+          },
+        );
+        recovered.close();
+      } finally {
+        source.close();
+      }
+      selectConnectedAccount(wallet, account);
+      return connectZkapi(installed, wallet, account);
     },
     addDeposit: () => changeDeposit(),
     selectDeposit: (id) => changeDeposit(id),
@@ -847,7 +970,7 @@ export async function connectZkapi(
       notifyObservers();
     },
     get invalidated() {
-      return invalidated;
+      return invalidated || disposed;
     },
     deployment: {
       id: assets.verifiedManifest.deployment_id,
@@ -858,15 +981,92 @@ export async function connectZkapi(
     assertActiveAccount,
     dispose() {
       if (disposed) return;
+      disposed = true;
+      notificationRevision++;
       offClient();
       raw.dispose();
       catalog.close();
+      recoveryStorage?.close();
       publicConnection?.clear();
-      disposed = true;
       offWallet();
       offConnector();
       offRegistry();
       observers.clear();
     },
   };
+  return handle;
+}
+
+/** A recovery file can only restore the app's independently pinned deployment.
+ * Its contents never choose the network, profile, or wallet account. */
+async function recoverZkchatDeposits(
+  config: AppConfig,
+  wallet: AppWallet,
+  account: StandardAccount,
+  fileText: string,
+  finishSetup: boolean,
+): Promise<BrowserClientHandle> {
+  const installed = parseConfig(config);
+  if (installed.schema !== 2 || RETIRED_RUNTIME)
+    throw new RecoveryError(
+      "Open the current zkChat app to restore a recovery file.",
+    );
+  const signer = walletStandardAdapter(wallet, account, CHAIN);
+  selectConnectedAccount(wallet, account);
+  assertRecoveryProfileBinding(installed, STORAGE_NAME, signer.publicKey);
+  const loaded = await loadAppProfile(installed);
+  const manifest = loaded.assets.verifiedManifest;
+  if (manifest.deployment_environment !== "devnet")
+    throw new RecoveryError("This recovery file cannot be used by this app.");
+  const context: DepositRecoveryContext = {
+    storageName: STORAGE_NAME,
+    deploymentId: manifest.deployment_id,
+    pool: manifest.pool,
+    wallet: signer.publicKey,
+    profileSha256: installed.profileSha256,
+  };
+  selectConnectedAccount(wallet, account);
+  let recovered;
+  if (finishSetup) {
+    const source = await openLocalRecoverySource(context);
+    try {
+      recovered = await enrollRecovery(context, fileText, source, {
+        previousOwnerStopped: true,
+      });
+    } finally {
+      source.close();
+    }
+  } else {
+    recovered = await restoreDeposits(context, fileText, {
+      previousOwnerStopped: true,
+    });
+  }
+  try {
+    selectConnectedAccount(wallet, account);
+    await retainRecoveredProfileBinding(
+      installed,
+      STORAGE_NAME,
+      signer.publicKey,
+    );
+  } finally {
+    recovered.close();
+  }
+  return connectZkapi(installed, wallet, account);
+}
+
+export function restoreZkchatDeposits(
+  config: AppConfig,
+  wallet: AppWallet,
+  account: StandardAccount,
+  fileText: string,
+) {
+  return recoverZkchatDeposits(config, wallet, account, fileText, false);
+}
+export function finishZkchatRecoverySetup(
+  config: AppConfig,
+  wallet: AppWallet,
+  account: StandardAccount,
+  fileText: string,
+) {
+  return recoverZkchatDeposits(config, wallet, account, fileText, true);
 }

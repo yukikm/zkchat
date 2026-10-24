@@ -3,7 +3,7 @@ import { sha256Hex } from "@zkapi/solana-sdk/trust";
 import { SDK_VERSION } from "./sdkVersion";
 
 export const CURRENT_VERIFIER = Object.freeze({
-  sdkVersion: "0.2.0-devnet.16",
+  sdkVersion: "0.2.0-devnet.18",
   profileSha256:
     "5e15d66c6f45265951cf1f8dd6cc0dae6574c4b8dd6756f828f7543ecaa97b9a",
   deploymentId: "public-devnet-20261021-state-v1",

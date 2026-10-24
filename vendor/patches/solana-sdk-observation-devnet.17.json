@@ -1,0 +1,50 @@
+{
+  "sourceBaseCommit": "66dedd8c9e5054d0dfa24b2f37c4b7851c62c038",
+  "installedBaseVersion": "0.2.0-devnet.16",
+  "installedBaseArchiveSha256": "29b8f521a95e99d2fd7aae11d6abdb728229a712d5cd4b967e857daaa1449d07",
+  "baselineDistFilesByteIdentical": true,
+  "version": "0.2.0-devnet.17",
+  "published": false,
+  "sourcePatch": "solana-sdk-observation-devnet.17.patch",
+  "sourcePatchSha256": "c9490eb5ba1bbb5a496ef61cfd9da05694e2094073265907af4c813133559a22",
+  "archive": "zkapi-solana-sdk-0.2.0-devnet.17.tgz",
+  "archiveSha256": "d7bbad7f5dfca4800ca11990aff7e7ebdee4a7efceddde40d322a87686821249",
+  "changedRuntimeFiles": [
+    "client.d.ts",
+    "client.js",
+    "public-profile.d.ts",
+    "public-profile.js",
+    "version.d.ts",
+    "version.js",
+    "wallet.d.ts",
+    "wallet.js"
+  ],
+  "tests": {
+    "typecheck": "passed",
+    "sdkBuild": "passed",
+    "fullSdk": {
+      "tests": 580,
+      "passed": 575,
+      "failed": 5,
+      "skipped": 0,
+      "failures": "Five trust tests required unchanged vendor VK fixtures absent from isolated worktree."
+    },
+    "trustRerun": {
+      "tests": 16,
+      "passed": 16,
+      "failed": 0,
+      "skipped": 0
+    },
+    "conclusion": "All 580 SDK tests passed across full run and affected-suite rerun after restoring unchanged public VK test inputs."
+  },
+  "runtimeConstraints": "No changes to prover WASM, authenticated profiles, custody bindings, journal schema, original financial validation or signed attempt bytes. New observe API is network-read-only and may commit existing finalized evidence locally. No real wallet signing, transactions, AUTH, inference, or release publishing performed.",
+  "packagedProfileCompatibility": {
+    "passed": true,
+    "observedAt": "2026-10-24T17:14:03.346Z",
+    "packageVersion": "0.2.0-devnet.17",
+    "profileSha256": "5e15d66c6f45265951cf1f8dd6cc0dae6574c4b8dd6756f828f7543ecaa97b9a",
+    "profileId": "public-devnet-20261021-state-v1",
+    "custodyProfileUnchanged": true,
+    "scope": "Read-only authenticated profile/assets load. No custody, AUTH, inference or wallet operations."
+  }
+}
