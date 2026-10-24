@@ -79,3 +79,24 @@ released SDK’s independent public preflight passed separately. The browser run
 includes the actual SDK and IndexedDB erasure/restore test, plus the installed
 WASM’s signed-receipt validation. All three production builds and CloudFront
 routing checks passed. [App test receipt](evidence/recovery-backup-ux-20261025.json).
+
+## Publication
+
+App source `a6e24f02e8522194853a4e148610f07a294fba0c` was committed and pushed
+to `main`, then published to <https://dzt0611ozdx70.cloudfront.net/>. The
+existing ACTIVE/FREE distribution was verified, old assets were retained, and
+CloudFront invalidation `I81JQQ6AKBGVJKJDE8D2O72EKD` completed. The upload
+contained 442 files / 28,253,014 bytes.
+
+[Deployed checks](evidence/deployment-backup-20261025.json) passed: 27 file
+SHA/MIME/cache checks, 9 routing checks, 15 retained assets, demo behavior, and
+same-origin navigation to both original recovery runtimes. The previous six
+HTML/config entries were saved locally for rollback before publication.
+
+The [production browser recovery smoke](evidence/public-backup-restore-20261025.json)
+also passed against the actual published app, SDK `.18`, and live recovery
+service. A generated unfunded test wallet saved its file and enabled backup;
+the isolated browser's entire origin data was erased and verified empty before
+loading the app again. The same file restored the zero-balance deposit screen.
+Wallet signatures, deposits, AUTH, paid inference, and transfers were all zero.
+The recovery file was kept only in test-process memory and is not in evidence.
