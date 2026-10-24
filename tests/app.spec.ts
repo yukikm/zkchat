@@ -319,7 +319,7 @@ test("live partial failure blocks sends; recovery does not replay; explicit retr
     .getByRole("button", { name: "Check payment", exact: true })
     .click();
   await expect(
-    page.getByText("Payment checked. Follow the status below."),
+    page.getByText("This payment is no longer pending. No message was resent."),
   ).toBeVisible();
   expect(
     await page.evaluate(

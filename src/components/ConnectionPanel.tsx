@@ -12,8 +12,16 @@ import {
   Unplug,
 } from "lucide-react";
 import type { ClientStatus } from "@zkapi/solana-sdk";
-import { SDK_VERSION, RETIRED_RUNTIME } from "../lib/sdkVersion";
+import {
+  SDK_VERSION,
+  RETIRED_RUNTIME,
+  LOCAL_RECOVERY_PREVIEW,
+} from "../lib/sdkVersion";
 import { reusableSession } from "../lib/sdkStatus";
+import {
+  paymentRecoveryDetails,
+  paymentRecoveryFeedback,
+} from "../lib/paymentRecovery";
 import {
   BrowserStorageMissing,
   connectWalletAccount,
@@ -837,14 +845,18 @@ export function ConnectionPanel({
                   <h4>
                     {reusableSession(status)
                       ? "Active session"
-                      : "Payment pending"}
+                      : status.session.phase === "closing"
+                        ? "Settlement pending"
+                        : "Payment pending"}
                   </h4>
                   <p className="small">
                     {RETIRED_RUNTIME
                       ? "This saved payment belongs to the retired Pool. Checking it does not resend your message."
                       : reusableSession(status)
                         ? "You can keep chatting in the same conversation. Settle charges before sending in another chat, switching deposits, or withdrawing."
-                        : "Check the payment before sending again. This does not resend your message."}
+                        : status.session.phase === "closing"
+                          ? "Closing and settlement have not been confirmed. Sending stays paused until the payment is resolved. Closing the payment is separate from withdrawing your deposit."
+                          : "Check the payment before sending again. This does not resend your message."}
                   </p>
                   {!RETIRED_RUNTIME &&
                     status.canReconcileUnacceptedAuthorization && (
@@ -858,6 +870,16 @@ export function ConnectionPanel({
                   <details className="connection-details">
                     <summary>Payment details</summary>
                     <code>{status.session.phase}</code>
+                    {status.session.id && (
+                      <p className="small">
+                        Payment reference: <code>{status.session.id}</code>
+                      </p>
+                    )}
+                    {paymentRecoveryDetails(status).map((detail) => (
+                      <p className="small" key={detail}>
+                        {detail}
+                      </p>
+                    ))}
                   </details>
                   <div className="button-row">
                     {reusableSession(status) && (
@@ -899,8 +921,16 @@ export function ConnectionPanel({
                       disabled={disabled}
                       onClick={() =>
                         void action(async () => {
-                          await handle.client.recover();
-                          setInfo("Payment checked. Follow the status below.");
+                          const result = await handle.client.recover();
+                          // Recovery may return while the SDK retains an
+                          // unresolved payment, including after a remote error.
+                          const latest = await handle.client.status();
+                          const feedback = paymentRecoveryFeedback(
+                            latest,
+                            result,
+                          );
+                          if (feedback.error) setError(feedback.message);
+                          else setInfo(feedback.message);
                         })
                       }
                     >
@@ -979,9 +1009,12 @@ export function ConnectionPanel({
                 <details className="notice">
                   <summary>Delayed withdrawal options</summary>
                   <p>
-                    Withdraw to this wallet after a waiting period. The payment
-                    stays pending. Follow each wallet step, then return after
-                    the deadline.
+                    {status.canPrepareEmergencyEscape
+                      ? "Optional withdrawal — not started. Check payment does not start this process. Choose it only if you want to withdraw this deposit after a waiting period."
+                      : "A delayed withdrawal was already started. Check payment does not start a new withdrawal. Follow the saved withdrawal status below."}
+                  </p>
+                  <p>
+                    Withdrawal requires wallet approvals and a waiting period.
                   </p>
                   {status.canPrepareEmergencyEscape && (
                     <button
@@ -1163,7 +1196,11 @@ export function ConnectionPanel({
       )}
       <details className="connection-details">
         <summary>Connection details</summary>
-        <p className="small muted">SDK {SDK_VERSION} · Solana Devnet</p>
+        <p className="small muted">
+          SDK {SDK_VERSION}
+          {LOCAL_RECOVERY_PREVIEW ? " · Local recovery preview" : ""} · Solana
+          Devnet
+        </p>
         {config && (
           <>
             <div className="config-summary">

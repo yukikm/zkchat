@@ -1,8 +1,10 @@
 # AWSでの最小コスト公開
 
-現行の配信手順は2026-10-23更新。zkchatは静的React/Viteアプリなので、**非公開S3 + CloudFront Free定額プラン**で公開できます。EC2、Lambda、API Gateway、DB、独自ドメインを追加しません。ビルドはローカルで行い、`https://….cloudfront.net` を固定URLにします。以下の2026-10-11の確認記録・料金見積もりはその時点の結果です。
+現行の配信手順は2026-10-24更新。zkchatは静的React/Viteアプリなので、**非公開S3 + CloudFront Free定額プラン**で公開できます。EC2、Lambda、API Gateway、DB、独自ドメインを追加しません。ビルドはローカルで行い、`https://….cloudfront.net` を固定URLにします。以下の2026-10-11の確認記録・料金見積もりはその時点の結果です。
 
 既存のZKAPI用CloudFront・S3は共有せず、専用の `zkchat-static` スタックで管理します。
+
+2026-10-24 05:13〜05:14 JSTに通常画面をSDK `.15` へ更新しました。現在のPool・profile・保存領域と `.12` / `.3` 復旧画面を保持しています。キャッシュ更新完了後に主要27ファイル、9ルーティング項目、旧asset 15件、デモと復旧画面、実公開profileによる `Service ready` を確認しました。[公開検証記録](SDK-RECOVERY-UPGRADE-20261024.md)。
 
 v0.2.0は通常画面をSDK `.13` / 新Poolへ切り替え、旧Poolの `.12` と元の `.3` の復旧画面を保持します。Node 24.22.1 LTS / npm 11.19.1でビルドします。S3/CloudFrontにNodeサーバーは常駐しておらず、Node更新の対象はローカルの開発・検証・ビルド環境です。公開結果は[SDK・Pool更新記録](SDK-POOL-UPGRADE-20261023.md)へ実行後に記録します。
 
@@ -135,7 +137,7 @@ Outputsの `SiteUrl` が公開URLです。作成に失敗した場合はCloudFor
 
 ## 公開後と更新
 
-公開URLで本体、デモ、`Connection settings` → `Have an older deposit?` → 両復旧画面への遷移を確認します。SDK表示が通常 `.13` / `/recovery-v12/` は `.12` / `/recovery-v3/` は `.3` であること、元の保存データを維持することを確認します。ブラウザのNetworkでJS/WorkerがJavaScriptとして200で返ること、欠落URLがエラーになることも確認します。
+公開URLで本体、デモ、`Connection settings` → `Have an older deposit?` → 両復旧画面への遷移を確認します。SDK表示が通常 `.16`（ローカル復旧プレビュー） / `/recovery-v12/` は `.12` / `/recovery-v3/` は `.3` であること、元の保存データを維持することを確認します。ブラウザのNetworkでJS/WorkerがJavaScriptとして200で返ること、欠落URLがエラーになることも確認します。
 
 新URLに対するAPIのCORSは次で確認できます。金融API本体へのPOSTはしません。
 

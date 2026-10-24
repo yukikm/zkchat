@@ -1,0 +1,171 @@
+{
+  "date": "2026-10-24",
+  "origin": "https://dzt0611ozdx70.cloudfront.net/",
+  "backend_origin": "https://d366buuvadnp3.cloudfront.net",
+  "policy_cutoff_jst": "2026-10-24T16:28:02+09:00",
+  "policy": {
+    "accepts_all_unknown_provider_costs": true,
+    "applies_to_sessions_created_at_or_after": 1792826882,
+    "grace_seconds": 300,
+    "version": "1"
+  },
+  "deployment": {
+    "prepare": {
+      "gateway_control_signer_stopped": true,
+      "private_database_backup": true,
+      "claim_files": 36,
+      "signer_journal_preserved": true
+    },
+    "baseline": {
+      "original_financial_records_preserved": true,
+      "claims_preserved": true,
+      "signer_journal_preserved": true,
+      "original_profile_and_keys_preserved": true
+    },
+    "runtime": {
+      "source_manifest_sha256": "45ed8e987f1ee60adeabe36df260efd2fa35138af66c28795c4178d9645032e4",
+      "all_three_binary_hashes_verified": true,
+      "signer_restarted_with_original_journal": true,
+      "readiness_available": true,
+      "all_existing_payments_preserved": true,
+      "new_session_policy": {
+        "version": "1",
+        "applies_to_sessions_created_at_or_after": 1792826882,
+        "grace_seconds": 300,
+        "accepts_all_unknown_provider_costs": true
+      },
+      "policy_registered_before_admission": true
+    }
+  },
+  "backend_audit": {
+    "services_active": {
+      "gateway": true,
+      "control": true,
+      "signer": true,
+      "postgresql": true,
+      "indexer": true,
+      "challenger": true
+    },
+    "original_ledger_rows_preserved": true,
+    "existing_sessions_preserved": 4,
+    "new_session_policy": {
+      "accepts_all_unknown_provider_costs": true,
+      "applies_to_sessions_created_at_or_after": 1792826882,
+      "grace_seconds": 300,
+      "version": "1"
+    },
+    "all_three_binary_hashes_verified": true,
+    "source_manifest_sha256": "45ed8e987f1ee60adeabe36df260efd2fa35138af66c28795c4178d9645032e4",
+    "original_claims_preserved": 36,
+    "additional_claim_files": 1,
+    "original_signer_history_preserved": true,
+    "signer_reconciled": true,
+    "signer_refused_requests": "0",
+    "sessions": [
+      {
+        "kind": "new_session",
+        "created_after_policy_cutoff": true,
+        "state": "SETTLED",
+        "close_requested": true,
+        "activated": true,
+        "provider_reference_recorded": true,
+        "charged_nano": "8100",
+        "settlement_signed": true,
+        "issuance_attempts": 1,
+        "unquiesced_attempts": 0,
+        "receipts": [
+          {
+            "reason": "metered",
+            "evidence_kind": "OPENROUTER_USAGE",
+            "provider_reported_usd": "0.0000081",
+            "observed_nano_usdc": "8100",
+            "charged_nano_usdc": "8100",
+            "operator_loss_nano_usdc": "0"
+          }
+        ]
+      }
+    ]
+  },
+  "binary_sha256": {
+    "bin/controld": "7e272e6dcc6240856b6362823de62b6252ae5bfa3ab283c5f6c0bf7374708d66",
+    "bin/dispatcherd": "d7b247de61d0279e3e6b7fb573c2708a5e05925fc7837bab6398e4edb20b7e8b",
+    "bin/signerd": "b9bf963d103de42a2b7bfe1b159898d3f4b95350b77695185fd776116ef00a8c"
+  },
+  "public_readonly_checks": {
+    "site": {
+      "status": 200,
+      "sha256": "f95a133d39fbff153f7224f176fc7eb0042ac89345a9dcc4c4c00d8d7f3e9f7a"
+    },
+    "readiness": {
+      "status": 200,
+      "sha256": "5df535506af38c5ffe03412fb417a65db25de829e39162d966f15a77ce5f8756",
+      "dependencies": {
+        "control": "available",
+        "signer": "available",
+        "indexer": "available"
+      }
+    },
+    "profile": {
+      "status": 200,
+      "sha256": "5e15d66c6f45265951cf1f8dd6cc0dae6574c4b8dd6756f828f7543ecaa97b9a"
+    }
+  },
+  "local_validation": {
+    "source_frozen": true,
+    "tests": {
+      "direct_adapters": {
+        "passed": 17
+      },
+      "dispatcher_preparation": {
+        "passed": 7
+      },
+      "direct_not_dispatched": {
+        "passed": 2
+      },
+      "direct_auto_waiver_postgresql": {
+        "passed": 4
+      },
+      "provider_http_direct_regressions": {
+        "passed": 7
+      },
+      "status_projection": {
+        "passed": 1,
+        "scenarios": 4,
+        "financial_snapshot_and_provider_request_count_unchanged": true
+      },
+      "go_parser": {
+        "passed": 1
+      },
+      "clippy_warnings_denied": true,
+      "cargo_fmt": true,
+      "git_diff_check": true,
+      "design_contract": true,
+      "ledger_contract": true,
+      "known_nonissuance_manual_waiver_ledger_and_signer_regressions": {
+        "passed": 14
+      }
+    },
+    "fault_fixture_limits": "Local fixtures use synthetic chain/provider responses with actual subprocesses, database, proofs and independent signer. No failures injected into live provider.",
+    "operational_review": "Independent read-only review found no blockers; cutoff and state-preserving maintenance verified."
+  },
+  "browser_verification": {
+    "fresh_message_sent_once": true,
+    "original_failed_message_resent": false,
+    "model": "openai/gpt-4o-mini",
+    "reply": "動作確認できました。",
+    "settlement_label": "Settled · 0.000009 USDC",
+    "actual_charged_nano_usdc": "8100",
+    "reload_same_wallet": true,
+    "saved_deposit_display_balance_usdc": "1.999096",
+    "ready_to_chat": true,
+    "pending_payment_present": false,
+    "reply_and_settlement_persisted": true,
+    "screenshot_sha256": "ce0799e124bd9fecb466729c516acc193cae6b116c9432a81f4181c5e0e7a1bd"
+  },
+  "frontend_redeployed_this_update": false,
+  "sdk": "0.2.0-devnet.16 local recovery preview",
+  "published_new_github_release": false,
+  "live_provider_failure_injected": false,
+  "provider_final_billing_independently_confirmed": false,
+  "support_message_sent": false
+}

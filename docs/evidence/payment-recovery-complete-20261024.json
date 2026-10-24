@@ -1,0 +1,52 @@
+{
+  "date": "2026-10-24",
+  "origin": "https://dzt0611ozdx70.cloudfront.net",
+  "sdk": "0.2.0-devnet.16",
+  "sdk_release_kind": "local recovery preview; not a published GitHub release",
+  "original_payment": {
+    "state": "SETTLED",
+    "settlement_signed": true,
+    "charged_nano_usdc": "0",
+    "receipt_reason": "waived_unknown",
+    "evidence_kind": "UNKNOWN_OPERATOR_LOSS",
+    "provider_reported_usd": null,
+    "observed_nano_usdc": null,
+    "operator_loss_nano_usdc": null,
+    "unknown_provider_cost_accepted_by_operator": true,
+    "issuance_replayed": false,
+    "original_message_resent": false,
+    "withdrawal_started": false
+  },
+  "new_chat": {
+    "model": "openai/gpt-4o-mini",
+    "reply": "チャットを再開できました。",
+    "state": "SETTLED",
+    "settlement_signed": true,
+    "receipt_reason": "metered",
+    "evidence_kind": "OPENROUTER_USAGE",
+    "charged_nano_usdc": "0",
+    "provider_reported_usd_at_observation": "0",
+    "observed_nano_usdc": "0",
+    "closed_provider_key_get_status": 404
+  },
+  "reload_verification": {
+    "same_wallet_reconnected": true,
+    "saved_deposit_balance_usdc": "2.00",
+    "ready_to_chat": true,
+    "pending_payment_present": false,
+    "response_persisted": true,
+    "settlement_label": "Settled · 0.00 USDC"
+  },
+  "backend_audit": {
+    "all_six_services_active": true,
+    "original_ledger_rows_preserved": true,
+    "original_claims_preserved": 33,
+    "new_claims": 1,
+    "original_signer_history_preserved": true,
+    "signer_reconciled": true,
+    "unquiesced_issuance_attempts": 0
+  },
+  "provider_final_billing_independently_confirmed": false,
+  "provider_billing_limitation": "The additional daily Activity query returned HTTP 400. The new receipt records only usage observed for settlement; the original payment retains unknown usage.",
+  "support_message_sent": false
+}

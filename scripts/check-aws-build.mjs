@@ -179,7 +179,7 @@ try {
       .click();
     assert.match(
       await page.getByRole("dialog").textContent(),
-      /SDK 0\.2\.0-devnet\.13/,
+      /SDK 0\.2\.0-devnet\.16/,
     );
     await page.getByText("Have an older deposit?", { exact: true }).click();
     await page.getByRole("link", { name: label, exact: true }).click();

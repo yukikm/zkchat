@@ -1,10 +1,10 @@
 {
   "schema": 1,
   "kind": "installed_production_dependency_notice_inventory",
-  "packageLockSha256": "9cf0acd6f273acae3f75dd5bd54201421767267b59c185d125b2595d65852a2d",
-  "applicationPackageJsonSha256": "37109d577fe9965e5254134e095070905cdd21661a4ebad52ec31c73a92a344c",
-  "collectionSha256": "8a97939f05ff596948a2bea5fc137a7201ef881f148e9a315c998e679ef30177",
-  "collectionBytes": 249121,
+  "packageLockSha256": "a843a153fc849bd91ecb0c46d20c10ca9e559c1bcfa679dd865f93804fe45b6b",
+  "applicationPackageJsonSha256": "dc7660b7e1683f6b4061043581a76672d9b1c68c9b60c1d1d4f207abdb47bf25",
+  "collectionSha256": "5b749bb4ebefda77bead156162ed5b711b97bfe4e8a2006dd8b2d988572e797b",
+  "collectionBytes": 251028,
   "scope": "Installed npm production closure; exact notice bytes preserved; overinclusive relative to Vite bundle",
   "fontPackages": [
     "@fontsource-variable/dm-sans",
@@ -797,10 +797,10 @@
     },
     {
       "name": "@zkapi/solana-sdk",
-      "version": "0.2.0-devnet.12",
+      "version": "0.2.0-devnet.16",
       "license": "MIT",
-      "lockIntegrity": "sha512-2IHQn0jd3ZqLgz8+thIaDTYf1ongIqAoi5we5OzoR/edjKLbk2IxpeTZJ998UJveuIyhROvXSY4f97FZ/R3AyQ==",
-      "packageJsonSha256": "7ba8f201d7c1322b8ad9585467f8406772c69002ee3fd00f01e12ef0452485eb",
+      "lockIntegrity": "sha512-TcsCnGnSB0oKRwQm1+zUmtceKoPfK6dRWomJpgbFNn0qC4dgjwanmkMhOv8v+qDKXUbtDwtVg/0IOeyanWiEcw==",
+      "packageJsonSha256": "7208eea7c40d3d38ad08422fa45617c58989989ebe9cbf5b7a6b520be242421f",
       "sources": [
         {
           "path": "node_modules/@zkapi/solana-sdk/LICENSE",
@@ -818,6 +818,20 @@
       "sources": [
         {
           "path": "node_modules/@zkapi/solana-sdk-legacy/LICENSE",
+          "sha256": "71afea996cef8ff3d3ef4f84705180bb0b124c1c21a16e89fddacd3b482d4fa7",
+          "bytes": 1097
+        }
+      ]
+    },
+    {
+      "name": "@zkapi/solana-sdk-previous",
+      "version": "0.2.0-devnet.12",
+      "license": "MIT",
+      "lockIntegrity": "sha512-2IHQn0jd3ZqLgz8+thIaDTYf1ongIqAoi5we5OzoR/edjKLbk2IxpeTZJ998UJveuIyhROvXSY4f97FZ/R3AyQ==",
+      "packageJsonSha256": "7ba8f201d7c1322b8ad9585467f8406772c69002ee3fd00f01e12ef0452485eb",
+      "sources": [
+        {
+          "path": "node_modules/@zkapi/solana-sdk-previous/LICENSE",
           "sha256": "71afea996cef8ff3d3ef4f84705180bb0b124c1c21a16e89fddacd3b482d4fa7",
           "bytes": 1097
         }
@@ -2335,5 +2349,9 @@
         }
       ]
     }
-  ]
+  ],
+  "additionalRuntimeNotices": {
+    "path": "verifier-notices/CURRENT-RUNTIME.json",
+    "sha256": "6754572753eb0b48d9b755129789bfa468daa35c0bf95e3dfc065f417906ef9f"
+  }
 }

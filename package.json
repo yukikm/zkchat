@@ -15,6 +15,7 @@
     "format": "prettier --write src tests scripts *.ts *.json index.html README.md docs/*.md",
     "check:public": "node scripts/check-public.mjs",
     "check:cors": "node scripts/check-cors.mjs",
+    "check:recovery-diagnostics": "node scripts/check-recovery-diagnostics.mjs",
     "check:browser": "ZKCHAT_LIVE_CHECK=1 playwright test tests/public.live.spec.ts --workers=1",
     "check:aws": "node scripts/check-aws-build.mjs",
     "publish:aws": "node scripts/publish-aws.mjs",
@@ -27,14 +28,14 @@
     "@solana/kit-plugin-wallet": "0.21.0",
     "@wallet-standard/app": "1.1.1",
     "@wallet-standard/ui-registry": "1.1.1",
-    "@zkapi/solana-sdk": "file:vendor/zkapi-solana-sdk-0.2.0-devnet.13.tgz",
+    "@zkapi/solana-sdk": "file:vendor/zkapi-solana-sdk-0.2.0-devnet.16.tgz",
     "@zkapi/solana-sdk-legacy": "file:vendor/zkapi-solana-sdk-0.2.0-devnet.3.tgz",
+    "@zkapi/solana-sdk-previous": "file:vendor/zkapi-solana-sdk-0.2.0-devnet.12.tgz",
     "lucide-react": "^0.468.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-markdown": "^10.1.0",
-    "remark-gfm": "^4.0.1",
-    "@zkapi/solana-sdk-previous": "file:vendor/zkapi-solana-sdk-0.2.0-devnet.12.tgz"
+    "remark-gfm": "^4.0.1"
   },
   "devDependencies": {
     "@playwright/test": "^1.58.0",

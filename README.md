@@ -1,6 +1,10 @@
 # zkchat
 
-Solana zkAPIをLLMバックエンドにするReactチャットアプリです。公開SDK **0.2.0-devnet.13** と **public-devnet-20261021-state-v1** の認証済み公開Devnet profileを使います。旧Poolの保存データは保持し、SDK `.12` と `.3` の復旧画面を同じoriginに同梱しています。Solanaは **`@solana/kit` 8.4.0**、ウォレット接続は **`@solana/kit-plugin-wallet` 0.21.0 / Wallet Standard**。`web3.js`は使用しません。
+Solana zkAPIをLLMバックエンドにするReactチャットアプリです。ローカル修正版SDK **0.2.0-devnet.16**（未公開release） と **public-devnet-20261021-state-v1** の認証済み公開Devnet profileを使います。旧Poolの保存データは保持し、SDK `.12` と `.3` の復旧画面を同じoriginに同梱しています。Solanaは **`@solana/kit` 8.4.0**、ウォレット接続は **`@solana/kit-plugin-wallet` 0.21.0 / Wallet Standard**。`web3.js`は使用しません。
+
+**2026-10-24 ローカル復旧プレビュー:** 明示的なoperator免除レシートを暗号検証するため、SDK `.16` と新しいWASMをローカルビルドしました。GitHub releaseとしては未公開です。既存profile・Pool・暗号化保存領域を保持し、未確認のprovider使用量をゼロとして扱いません。[変更内容とローカル検証](docs/SDK-OPERATOR-WAIVER-20261024.md)。
+
+**2026-10-24 SDK .15更新:** 公式配布物・署名証明・SHA-256を確認し、現在のPool・profile・保存名・note IDを保持したまま更新しました。支払い確認は完了・保留・失敗を区別し、provider keyが見つからない場合と照合に失敗した場合を表示します。未解決の支払いは保持されます。同日05:13〜05:14 JSTに同じ公開URLへ反映し、配信ファイル・デモ・両復旧画面・公開サービス接続を検証済みです。[更新内容と検証範囲](docs/SDK-RECOVERY-UPGRADE-20261024.md)。
 
 **2026-10-23 v0.2.0:** 上流のPool刷新に合わせ、新Pool用の保存領域を旧データと分離しました。旧会話のモデルが現在のprofileにない場合は送信を止め、新規チャットを案内します。Node.jsはセキュリティ修正版24.22.1 LTSを使用します。検証・公開状況と旧データの保持方針は[SDK・Pool更新記録](docs/SDK-POOL-UPGRADE-20261023.md)を参照してください。以下の2026-10-12以前の記録は旧Poolの過去の結果です。
 
@@ -110,17 +114,17 @@ npm run check:cors -- http://localhost:5173 docs/evidence/my-cors.json
 npm run check:browser
 ```
 
-`check:public`は公開SDKの10項目とreadinessを検証します。`check:cors`は認証済みprofileから導出した11ルート（`.10` の認可復旧ルートを含む）へ指定originのOPTIONSを送り、必要なmethod/headerを照合します。金融API本体へはPOSTしません。
+`check:public`は公開SDKの10項目とreadinessを検証します。`check:cors`は認証済みprofileから導出した11ルート（`.10` の認可復旧ルートを含む）へ指定originのOPTIONSを送り、必要なmethod/headerを照合します。`.15` のsession作成・状態取得・終了に必要な `X-Zkapi-Recovery-Diagnostics` も確認します。金融API本体へはPOSTしません。
 
 `check:browser`は隔離Chromiumで実サービスを検査します。接続検査に加えて、署名できないテスト用Wallet Standardアカウントで公開SDK・Worker・WASM・IndexedDBの初期化/再接続を検証します。初回Workerロード時のVite再読み込みを避けるため、Worker依存を起動時に最適化します。ローカル保存領域は作りますが、入金・AUTH・推論は禁止するネットワークガードを使用します。通常E2Eと実ウォレットの有資金検証は別の範囲です。
 
 ## 固定設定と保存
 
-[`.13` 更新ガイド](https://github.com/yukikm/solana-zkapi/blob/v0.2.0-devnet.13/docs/getting-started/gateway-release-upgrade.md)と[新Poolの導入手順](https://github.com/yukikm/solana-zkapi/blob/1d5b22e5e76ed32719fa130899a22dc187d7487b/docs/getting-started/sdk.md)に従い、実行SDKと保存領域の世代を分離しています。配布元はnpm registryではなくGitHub releaseです。`verify:sdk`は現行 `.13` と保持した `.12`・`.10`・`.8`・`.3` のvendor archiveを公開SHA-256と照合します。
+[`.15` 更新ガイド](https://github.com/yukikm/solana-zkapi/blob/94e4969f3169bfc790fc6f4186fc2bf94dbe074a/docs/getting-started/direct-recovery-upgrade.md)に従い、実行SDKと保存領域の世代を分離しています。公開SDKの配布元はnpm registryではなくGitHub releaseです。現行 `.16` はローカル復旧プレビューで、`verify:sdk`はレビューしたローカルarchiveとWASMのSHA-256を照合します。保持した `.15`・`.13`・`.12`・`.10`・`.8`・`.3` は公開SHA-256と照合します。現行 `.16` も現在の `.13` profileをそのまま受け入れ、profileと保存領域を変更しません。
 
 | 画面       | 固定設定                                                       | 保存名 / 初回note ID                                                                             |
 | ---------- | -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
-| 通常 `.13` | `public/zkapi-config.json` / `public-devnet-20261021-state-v1` | `zkchat-sdk-public-devnet-20261021-state-v1` / `zkchat-note-sdk-public-devnet-20261021-state-v1` |
+| 通常 `.16`（ローカルプレビュー） | `public/zkapi-config.json` / `public-devnet-20261021-state-v1` | `zkchat-sdk-public-devnet-20261021-state-v1` / `zkchat-note-sdk-public-devnet-20261021-state-v1` |
 | 復旧 `.12` | `config/zkapi-config.devnet.12.json` / 元のrevision-6 profile  | `zkchat-sdk-0.2.0-devnet.8` / `zkchat-note-sdk-0.2.0-devnet.8`                                   |
 | 復旧 `.3`  | `config/zkapi-config.devnet.3.json` / 元のrevision-2 profile   | `zkchat-sdk-0.2.0-devnet.3` / `zkchat-note-sdk-0.2.0-devnet.3`                                   |
 
@@ -134,7 +138,7 @@ npm run check:browser
 
 AWSの最小コスト構成（非公開S3 + CloudFront Free定額プラン）、配信用テンプレート、公開手順は[docs/AWS-DEPLOY.md](docs/AWS-DEPLOY.md)にまとめています。`npm run check:aws`で配信動作をローカル検証し、`npm run publish:aws`でAWSを変更せず配信計画を確認できます。
 
-公開URL: [zkchat](https://dzt0611ozdx70.cloudfront.net) / [旧Pool `.12` 復旧画面](https://dzt0611ozdx70.cloudfront.net/recovery-v12/) / [元の `.3` 復旧画面](https://dzt0611ozdx70.cloudfront.net/recovery-v3/)。同じCloudFront URLを維持します。v0.2.0の公開状況と外部ZKAPIの確認結果は[更新記録](docs/SDK-POOL-UPGRADE-20261023.md)を参照してください。
+公開URL: [zkchat](https://dzt0611ozdx70.cloudfront.net) / [旧Pool `.12` 復旧画面](https://dzt0611ozdx70.cloudfront.net/recovery-v12/) / [元の `.3` 復旧画面](https://dzt0611ozdx70.cloudfront.net/recovery-v3/)。同じCloudFront URLを維持します。SDK `.15` の公開状況と外部ZKAPIの確認結果は[更新記録](docs/SDK-RECOVERY-UPGRADE-20261024.md)を参照してください。
 
 HTTPS、Web Crypto、Web Locks、IndexedDB、module Worker、WASM対応ブラウザが必要です。サブパスへ配置する場合:
 

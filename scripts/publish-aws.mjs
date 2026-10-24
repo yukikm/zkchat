@@ -29,8 +29,14 @@ async function listFiles(directory, prefix = "") {
       );
     } else {
       assert(entry.isFile(), `Unexpected build entry: ${key}`);
+      // Vite copies the shared public notices into each build. Permit only the
+      // reviewed provenance Markdown files, not arbitrary source documentation.
+      const verifierNotice =
+        /^(?:recovery-v(?:12|3)\/)?verifier-notices\/(?:BUNDLE-PROVENANCE|PROVENANCE|ethereum-VENDORED-045b444|mingyech-(?:setup-)?README-8b2d4e3)\.md$/.test(
+          key,
+        );
       assert(
-        /\.(html|js|css|json|svg|txt|woff2|wasm)$/.test(key),
+        /\.(html|js|css|json|svg|txt|woff2|wasm)$/.test(key) || verifierNotice,
         `Unexpected build file: ${key}`,
       );
       files.push(key);

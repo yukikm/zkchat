@@ -39,6 +39,7 @@ import { WalletConnectionError } from "./walletErrors";
 import { MAX_OUTPUT_TOKENS } from "./chat";
 import { createIndexerSnapshotFetch } from "./indexerFetch";
 import { recoveryWallet } from "./recoveryWallet";
+import { currentVerifier } from "./currentVerifier";
 import {
   openDepositCatalog,
   ORIGINAL_NOTE_ID,
@@ -487,6 +488,7 @@ export async function connectZkapi(
     };
   }
   let raw: Awaited<ReturnType<typeof createBrowserClient>>;
+  let verifier: Awaited<ReturnType<typeof currentVerifier>>;
   const openClient = async (noteId: string, initialize = false) => {
     // Each wrapper reads its own client's journal, even during note switching.
     let signingClient: ZkApiClient | undefined;
@@ -522,8 +524,8 @@ export async function connectZkapi(
           type: "module",
           name: "zkchat-prover",
         }),
-      wasm: assets.wasm,
-      wasmSha256: assets.wasmSha256,
+      wasm: verifier.wasm,
+      wasmSha256: verifier.wasmSha256,
     });
     signingClient = opened.client;
     return opened;
@@ -531,6 +533,7 @@ export async function connectZkapi(
   let catalog: DepositCatalog;
   let saved: Awaited<ReturnType<DepositCatalog["read"]>>;
   try {
+    verifier = await currentVerifier(installed, assets);
     raw = await openClient(NOTE_ID, initializeStorage);
   } catch (error) {
     publicConnection?.clear();

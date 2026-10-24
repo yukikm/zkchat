@@ -1,0 +1,53 @@
+{
+  "schema": 1,
+  "kind": "independently_installed_local_verifier_patch",
+  "sdkVersion": "0.2.0-devnet.16",
+  "publishedRelease": false,
+  "sourceBaseCommit": "94e4969f3169bfc790fc6f4186fc2bf94dbe074a",
+  "sharedValidatorSha256": "b17f7161a80d6ec722d4216ffd0af374bf4ada3a1a8270269443c2e278039edb",
+  "wasmSha256": "395465e39aef68ff1e9fd3167cb80d03a653bab09a54c83c18cbf8df06c60d84",
+  "profileSha256": "5e15d66c6f45265951cf1f8dd6cc0dae6574c4b8dd6756f828f7543ecaa97b9a",
+  "scope": "Explicit operator-waived unknown cost verifier; original financial manifest, proof artifacts, custody and profile retained. Dependencies unchanged. Original provenance files describe original bundle only.",
+  "notices": {
+    "BUNDLE-PROVENANCE.md": {
+      "sha256": "a2149ea0282d5feb71dafb429b1beaacd6a4fa70b12af7b77bb1651899fe632d",
+      "bytes": 2442
+    },
+    "PROVENANCE.md": {
+      "sha256": "2b2fd1dd5baf7baf8fe0947987c56b8465c64b63e179d461f7a12f190b834aed",
+      "bytes": 3682
+    },
+    "Rust-notices-1.json": {
+      "sha256": "60901baa076fb37f4fd60c337f8feae117b27723ef0194b4a6462d501c198f7d",
+      "bytes": 849885
+    },
+    "Rust-notices-2.json": {
+      "sha256": "8c7dfd19d3a2433ee81a276153ef487a11ca43b969d455e4b24d309905afb89f",
+      "bytes": 145787
+    },
+    "ethereum-VENDORED-045b444.md": {
+      "sha256": "12e597fefcdb430f28a1ca16c1fe917e0bd2513958aa8523e1e1610bb947fce3",
+      "bytes": 2208
+    },
+    "Rust-dependencies.json": {
+      "sha256": "18f593bf1a49de45eff46fc531382bd62d5b0f42f004aede09f945797a9a0021",
+      "bytes": 232628
+    },
+    "Solana-zkAPI-LICENSE.txt": {
+      "sha256": "71afea996cef8ff3d3ef4f84705180bb0b124c1c21a16e89fddacd3b482d4fa7",
+      "bytes": 1097
+    },
+    "mingyech-setup-README-8b2d4e3.md": {
+      "sha256": "22b8ab79c6e8c985447c2a20b55d9253b5c2dab932cbd50927538f3571ffcf5d",
+      "bytes": 894
+    },
+    "mingyech-README-8b2d4e3.md": {
+      "sha256": "f93dcf61244ca2c3de783aa68355cb263024f5b5da3ec9fd40ac26cbee157846",
+      "bytes": 3301
+    },
+    "Apache-2.0.txt": {
+      "sha256": "074e6e32c86a4c0ef8b3ed25b721ca23aca83df277cd88106ef7177c354615ff",
+      "bytes": 10280
+    }
+  }
+}

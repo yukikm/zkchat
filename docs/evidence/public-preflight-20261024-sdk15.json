@@ -1,0 +1,69 @@
+{
+  "startedAt": "2026-10-23T19:59:40.162Z",
+  "sdk": "0.2.0-devnet.15",
+  "node": "v24.22.1",
+  "profileSha256": "5e15d66c6f45265951cf1f8dd6cc0dae6574c4b8dd6756f828f7543ecaa97b9a",
+  "checks": [
+    {
+      "stage": "profile",
+      "passed": true,
+      "profileId": "public-devnet-20261021-state-v1",
+      "models": [
+        "openai/gpt-4o-mini"
+      ],
+      "wasmBytes": 3678975
+    },
+    {
+      "stage": "preflight",
+      "passed": true,
+      "profileId": "public-devnet-20261021-state-v1",
+      "profileSha256": "5e15d66c6f45265951cf1f8dd6cc0dae6574c4b8dd6756f828f7543ecaa97b9a",
+      "deploymentId": "public-devnet-20261021-state-v1",
+      "pool": "2zAKvvfiV1RZtWw71EYthWVrR3ZiWgmy92DS75JpmG8R",
+      "manifestHash": "5e3a6120e320f6d688c30f1e505a0fe657be1de0928b5f2d855974ccfc97f51e",
+      "slot": "514359765",
+      "paused": false,
+      "chainAllowsNewOperations": true,
+      "operatorAdmission": "unverified",
+      "models": [
+        "openai/gpt-4o-mini"
+      ],
+      "apis": [],
+      "snapshot": {
+        "root": "0x07253e233cb6e9ae06322455aca1fc760e0ca4b6ff7f7c33ff58fc192b80ed2a",
+        "slot": 514359765,
+        "sequence": "3",
+        "nextNoteId": 2,
+        "clock": "1792785583",
+        "paused": false,
+        "sourceSlot": 514359761,
+        "pendingCount": 0,
+        "activeCount": 1
+      },
+      "checks": [
+        "profile",
+        "assets",
+        "manifest",
+        "tariffs",
+        "genesis",
+        "finalized_pool",
+        "control_config",
+        "catalog",
+        "shared_snapshot",
+        "chain_clock"
+      ]
+    },
+    {
+      "stage": "readiness",
+      "passed": true,
+      "admission": "enabled",
+      "invitationRequired": false,
+      "recovery": "enabled",
+      "servicesAvailable": true,
+      "expiresAt": 1792785590000,
+      "checkedAt": 1792785585144
+    }
+  ],
+  "scope": "Read-only public HTTP and SDK preflight. No custody, signatures, AUTH or inference.",
+  "completedAt": "2026-10-23T19:59:45.144Z"
+}

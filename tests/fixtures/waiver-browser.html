@@ -1,0 +1,11 @@
+<!doctype html>
+<html lang="en">
+  <head><meta charset="UTF-8"><title>Offline waiver verifier fixture</title></head>
+  <body>
+    <p>Public test fixture: no wallet or live payment service.</p>
+    <script type="module">
+      import { verifyWaiverInBrowser } from "./waiverBrowser.ts";
+      window.verifyWaiverInBrowser = verifyWaiverInBrowser;
+    </script>
+  </body>
+</html>

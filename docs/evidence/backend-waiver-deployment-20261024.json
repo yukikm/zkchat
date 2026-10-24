@@ -1,0 +1,68 @@
+{
+  "date": "2026-10-24",
+  "deployment_id": "public-devnet-20261021-state-v1",
+  "schema_migration": 5,
+  "first_runtime_deployed_and_original_state_verified": {
+    "prepare": {
+      "gateway_control_signer_stopped": true,
+      "private_database_backup": true,
+      "claim_files": 33,
+      "signer_journal_preserved": true
+    },
+    "baseline": {
+      "original_financial_records_preserved": true,
+      "claims_preserved": true,
+      "signer_journal_preserved": true,
+      "original_profile_and_keys_preserved": true
+    },
+    "runtime": {
+      "source_manifest_sha256": "066625e4433290c42f434e446413479a286932d8dacad56a9c8b78ac76f1d28d",
+      "all_three_binary_hashes_verified": true,
+      "signer_restarted_with_original_journal": true,
+      "readiness_available": true,
+      "payment_unchanged_pending_approval": true
+    }
+  },
+  "initial_apply_safely_refused": {
+    "cause": "Administrative approval uses numeric timestamps, incompatible with public wire parser.",
+    "financial_records_unchanged": true,
+    "waiver_rows": 0
+  },
+  "revision_two": "Canonical administrative parser, exact bytes and schema validated; same migration and signature format.",
+  "revision_two_deployment": {
+    "prepare": {
+      "gateway_control_signer_stopped": true,
+      "private_database_backup": true,
+      "claim_files": 33,
+      "signer_journal_preserved": true
+    },
+    "baseline": {
+      "original_financial_records_preserved": true,
+      "claims_preserved": true,
+      "signer_journal_preserved": true,
+      "original_profile_and_keys_preserved": true
+    },
+    "runtime": {
+      "source_manifest_sha256": "5d7828512bddcb392f7cad597576314034b527ea9ed9acbd4becfa959f127528",
+      "all_three_binary_hashes_verified": true,
+      "signer_restarted_with_original_journal": true,
+      "readiness_available": true,
+      "payment_unchanged_pending_approval": true
+    }
+  },
+  "original_incident_resolution": {
+    "state": "SETTLED",
+    "charged_nano": "0",
+    "receipt_count": 1,
+    "settlement_signed": true,
+    "original_auth_reserved": true,
+    "direct_stop_evidence_present": false,
+    "provider_usage": "unknown",
+    "operator_accepts_all_unknown_costs": true,
+    "browser_recovered": true,
+    "browser_balance_usdc": "2.00",
+    "browser_ready_to_chat": true,
+    "message_resent": false,
+    "withdrawal_started": false
+  }
+}

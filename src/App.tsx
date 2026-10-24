@@ -34,6 +34,8 @@ import { readChatResponse } from "./lib/chatResponse";
 import { useAppUpdate } from "./lib/appUpdate";
 import {
   SDK_VERSION,
+  LOCAL_RECOVERY_PREVIEW,
+  SDK_SOURCE_URL,
   RECOVERY_RUNTIME,
   RETIRED_RUNTIME,
 } from "./lib/sdkVersion";
@@ -1509,8 +1511,9 @@ export default function App() {
           <details className="connection-details">
             <summary>Payment data details</summary>
             <p>
-              App {APP_VERSION} · SDK {SDK_VERSION}. Payment records are
-              encrypted in this browser.{" "}
+              App {APP_VERSION} · SDK {SDK_VERSION}
+              {LOCAL_RECOVERY_PREVIEW ? " (local recovery preview)" : ""}.
+              Payment records are encrypted in this browser.{" "}
               {RECOVERY_RUNTIME
                 ? "Older records can include sent messages."
                 : "Sent message bodies are omitted from new SDK records. Request fingerprints and payment records remain."}{" "}
@@ -1520,11 +1523,14 @@ export default function App() {
           </details>
           <a
             className="source-link"
-            href={`https://github.com/yukikm/solana-zkapi/releases/tag/v${SDK_VERSION}`}
+            href={SDK_SOURCE_URL}
             target="_blank"
             rel="noreferrer"
           >
-            SDK release ({SDK_VERSION}) <ExternalLink size={14} />
+            {LOCAL_RECOVERY_PREVIEW
+              ? "Upstream source for local recovery preview"
+              : `SDK release (${SDK_VERSION})`}{" "}
+            <ExternalLink size={14} />
           </a>
         </Modal>
       )}

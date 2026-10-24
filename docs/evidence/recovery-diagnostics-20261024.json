@@ -1,0 +1,30 @@
+{
+  "observedAt": "2026-10-23T20:27:01.617Z",
+  "origin": "https://dzt0611ozdx70.cloudfront.net",
+  "profileSha256": "5e15d66c6f45265951cf1f8dd6cc0dae6574c4b8dd6756f828f7543ecaa97b9a",
+  "checks": [
+    {
+      "diagnostic": null,
+      "expectedStatus": 404,
+      "status": 404,
+      "invalidValueRejected": false,
+      "passed": true
+    },
+    {
+      "diagnostic": "1",
+      "expectedStatus": 404,
+      "status": 404,
+      "invalidValueRejected": false,
+      "passed": true
+    },
+    {
+      "diagnostic": "2",
+      "expectedStatus": 400,
+      "status": 400,
+      "invalidValueRejected": true,
+      "passed": true
+    }
+  ],
+  "passed": true,
+  "scope": "Verified profile loading and read-only GETs for a nonexistent session with a fake credential. Checks public gateway diagnostic-header forwarding only. No real session credentials, wallet, AUTH creation, recovery, inference or transaction. Does not verify an authenticated recovery payload or payment settlement."
+}

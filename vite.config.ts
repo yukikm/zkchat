@@ -16,7 +16,7 @@ export default defineConfig(({ mode }) => {
       `node_modules/.vite-${mode}`,
     define: {
       "import.meta.env.VITE_ZKCHAT_SDK_VERSION": JSON.stringify(
-        `0.2.0-devnet.${recoveryVersion ?? "13"}`,
+        `0.2.0-devnet.${recoveryVersion ?? "16"}`,
       ),
     },
     resolve: {
@@ -25,6 +25,10 @@ export default defineConfig(({ mode }) => {
             {
               find: /^@zkapi\/solana-sdk(?=\/|$)/,
               replacement: recoveryPackage,
+            },
+            {
+              find: /^\.\/currentVerifier$/,
+              replacement: resolve("src/lib/originalVerifier.ts"),
             },
           ]
         : [],

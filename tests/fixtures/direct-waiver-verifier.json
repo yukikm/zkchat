@@ -1,0 +1,1189 @@
+{
+  "expected": {
+    "anchor": "0x0000000000000000000000000000000000000000000000000000000000000011",
+    "balance_blinding": "0x0000000000000000000000000000000000000000000000000000000000000047",
+    "balance_micro_usdc": "5000000",
+    "commitment": {
+      "x": "0x042dc881d78f060e49038cf462d9e2bba61bc4770e949846786b09dc81ea99a5",
+      "y": "0x110c5b021781c0b9de6d006b2ea83fa941ced3e2108d971b17fe1e968bed6075"
+    },
+    "note_leaf": "0x04dbfc272f894c0d1739ac1e19e7479267c98986ceedcb31be08abece82968f8",
+    "state_signature": {
+      "r_x": "0x2dd0bd0a944313e2cef557915aa1eecd8d272e0da00d09c2fa8e8917e1399583",
+      "r_y": "0x2a2862780b932220596a71414e5d18ef2697d5c3ebe6b79db8b3d13b70938667",
+      "s": "0x0234a6bee9bc56df85a8fb086ea52ab30828c1705bbaab804d5687ff3c05889d"
+    }
+  },
+  "rejected": [
+    {
+      "context": {
+        "cap_micro_usdc": "1000000",
+        "control_api_origin": "http://127.0.0.1:8788",
+        "deployment_id": "i05-local",
+        "inference_api_origin": "http://127.0.0.1:8789",
+        "pool": "3mJ5ojuRqQRz2Wu1WTXagW2bT3WJCStTDxLH8VSHGqxm",
+        "quote_public_key": "7v54NWdBtkjuAFJrLGsS2SXnuk8nKam81mZJeeYxVFi9",
+        "receipt_public_key": "mBKqcnGotbsSb5vNrdyhzZ5EhqZdids9QYiTRckvi7v",
+        "request_vk_sha256": "8011244c99fa1a8524870906462d430fc86366b8ad821736c5fa726b479e6d97",
+        "state_key": [
+          "0x1323be9e2e992d044776cbcb214a0c48c6b26e75d0e16566205b8d87b7c96426",
+          "0x27a29afe44e845c4ece5d6f0fdf72d31229299094efc99ea1b5ead25bdab2564"
+        ],
+        "tariff_hashes": [
+          "b1ac4f5ef8577b78e0854ddf4618e9c0d2a569a5c3824bf9597862865b219fd3"
+        ],
+        "vault_binding": "0x276cc4776cdeea717902ba96bda89d2b81b09d80225db473d9f624da621efb9b"
+      },
+      "kind": "settle",
+      "operations": [],
+      "prepared": {
+        "control_token": "zkc1.b4341706-4bec-45d1-96f9-61133ac65437.BwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwc",
+        "proxy_token": null,
+        "request": {
+          "authorization": {
+            "control_secret_hash": "4bb06f8e4e3a7715d201d573d0aa423762e55dabd61a2c02278fa56cc6d294e0",
+            "deployment_id": "i05-local",
+            "mode": "direct_openrouter",
+            "pool": "3mJ5ojuRqQRz2Wu1WTXagW2bT3WJCStTDxLH8VSHGqxm",
+            "proxy_secret_hash": null,
+            "quote_hash": "bb2740f7abf2b4a0beff17754e27e526c736e15468883462db5c5a4a6188beae",
+            "request_id": "b4341706-4bec-45d1-96f9-61133ac65437",
+            "version": "1"
+          },
+          "proof": {
+            "backend": "groth16_bn254",
+            "proof": "AOIRu6LhltMKf6ht0MttAJwMk6BV5emkPm3KAJKhZYcst5IFXCNFnFWg3230MDNrw0fbVnPGzEc/dVdoJWPiIRkuVhmIZGH8GLUSiU3FnDtshxjmtDlonAa8FeyPXASqEueSU3dXOO+WiSzocFvW0sgEF71A4IDzkP4S1SjriaouPcZf+k22hn/bniT6mL5xxKGaHVJS1kc8C/io/z9KhSpPRlb6L4m/gaf9P1yRb2SLdwp26swJEH5sGI4h6A+nL6NaQu8OZ9EVCcnkzJRiLkUMLvELbTXv4yzoH+bfpdcs+MHXl32gdwn4GtBPND17a/PW2xEtvF2NG1wyHDj0CQ=="
+          },
+          "public_inputs": [
+            "0x0000000000000000000000000000000000000000000000000000000000000002",
+            "0x0000000000000000000000000000000000000000000000000000000000534f4c",
+            "0x276cc4776cdeea717902ba96bda89d2b81b09d80225db473d9f624da621efb9b",
+            "0x0d0c94df0567dc5a63abcc7bf3330fcf47c08ebaec5b1aec208f679076c6efab",
+            "0x1323be9e2e992d044776cbcb214a0c48c6b26e75d0e16566205b8d87b7c96426",
+            "0x27a29afe44e845c4ece5d6f0fdf72d31229299094efc99ea1b5ead25bdab2564",
+            "0x00000000000000000000000000000000000000000000000000000000b2d05e00",
+            "0x00000000000000000000000000000000000000000000000000000000000f4240",
+            "0x297c134bc2ba2db527d7d6cf5818de29f838328162eb1566546ec75916e6a33f",
+            "0x0eece29412b5e24841a2a4c68f7cc6b4304cd126e42a6249a994ef9739103745",
+            "0x2d7045b84a16e73d150fc5a97736684af69cabd0ddc22d16131c7ac04c91474b",
+            "0x0e1022643b1f0e53d9abe5bd47b7cc86f0866f5bef88404d46f3669eae71ab31"
+          ],
+          "quote": {
+            "body": {
+              "cap_micro_usdc": "1000000",
+              "control_api_origin": "http://127.0.0.1:8788",
+              "deployment_id": "i05-local",
+              "expires_at": "3000000120",
+              "inference_api_origin": "http://127.0.0.1:8789",
+              "issued_at": "3000000000",
+              "max_concurrency": "4",
+              "mode": "direct_openrouter",
+              "models": [
+                "*"
+              ],
+              "pool": "3mJ5ojuRqQRz2Wu1WTXagW2bT3WJCStTDxLH8VSHGqxm",
+              "provider": "openrouter",
+              "quote_id": "f149ace7-41fe-40ed-a1cd-e1c09af61fad",
+              "session_ttl_seconds": "60",
+              "tariff_hash": "b1ac4f5ef8577b78e0854ddf4618e9c0d2a569a5c3824bf9597862865b219fd3"
+            },
+            "quote_hash": "bb2740f7abf2b4a0beff17754e27e526c736e15468883462db5c5a4a6188beae",
+            "signature": "K4x0akcasr3vgGxOzWih3YlM/Bad8q8GhGfxz6CIaCmrH42Hi1KGJTPJiJO5fC3OvOzCPjSNYpSfzsfI/tSoBw=="
+          }
+        },
+        "rerandomization": "0x0000000000000000000000000000000000000000000000000000000000000017",
+        "tariff": {
+          "model": "*",
+          "operator_fee_micro_usdc": "0",
+          "pricing_basis": "provider_reported_usd",
+          "provider": "openrouter",
+          "rates": [],
+          "tariff_hash": "b1ac4f5ef8577b78e0854ddf4618e9c0d2a569a5c3824bf9597862865b219fd3",
+          "valid_from": "0",
+          "valid_until": "4000000000",
+          "version": "1"
+        }
+      },
+      "receipts": [
+        {
+          "body": {
+            "billing_effect": "charge",
+            "charged_nano_usdc": "0",
+            "deployment_id": "i05-local",
+            "evidence_kind": "UNKNOWN_OPERATOR_LOSS",
+            "observed_at": "3000000001",
+            "observed_nano_usdc": null,
+            "operation_id": null,
+            "operator_loss_nano_usdc": null,
+            "pool": "3mJ5ojuRqQRz2Wu1WTXagW2bT3WJCStTDxLH8VSHGqxm",
+            "provider_evidence_digest": null,
+            "provider_reported_usd": null,
+            "provider_request_id": null,
+            "reason": "waived_unknown",
+            "receipt_id": "4ff33489-eb48-4769-a247-2b4cfef9c998",
+            "related_receipt_hash": null,
+            "request_id": "b4341706-4bec-45d1-96f9-61133ac65437",
+            "reservation_nano_usdc": "1000000000",
+            "tariff_hash": "b1ac4f5ef8577b78e0854ddf4618e9c0d2a569a5c3824bf9597862865b219fd3",
+            "usage": [],
+            "version": "1"
+          },
+          "receipt_hash": "ac8bd2dd0746c770b3a21b8ea8eecb3d1674329a7e27ffe59f40ded29c57c675",
+          "signature": "XyoArb6vAt+gYEh7xrXcF5F7+1juNVJa5MEWz/MQHlgTEd5HSVjkI8v5GB08d2pGC9ajpcjuunIELDdhrE/lDQ=="
+        }
+      ],
+      "settlement": {
+        "blind_delta_srv": "0x000000000000000000000000000000000000000000000000000000000000001d",
+        "charge_micro_usdc": "0",
+        "next_anchor": "0x0000000000000000000000000000000000000000000000000000000000000011",
+        "next_commitment": {
+          "x": "0x042dc881d78f060e49038cf462d9e2bba61bc4770e949846786b09dc81ea99a5",
+          "y": "0x110c5b021781c0b9de6d006b2ea83fa941ced3e2108d971b17fe1e968bed6075"
+        },
+        "next_state_signature": {
+          "r_x": "0x2dd0bd0a944313e2cef557915aa1eecd8d272e0da00d09c2fa8e8917e1399583",
+          "r_y": "0x2a2862780b932220596a71414e5d18ef2697d5c3ebe6b79db8b3d13b70938667",
+          "s": "0x0234a6bee9bc56df85a8fb086ea52ab30828c1705bbaab804d5687ff3c05889d"
+        }
+      },
+      "state": {
+        "anchor": "0x0000000000000000000000000000000000000000000000000000000000000001",
+        "balance_blinding": "0x0000000000000000000000000000000000000000000000000000000000000013",
+        "balance_micro_usdc": "5000000",
+        "commitment": {
+          "x": "0x06a679e231a548ee632030cca6b3d7871fc77f8841a9c4cce57f70089d583f97",
+          "y": "0x2da9ed477ff38be2922da9be6c8abff98598d19d9da73da19b03641c8c5c26d7"
+        },
+        "note_leaf": "0x04dbfc272f894c0d1739ac1e19e7479267c98986ceedcb31be08abece82968f8",
+        "state_signature": null
+      }
+    },
+    {
+      "context": {
+        "cap_micro_usdc": "1000000",
+        "control_api_origin": "http://127.0.0.1:8788",
+        "deployment_id": "i05-local",
+        "inference_api_origin": "http://127.0.0.1:8789",
+        "pool": "3mJ5ojuRqQRz2Wu1WTXagW2bT3WJCStTDxLH8VSHGqxm",
+        "quote_public_key": "7v54NWdBtkjuAFJrLGsS2SXnuk8nKam81mZJeeYxVFi9",
+        "receipt_public_key": "mBKqcnGotbsSb5vNrdyhzZ5EhqZdids9QYiTRckvi7v",
+        "request_vk_sha256": "8011244c99fa1a8524870906462d430fc86366b8ad821736c5fa726b479e6d97",
+        "state_key": [
+          "0x1323be9e2e992d044776cbcb214a0c48c6b26e75d0e16566205b8d87b7c96426",
+          "0x27a29afe44e845c4ece5d6f0fdf72d31229299094efc99ea1b5ead25bdab2564"
+        ],
+        "tariff_hashes": [
+          "b1ac4f5ef8577b78e0854ddf4618e9c0d2a569a5c3824bf9597862865b219fd3"
+        ],
+        "vault_binding": "0x276cc4776cdeea717902ba96bda89d2b81b09d80225db473d9f624da621efb9b"
+      },
+      "kind": "settle",
+      "operations": [],
+      "prepared": {
+        "control_token": "zkc1.b4341706-4bec-45d1-96f9-61133ac65437.BwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwc",
+        "proxy_token": null,
+        "request": {
+          "authorization": {
+            "control_secret_hash": "4bb06f8e4e3a7715d201d573d0aa423762e55dabd61a2c02278fa56cc6d294e0",
+            "deployment_id": "i05-local",
+            "mode": "direct_openrouter",
+            "pool": "3mJ5ojuRqQRz2Wu1WTXagW2bT3WJCStTDxLH8VSHGqxm",
+            "proxy_secret_hash": null,
+            "quote_hash": "bb2740f7abf2b4a0beff17754e27e526c736e15468883462db5c5a4a6188beae",
+            "request_id": "b4341706-4bec-45d1-96f9-61133ac65437",
+            "version": "1"
+          },
+          "proof": {
+            "backend": "groth16_bn254",
+            "proof": "AOIRu6LhltMKf6ht0MttAJwMk6BV5emkPm3KAJKhZYcst5IFXCNFnFWg3230MDNrw0fbVnPGzEc/dVdoJWPiIRkuVhmIZGH8GLUSiU3FnDtshxjmtDlonAa8FeyPXASqEueSU3dXOO+WiSzocFvW0sgEF71A4IDzkP4S1SjriaouPcZf+k22hn/bniT6mL5xxKGaHVJS1kc8C/io/z9KhSpPRlb6L4m/gaf9P1yRb2SLdwp26swJEH5sGI4h6A+nL6NaQu8OZ9EVCcnkzJRiLkUMLvELbTXv4yzoH+bfpdcs+MHXl32gdwn4GtBPND17a/PW2xEtvF2NG1wyHDj0CQ=="
+          },
+          "public_inputs": [
+            "0x0000000000000000000000000000000000000000000000000000000000000002",
+            "0x0000000000000000000000000000000000000000000000000000000000534f4c",
+            "0x276cc4776cdeea717902ba96bda89d2b81b09d80225db473d9f624da621efb9b",
+            "0x0d0c94df0567dc5a63abcc7bf3330fcf47c08ebaec5b1aec208f679076c6efab",
+            "0x1323be9e2e992d044776cbcb214a0c48c6b26e75d0e16566205b8d87b7c96426",
+            "0x27a29afe44e845c4ece5d6f0fdf72d31229299094efc99ea1b5ead25bdab2564",
+            "0x00000000000000000000000000000000000000000000000000000000b2d05e00",
+            "0x00000000000000000000000000000000000000000000000000000000000f4240",
+            "0x297c134bc2ba2db527d7d6cf5818de29f838328162eb1566546ec75916e6a33f",
+            "0x0eece29412b5e24841a2a4c68f7cc6b4304cd126e42a6249a994ef9739103745",
+            "0x2d7045b84a16e73d150fc5a97736684af69cabd0ddc22d16131c7ac04c91474b",
+            "0x0e1022643b1f0e53d9abe5bd47b7cc86f0866f5bef88404d46f3669eae71ab31"
+          ],
+          "quote": {
+            "body": {
+              "cap_micro_usdc": "1000000",
+              "control_api_origin": "http://127.0.0.1:8788",
+              "deployment_id": "i05-local",
+              "expires_at": "3000000120",
+              "inference_api_origin": "http://127.0.0.1:8789",
+              "issued_at": "3000000000",
+              "max_concurrency": "4",
+              "mode": "direct_openrouter",
+              "models": [
+                "*"
+              ],
+              "pool": "3mJ5ojuRqQRz2Wu1WTXagW2bT3WJCStTDxLH8VSHGqxm",
+              "provider": "openrouter",
+              "quote_id": "f149ace7-41fe-40ed-a1cd-e1c09af61fad",
+              "session_ttl_seconds": "60",
+              "tariff_hash": "b1ac4f5ef8577b78e0854ddf4618e9c0d2a569a5c3824bf9597862865b219fd3"
+            },
+            "quote_hash": "bb2740f7abf2b4a0beff17754e27e526c736e15468883462db5c5a4a6188beae",
+            "signature": "K4x0akcasr3vgGxOzWih3YlM/Bad8q8GhGfxz6CIaCmrH42Hi1KGJTPJiJO5fC3OvOzCPjSNYpSfzsfI/tSoBw=="
+          }
+        },
+        "rerandomization": "0x0000000000000000000000000000000000000000000000000000000000000017",
+        "tariff": {
+          "model": "*",
+          "operator_fee_micro_usdc": "0",
+          "pricing_basis": "provider_reported_usd",
+          "provider": "openrouter",
+          "rates": [],
+          "tariff_hash": "b1ac4f5ef8577b78e0854ddf4618e9c0d2a569a5c3824bf9597862865b219fd3",
+          "valid_from": "0",
+          "valid_until": "4000000000",
+          "version": "1"
+        }
+      },
+      "receipts": [
+        {
+          "body": {
+            "billing_effect": "charge",
+            "charged_nano_usdc": "0",
+            "deployment_id": "i05-local",
+            "evidence_kind": "UNKNOWN_OPERATOR_LOSS",
+            "observed_at": "3000000001",
+            "observed_nano_usdc": null,
+            "operation_id": null,
+            "operator_loss_nano_usdc": null,
+            "pool": "3mJ5ojuRqQRz2Wu1WTXagW2bT3WJCStTDxLH8VSHGqxm",
+            "provider_evidence_digest": "abababababababababababababababababababababababababababababababab",
+            "provider_reported_usd": null,
+            "provider_request_id": null,
+            "reason": "waived_unknown",
+            "receipt_id": "4ff33489-eb48-4769-a247-2b4cfef9c998",
+            "related_receipt_hash": null,
+            "request_id": "baaa4222-f291-4a93-9820-46b78e69b4a6",
+            "reservation_nano_usdc": "1000000000",
+            "tariff_hash": "b1ac4f5ef8577b78e0854ddf4618e9c0d2a569a5c3824bf9597862865b219fd3",
+            "usage": [],
+            "version": "1"
+          },
+          "receipt_hash": "fe970cfd6b777bba3c2fd6cc825437ccc7ae2c0798dc566c837b7dd24c5840ad",
+          "signature": "TPPEMcMl4epP75v3ADfQi6sFDgWk7HYdJ22jdQyqqCcnwpRaXXLrxn/4iULyYLDsI7tXo0RV+Abp7LzZHsGgAQ=="
+        }
+      ],
+      "settlement": {
+        "blind_delta_srv": "0x000000000000000000000000000000000000000000000000000000000000001d",
+        "charge_micro_usdc": "0",
+        "next_anchor": "0x0000000000000000000000000000000000000000000000000000000000000011",
+        "next_commitment": {
+          "x": "0x042dc881d78f060e49038cf462d9e2bba61bc4770e949846786b09dc81ea99a5",
+          "y": "0x110c5b021781c0b9de6d006b2ea83fa941ced3e2108d971b17fe1e968bed6075"
+        },
+        "next_state_signature": {
+          "r_x": "0x2dd0bd0a944313e2cef557915aa1eecd8d272e0da00d09c2fa8e8917e1399583",
+          "r_y": "0x2a2862780b932220596a71414e5d18ef2697d5c3ebe6b79db8b3d13b70938667",
+          "s": "0x0234a6bee9bc56df85a8fb086ea52ab30828c1705bbaab804d5687ff3c05889d"
+        }
+      },
+      "state": {
+        "anchor": "0x0000000000000000000000000000000000000000000000000000000000000001",
+        "balance_blinding": "0x0000000000000000000000000000000000000000000000000000000000000013",
+        "balance_micro_usdc": "5000000",
+        "commitment": {
+          "x": "0x06a679e231a548ee632030cca6b3d7871fc77f8841a9c4cce57f70089d583f97",
+          "y": "0x2da9ed477ff38be2922da9be6c8abff98598d19d9da73da19b03641c8c5c26d7"
+        },
+        "note_leaf": "0x04dbfc272f894c0d1739ac1e19e7479267c98986ceedcb31be08abece82968f8",
+        "state_signature": null
+      }
+    },
+    {
+      "context": {
+        "cap_micro_usdc": "1000000",
+        "control_api_origin": "http://127.0.0.1:8788",
+        "deployment_id": "i05-local",
+        "inference_api_origin": "http://127.0.0.1:8789",
+        "pool": "3mJ5ojuRqQRz2Wu1WTXagW2bT3WJCStTDxLH8VSHGqxm",
+        "quote_public_key": "7v54NWdBtkjuAFJrLGsS2SXnuk8nKam81mZJeeYxVFi9",
+        "receipt_public_key": "mBKqcnGotbsSb5vNrdyhzZ5EhqZdids9QYiTRckvi7v",
+        "request_vk_sha256": "8011244c99fa1a8524870906462d430fc86366b8ad821736c5fa726b479e6d97",
+        "state_key": [
+          "0x1323be9e2e992d044776cbcb214a0c48c6b26e75d0e16566205b8d87b7c96426",
+          "0x27a29afe44e845c4ece5d6f0fdf72d31229299094efc99ea1b5ead25bdab2564"
+        ],
+        "tariff_hashes": [
+          "b1ac4f5ef8577b78e0854ddf4618e9c0d2a569a5c3824bf9597862865b219fd3"
+        ],
+        "vault_binding": "0x276cc4776cdeea717902ba96bda89d2b81b09d80225db473d9f624da621efb9b"
+      },
+      "kind": "settle",
+      "operations": [],
+      "prepared": {
+        "control_token": "zkc1.b4341706-4bec-45d1-96f9-61133ac65437.BwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwc",
+        "proxy_token": null,
+        "request": {
+          "authorization": {
+            "control_secret_hash": "4bb06f8e4e3a7715d201d573d0aa423762e55dabd61a2c02278fa56cc6d294e0",
+            "deployment_id": "i05-local",
+            "mode": "direct_openrouter",
+            "pool": "3mJ5ojuRqQRz2Wu1WTXagW2bT3WJCStTDxLH8VSHGqxm",
+            "proxy_secret_hash": null,
+            "quote_hash": "bb2740f7abf2b4a0beff17754e27e526c736e15468883462db5c5a4a6188beae",
+            "request_id": "b4341706-4bec-45d1-96f9-61133ac65437",
+            "version": "1"
+          },
+          "proof": {
+            "backend": "groth16_bn254",
+            "proof": "AOIRu6LhltMKf6ht0MttAJwMk6BV5emkPm3KAJKhZYcst5IFXCNFnFWg3230MDNrw0fbVnPGzEc/dVdoJWPiIRkuVhmIZGH8GLUSiU3FnDtshxjmtDlonAa8FeyPXASqEueSU3dXOO+WiSzocFvW0sgEF71A4IDzkP4S1SjriaouPcZf+k22hn/bniT6mL5xxKGaHVJS1kc8C/io/z9KhSpPRlb6L4m/gaf9P1yRb2SLdwp26swJEH5sGI4h6A+nL6NaQu8OZ9EVCcnkzJRiLkUMLvELbTXv4yzoH+bfpdcs+MHXl32gdwn4GtBPND17a/PW2xEtvF2NG1wyHDj0CQ=="
+          },
+          "public_inputs": [
+            "0x0000000000000000000000000000000000000000000000000000000000000002",
+            "0x0000000000000000000000000000000000000000000000000000000000534f4c",
+            "0x276cc4776cdeea717902ba96bda89d2b81b09d80225db473d9f624da621efb9b",
+            "0x0d0c94df0567dc5a63abcc7bf3330fcf47c08ebaec5b1aec208f679076c6efab",
+            "0x1323be9e2e992d044776cbcb214a0c48c6b26e75d0e16566205b8d87b7c96426",
+            "0x27a29afe44e845c4ece5d6f0fdf72d31229299094efc99ea1b5ead25bdab2564",
+            "0x00000000000000000000000000000000000000000000000000000000b2d05e00",
+            "0x00000000000000000000000000000000000000000000000000000000000f4240",
+            "0x297c134bc2ba2db527d7d6cf5818de29f838328162eb1566546ec75916e6a33f",
+            "0x0eece29412b5e24841a2a4c68f7cc6b4304cd126e42a6249a994ef9739103745",
+            "0x2d7045b84a16e73d150fc5a97736684af69cabd0ddc22d16131c7ac04c91474b",
+            "0x0e1022643b1f0e53d9abe5bd47b7cc86f0866f5bef88404d46f3669eae71ab31"
+          ],
+          "quote": {
+            "body": {
+              "cap_micro_usdc": "1000000",
+              "control_api_origin": "http://127.0.0.1:8788",
+              "deployment_id": "i05-local",
+              "expires_at": "3000000120",
+              "inference_api_origin": "http://127.0.0.1:8789",
+              "issued_at": "3000000000",
+              "max_concurrency": "4",
+              "mode": "direct_openrouter",
+              "models": [
+                "*"
+              ],
+              "pool": "3mJ5ojuRqQRz2Wu1WTXagW2bT3WJCStTDxLH8VSHGqxm",
+              "provider": "openrouter",
+              "quote_id": "f149ace7-41fe-40ed-a1cd-e1c09af61fad",
+              "session_ttl_seconds": "60",
+              "tariff_hash": "b1ac4f5ef8577b78e0854ddf4618e9c0d2a569a5c3824bf9597862865b219fd3"
+            },
+            "quote_hash": "bb2740f7abf2b4a0beff17754e27e526c736e15468883462db5c5a4a6188beae",
+            "signature": "K4x0akcasr3vgGxOzWih3YlM/Bad8q8GhGfxz6CIaCmrH42Hi1KGJTPJiJO5fC3OvOzCPjSNYpSfzsfI/tSoBw=="
+          }
+        },
+        "rerandomization": "0x0000000000000000000000000000000000000000000000000000000000000017",
+        "tariff": {
+          "model": "*",
+          "operator_fee_micro_usdc": "0",
+          "pricing_basis": "provider_reported_usd",
+          "provider": "openrouter",
+          "rates": [],
+          "tariff_hash": "b1ac4f5ef8577b78e0854ddf4618e9c0d2a569a5c3824bf9597862865b219fd3",
+          "valid_from": "0",
+          "valid_until": "4000000000",
+          "version": "1"
+        }
+      },
+      "receipts": [
+        {
+          "body": {
+            "billing_effect": "charge",
+            "charged_nano_usdc": "0",
+            "deployment_id": "i05-local",
+            "evidence_kind": "UNKNOWN_OPERATOR_LOSS",
+            "observed_at": "3000000001",
+            "observed_nano_usdc": null,
+            "operation_id": null,
+            "operator_loss_nano_usdc": null,
+            "pool": "3mJ5ojuRqQRz2Wu1WTXagW2bT3WJCStTDxLH8VSHGqxm",
+            "provider_evidence_digest": "abababababababababababababababababababababababababababababababab",
+            "provider_reported_usd": null,
+            "provider_request_id": null,
+            "reason": "waived_unknown",
+            "receipt_id": "4ff33489-eb48-4769-a247-2b4cfef9c998",
+            "related_receipt_hash": null,
+            "request_id": "b4341706-4bec-45d1-96f9-61133ac65437",
+            "reservation_nano_usdc": "1000",
+            "tariff_hash": "b1ac4f5ef8577b78e0854ddf4618e9c0d2a569a5c3824bf9597862865b219fd3",
+            "usage": [],
+            "version": "1"
+          },
+          "receipt_hash": "43f0467350b12d690e9785fc5104a27549817468bdd3dd4105306968145fb4b8",
+          "signature": "uzSteigLuOpiPFOTfHxQY/yh8rE1pYB1sMj0jZp9ecLd7FE9dHRCwv/XWhp1es3Zki0mKwJzL60fLvVfKKoKAg=="
+        }
+      ],
+      "settlement": {
+        "blind_delta_srv": "0x000000000000000000000000000000000000000000000000000000000000001d",
+        "charge_micro_usdc": "0",
+        "next_anchor": "0x0000000000000000000000000000000000000000000000000000000000000011",
+        "next_commitment": {
+          "x": "0x042dc881d78f060e49038cf462d9e2bba61bc4770e949846786b09dc81ea99a5",
+          "y": "0x110c5b021781c0b9de6d006b2ea83fa941ced3e2108d971b17fe1e968bed6075"
+        },
+        "next_state_signature": {
+          "r_x": "0x2dd0bd0a944313e2cef557915aa1eecd8d272e0da00d09c2fa8e8917e1399583",
+          "r_y": "0x2a2862780b932220596a71414e5d18ef2697d5c3ebe6b79db8b3d13b70938667",
+          "s": "0x0234a6bee9bc56df85a8fb086ea52ab30828c1705bbaab804d5687ff3c05889d"
+        }
+      },
+      "state": {
+        "anchor": "0x0000000000000000000000000000000000000000000000000000000000000001",
+        "balance_blinding": "0x0000000000000000000000000000000000000000000000000000000000000013",
+        "balance_micro_usdc": "5000000",
+        "commitment": {
+          "x": "0x06a679e231a548ee632030cca6b3d7871fc77f8841a9c4cce57f70089d583f97",
+          "y": "0x2da9ed477ff38be2922da9be6c8abff98598d19d9da73da19b03641c8c5c26d7"
+        },
+        "note_leaf": "0x04dbfc272f894c0d1739ac1e19e7479267c98986ceedcb31be08abece82968f8",
+        "state_signature": null
+      }
+    },
+    {
+      "context": {
+        "cap_micro_usdc": "1000000",
+        "control_api_origin": "http://127.0.0.1:8788",
+        "deployment_id": "i05-local",
+        "inference_api_origin": "http://127.0.0.1:8789",
+        "pool": "3mJ5ojuRqQRz2Wu1WTXagW2bT3WJCStTDxLH8VSHGqxm",
+        "quote_public_key": "7v54NWdBtkjuAFJrLGsS2SXnuk8nKam81mZJeeYxVFi9",
+        "receipt_public_key": "mBKqcnGotbsSb5vNrdyhzZ5EhqZdids9QYiTRckvi7v",
+        "request_vk_sha256": "8011244c99fa1a8524870906462d430fc86366b8ad821736c5fa726b479e6d97",
+        "state_key": [
+          "0x1323be9e2e992d044776cbcb214a0c48c6b26e75d0e16566205b8d87b7c96426",
+          "0x27a29afe44e845c4ece5d6f0fdf72d31229299094efc99ea1b5ead25bdab2564"
+        ],
+        "tariff_hashes": [
+          "b1ac4f5ef8577b78e0854ddf4618e9c0d2a569a5c3824bf9597862865b219fd3"
+        ],
+        "vault_binding": "0x276cc4776cdeea717902ba96bda89d2b81b09d80225db473d9f624da621efb9b"
+      },
+      "kind": "settle",
+      "operations": [],
+      "prepared": {
+        "control_token": "zkc1.b4341706-4bec-45d1-96f9-61133ac65437.BwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwc",
+        "proxy_token": null,
+        "request": {
+          "authorization": {
+            "control_secret_hash": "4bb06f8e4e3a7715d201d573d0aa423762e55dabd61a2c02278fa56cc6d294e0",
+            "deployment_id": "i05-local",
+            "mode": "direct_openrouter",
+            "pool": "3mJ5ojuRqQRz2Wu1WTXagW2bT3WJCStTDxLH8VSHGqxm",
+            "proxy_secret_hash": null,
+            "quote_hash": "bb2740f7abf2b4a0beff17754e27e526c736e15468883462db5c5a4a6188beae",
+            "request_id": "b4341706-4bec-45d1-96f9-61133ac65437",
+            "version": "1"
+          },
+          "proof": {
+            "backend": "groth16_bn254",
+            "proof": "AOIRu6LhltMKf6ht0MttAJwMk6BV5emkPm3KAJKhZYcst5IFXCNFnFWg3230MDNrw0fbVnPGzEc/dVdoJWPiIRkuVhmIZGH8GLUSiU3FnDtshxjmtDlonAa8FeyPXASqEueSU3dXOO+WiSzocFvW0sgEF71A4IDzkP4S1SjriaouPcZf+k22hn/bniT6mL5xxKGaHVJS1kc8C/io/z9KhSpPRlb6L4m/gaf9P1yRb2SLdwp26swJEH5sGI4h6A+nL6NaQu8OZ9EVCcnkzJRiLkUMLvELbTXv4yzoH+bfpdcs+MHXl32gdwn4GtBPND17a/PW2xEtvF2NG1wyHDj0CQ=="
+          },
+          "public_inputs": [
+            "0x0000000000000000000000000000000000000000000000000000000000000002",
+            "0x0000000000000000000000000000000000000000000000000000000000534f4c",
+            "0x276cc4776cdeea717902ba96bda89d2b81b09d80225db473d9f624da621efb9b",
+            "0x0d0c94df0567dc5a63abcc7bf3330fcf47c08ebaec5b1aec208f679076c6efab",
+            "0x1323be9e2e992d044776cbcb214a0c48c6b26e75d0e16566205b8d87b7c96426",
+            "0x27a29afe44e845c4ece5d6f0fdf72d31229299094efc99ea1b5ead25bdab2564",
+            "0x00000000000000000000000000000000000000000000000000000000b2d05e00",
+            "0x00000000000000000000000000000000000000000000000000000000000f4240",
+            "0x297c134bc2ba2db527d7d6cf5818de29f838328162eb1566546ec75916e6a33f",
+            "0x0eece29412b5e24841a2a4c68f7cc6b4304cd126e42a6249a994ef9739103745",
+            "0x2d7045b84a16e73d150fc5a97736684af69cabd0ddc22d16131c7ac04c91474b",
+            "0x0e1022643b1f0e53d9abe5bd47b7cc86f0866f5bef88404d46f3669eae71ab31"
+          ],
+          "quote": {
+            "body": {
+              "cap_micro_usdc": "1000000",
+              "control_api_origin": "http://127.0.0.1:8788",
+              "deployment_id": "i05-local",
+              "expires_at": "3000000120",
+              "inference_api_origin": "http://127.0.0.1:8789",
+              "issued_at": "3000000000",
+              "max_concurrency": "4",
+              "mode": "direct_openrouter",
+              "models": [
+                "*"
+              ],
+              "pool": "3mJ5ojuRqQRz2Wu1WTXagW2bT3WJCStTDxLH8VSHGqxm",
+              "provider": "openrouter",
+              "quote_id": "f149ace7-41fe-40ed-a1cd-e1c09af61fad",
+              "session_ttl_seconds": "60",
+              "tariff_hash": "b1ac4f5ef8577b78e0854ddf4618e9c0d2a569a5c3824bf9597862865b219fd3"
+            },
+            "quote_hash": "bb2740f7abf2b4a0beff17754e27e526c736e15468883462db5c5a4a6188beae",
+            "signature": "K4x0akcasr3vgGxOzWih3YlM/Bad8q8GhGfxz6CIaCmrH42Hi1KGJTPJiJO5fC3OvOzCPjSNYpSfzsfI/tSoBw=="
+          }
+        },
+        "rerandomization": "0x0000000000000000000000000000000000000000000000000000000000000017",
+        "tariff": {
+          "model": "*",
+          "operator_fee_micro_usdc": "0",
+          "pricing_basis": "provider_reported_usd",
+          "provider": "openrouter",
+          "rates": [],
+          "tariff_hash": "b1ac4f5ef8577b78e0854ddf4618e9c0d2a569a5c3824bf9597862865b219fd3",
+          "valid_from": "0",
+          "valid_until": "4000000000",
+          "version": "1"
+        }
+      },
+      "receipts": [
+        {
+          "body": {
+            "billing_effect": "charge",
+            "charged_nano_usdc": "0",
+            "deployment_id": "i05-local",
+            "evidence_kind": "UNKNOWN_OPERATOR_LOSS",
+            "observed_at": "3000000001",
+            "observed_nano_usdc": null,
+            "operation_id": null,
+            "operator_loss_nano_usdc": null,
+            "pool": "3mJ5ojuRqQRz2Wu1WTXagW2bT3WJCStTDxLH8VSHGqxm",
+            "provider_evidence_digest": "abababababababababababababababababababababababababababababababab",
+            "provider_reported_usd": null,
+            "provider_request_id": null,
+            "reason": "waived_unknown",
+            "receipt_id": "4ff33489-eb48-4769-a247-2b4cfef9c998",
+            "related_receipt_hash": null,
+            "request_id": "b4341706-4bec-45d1-96f9-61133ac65437",
+            "reservation_nano_usdc": "1000000000",
+            "tariff_hash": "b1ac4f5ef8577b78e0854ddf4618e9c0d2a569a5c3824bf9597862865b219fd3",
+            "usage": [],
+            "version": "1"
+          },
+          "receipt_hash": "e5524353c1b826169b3700dd72aa7bb642ff7b88d30f801a58b439569bfab268",
+          "signature": "vr+MsLxDankJnFDQ0P68P9goHUQ3Yc9q+1kRV99aSFEJtPIgTCp4u+6rZPJWlHaOof3ewUw+YjxvgROxdlf/Bw=="
+        }
+      ],
+      "settlement": {
+        "blind_delta_srv": "0x000000000000000000000000000000000000000000000000000000000000001d",
+        "charge_micro_usdc": "1",
+        "next_anchor": "0x0000000000000000000000000000000000000000000000000000000000000011",
+        "next_commitment": {
+          "x": "0x08589da525aa0439877e6e0c4a43479b7b18ea6c372eb07f262f560d541d7c68",
+          "y": "0x16fc6d081238372f57d45d810bb95770096e03412d4958255fd29d9b0cf76b33"
+        },
+        "next_state_signature": {
+          "r_x": "0x2dd0bd0a944313e2cef557915aa1eecd8d272e0da00d09c2fa8e8917e1399583",
+          "r_y": "0x2a2862780b932220596a71414e5d18ef2697d5c3ebe6b79db8b3d13b70938667",
+          "s": "0x0072384471724cc7f399c33a3ce6d0b8bf77d1c8b443232db73245bfbea83f1c"
+        }
+      },
+      "state": {
+        "anchor": "0x0000000000000000000000000000000000000000000000000000000000000001",
+        "balance_blinding": "0x0000000000000000000000000000000000000000000000000000000000000013",
+        "balance_micro_usdc": "5000000",
+        "commitment": {
+          "x": "0x06a679e231a548ee632030cca6b3d7871fc77f8841a9c4cce57f70089d583f97",
+          "y": "0x2da9ed477ff38be2922da9be6c8abff98598d19d9da73da19b03641c8c5c26d7"
+        },
+        "note_leaf": "0x04dbfc272f894c0d1739ac1e19e7479267c98986ceedcb31be08abece82968f8",
+        "state_signature": null
+      }
+    },
+    {
+      "context": {
+        "cap_micro_usdc": "1000000",
+        "control_api_origin": "http://127.0.0.1:8788",
+        "deployment_id": "i05-local",
+        "inference_api_origin": "http://127.0.0.1:8789",
+        "pool": "3mJ5ojuRqQRz2Wu1WTXagW2bT3WJCStTDxLH8VSHGqxm",
+        "quote_public_key": "7v54NWdBtkjuAFJrLGsS2SXnuk8nKam81mZJeeYxVFi9",
+        "receipt_public_key": "mBKqcnGotbsSb5vNrdyhzZ5EhqZdids9QYiTRckvi7v",
+        "request_vk_sha256": "8011244c99fa1a8524870906462d430fc86366b8ad821736c5fa726b479e6d97",
+        "state_key": [
+          "0x1323be9e2e992d044776cbcb214a0c48c6b26e75d0e16566205b8d87b7c96426",
+          "0x27a29afe44e845c4ece5d6f0fdf72d31229299094efc99ea1b5ead25bdab2564"
+        ],
+        "tariff_hashes": [
+          "b1ac4f5ef8577b78e0854ddf4618e9c0d2a569a5c3824bf9597862865b219fd3"
+        ],
+        "vault_binding": "0x276cc4776cdeea717902ba96bda89d2b81b09d80225db473d9f624da621efb9b"
+      },
+      "kind": "settle",
+      "operations": [],
+      "prepared": {
+        "control_token": "zkc1.b4341706-4bec-45d1-96f9-61133ac65437.BwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwc",
+        "proxy_token": null,
+        "request": {
+          "authorization": {
+            "control_secret_hash": "4bb06f8e4e3a7715d201d573d0aa423762e55dabd61a2c02278fa56cc6d294e0",
+            "deployment_id": "i05-local",
+            "mode": "direct_openrouter",
+            "pool": "3mJ5ojuRqQRz2Wu1WTXagW2bT3WJCStTDxLH8VSHGqxm",
+            "proxy_secret_hash": null,
+            "quote_hash": "bb2740f7abf2b4a0beff17754e27e526c736e15468883462db5c5a4a6188beae",
+            "request_id": "b4341706-4bec-45d1-96f9-61133ac65437",
+            "version": "1"
+          },
+          "proof": {
+            "backend": "groth16_bn254",
+            "proof": "AOIRu6LhltMKf6ht0MttAJwMk6BV5emkPm3KAJKhZYcst5IFXCNFnFWg3230MDNrw0fbVnPGzEc/dVdoJWPiIRkuVhmIZGH8GLUSiU3FnDtshxjmtDlonAa8FeyPXASqEueSU3dXOO+WiSzocFvW0sgEF71A4IDzkP4S1SjriaouPcZf+k22hn/bniT6mL5xxKGaHVJS1kc8C/io/z9KhSpPRlb6L4m/gaf9P1yRb2SLdwp26swJEH5sGI4h6A+nL6NaQu8OZ9EVCcnkzJRiLkUMLvELbTXv4yzoH+bfpdcs+MHXl32gdwn4GtBPND17a/PW2xEtvF2NG1wyHDj0CQ=="
+          },
+          "public_inputs": [
+            "0x0000000000000000000000000000000000000000000000000000000000000002",
+            "0x0000000000000000000000000000000000000000000000000000000000534f4c",
+            "0x276cc4776cdeea717902ba96bda89d2b81b09d80225db473d9f624da621efb9b",
+            "0x0d0c94df0567dc5a63abcc7bf3330fcf47c08ebaec5b1aec208f679076c6efab",
+            "0x1323be9e2e992d044776cbcb214a0c48c6b26e75d0e16566205b8d87b7c96426",
+            "0x27a29afe44e845c4ece5d6f0fdf72d31229299094efc99ea1b5ead25bdab2564",
+            "0x00000000000000000000000000000000000000000000000000000000b2d05e00",
+            "0x00000000000000000000000000000000000000000000000000000000000f4240",
+            "0x297c134bc2ba2db527d7d6cf5818de29f838328162eb1566546ec75916e6a33f",
+            "0x0eece29412b5e24841a2a4c68f7cc6b4304cd126e42a6249a994ef9739103745",
+            "0x2d7045b84a16e73d150fc5a97736684af69cabd0ddc22d16131c7ac04c91474b",
+            "0x0e1022643b1f0e53d9abe5bd47b7cc86f0866f5bef88404d46f3669eae71ab31"
+          ],
+          "quote": {
+            "body": {
+              "cap_micro_usdc": "1000000",
+              "control_api_origin": "http://127.0.0.1:8788",
+              "deployment_id": "i05-local",
+              "expires_at": "3000000120",
+              "inference_api_origin": "http://127.0.0.1:8789",
+              "issued_at": "3000000000",
+              "max_concurrency": "4",
+              "mode": "direct_openrouter",
+              "models": [
+                "*"
+              ],
+              "pool": "3mJ5ojuRqQRz2Wu1WTXagW2bT3WJCStTDxLH8VSHGqxm",
+              "provider": "openrouter",
+              "quote_id": "f149ace7-41fe-40ed-a1cd-e1c09af61fad",
+              "session_ttl_seconds": "60",
+              "tariff_hash": "b1ac4f5ef8577b78e0854ddf4618e9c0d2a569a5c3824bf9597862865b219fd3"
+            },
+            "quote_hash": "bb2740f7abf2b4a0beff17754e27e526c736e15468883462db5c5a4a6188beae",
+            "signature": "K4x0akcasr3vgGxOzWih3YlM/Bad8q8GhGfxz6CIaCmrH42Hi1KGJTPJiJO5fC3OvOzCPjSNYpSfzsfI/tSoBw=="
+          }
+        },
+        "rerandomization": "0x0000000000000000000000000000000000000000000000000000000000000017",
+        "tariff": {
+          "model": "*",
+          "operator_fee_micro_usdc": "0",
+          "pricing_basis": "provider_reported_usd",
+          "provider": "openrouter",
+          "rates": [],
+          "tariff_hash": "b1ac4f5ef8577b78e0854ddf4618e9c0d2a569a5c3824bf9597862865b219fd3",
+          "valid_from": "0",
+          "valid_until": "4000000000",
+          "version": "1"
+        }
+      },
+      "receipts": [
+        {
+          "body": {
+            "billing_effect": "charge",
+            "charged_nano_usdc": "0",
+            "deployment_id": "i05-local",
+            "evidence_kind": "UNKNOWN_OPERATOR_LOSS",
+            "observed_at": "3000000001",
+            "observed_nano_usdc": null,
+            "operation_id": null,
+            "operator_loss_nano_usdc": null,
+            "pool": "3mJ5ojuRqQRz2Wu1WTXagW2bT3WJCStTDxLH8VSHGqxm",
+            "provider_evidence_digest": "abababababababababababababababababababababababababababababababab",
+            "provider_reported_usd": null,
+            "provider_request_id": null,
+            "reason": "waived_unknown",
+            "receipt_id": "4ff33489-eb48-4769-a247-2b4cfef9c998",
+            "related_receipt_hash": null,
+            "request_id": "b4341706-4bec-45d1-96f9-61133ac65437",
+            "reservation_nano_usdc": "1000000000",
+            "tariff_hash": "b1ac4f5ef8577b78e0854ddf4618e9c0d2a569a5c3824bf9597862865b219fd3",
+            "usage": [],
+            "version": "1"
+          },
+          "receipt_hash": "e5524353c1b826169b3700dd72aa7bb642ff7b88d30f801a58b439569bfab268",
+          "signature": "vr+MsLxDankJnFDQ0P68P9goHUQ3Yc9q+1kRV99aSFEJtPIgTCp4u+6rZPJWlHaOof3ewUw+YjxvgROxdlf/Bw=="
+        }
+      ],
+      "settlement": {
+        "blind_delta_srv": "0x000000000000000000000000000000000000000000000000000000000000001d",
+        "charge_micro_usdc": "0",
+        "next_anchor": "0x0000000000000000000000000000000000000000000000000000000000000011",
+        "next_commitment": {
+          "x": "0x042dc881d78f060e49038cf462d9e2bba61bc4770e949846786b09dc81ea99a5",
+          "y": "0x110c5b021781c0b9de6d006b2ea83fa941ced3e2108d971b17fe1e968bed6075"
+        },
+        "next_state_signature": {
+          "r_x": "0x2dd0bd0a944313e2cef557915aa1eecd8d272e0da00d09c2fa8e8917e1399583",
+          "r_y": "0x2a2862780b932220596a71414e5d18ef2697d5c3ebe6b79db8b3d13b70938667",
+          "s": "0x0000000000000000000000000000000000000000000000000000000000000001"
+        }
+      },
+      "state": {
+        "anchor": "0x0000000000000000000000000000000000000000000000000000000000000001",
+        "balance_blinding": "0x0000000000000000000000000000000000000000000000000000000000000013",
+        "balance_micro_usdc": "5000000",
+        "commitment": {
+          "x": "0x06a679e231a548ee632030cca6b3d7871fc77f8841a9c4cce57f70089d583f97",
+          "y": "0x2da9ed477ff38be2922da9be6c8abff98598d19d9da73da19b03641c8c5c26d7"
+        },
+        "note_leaf": "0x04dbfc272f894c0d1739ac1e19e7479267c98986ceedcb31be08abece82968f8",
+        "state_signature": null
+      }
+    },
+    {
+      "context": {
+        "cap_micro_usdc": "1000000",
+        "control_api_origin": "http://127.0.0.1:8788",
+        "deployment_id": "i05-local",
+        "inference_api_origin": "http://127.0.0.1:8789",
+        "pool": "3mJ5ojuRqQRz2Wu1WTXagW2bT3WJCStTDxLH8VSHGqxm",
+        "quote_public_key": "7v54NWdBtkjuAFJrLGsS2SXnuk8nKam81mZJeeYxVFi9",
+        "receipt_public_key": "mBKqcnGotbsSb5vNrdyhzZ5EhqZdids9QYiTRckvi7v",
+        "request_vk_sha256": "8011244c99fa1a8524870906462d430fc86366b8ad821736c5fa726b479e6d97",
+        "state_key": [
+          "0x1323be9e2e992d044776cbcb214a0c48c6b26e75d0e16566205b8d87b7c96426",
+          "0x27a29afe44e845c4ece5d6f0fdf72d31229299094efc99ea1b5ead25bdab2564"
+        ],
+        "tariff_hashes": [
+          "b1ac4f5ef8577b78e0854ddf4618e9c0d2a569a5c3824bf9597862865b219fd3"
+        ],
+        "vault_binding": "0x276cc4776cdeea717902ba96bda89d2b81b09d80225db473d9f624da621efb9b"
+      },
+      "kind": "settle",
+      "operations": [],
+      "prepared": {
+        "control_token": "zkc1.b4341706-4bec-45d1-96f9-61133ac65437.BwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwc",
+        "proxy_token": null,
+        "request": {
+          "authorization": {
+            "control_secret_hash": "4bb06f8e4e3a7715d201d573d0aa423762e55dabd61a2c02278fa56cc6d294e0",
+            "deployment_id": "i05-local",
+            "mode": "direct_openrouter",
+            "pool": "3mJ5ojuRqQRz2Wu1WTXagW2bT3WJCStTDxLH8VSHGqxm",
+            "proxy_secret_hash": null,
+            "quote_hash": "bb2740f7abf2b4a0beff17754e27e526c736e15468883462db5c5a4a6188beae",
+            "request_id": "b4341706-4bec-45d1-96f9-61133ac65437",
+            "version": "1"
+          },
+          "proof": {
+            "backend": "groth16_bn254",
+            "proof": "AOIRu6LhltMKf6ht0MttAJwMk6BV5emkPm3KAJKhZYcst5IFXCNFnFWg3230MDNrw0fbVnPGzEc/dVdoJWPiIRkuVhmIZGH8GLUSiU3FnDtshxjmtDlonAa8FeyPXASqEueSU3dXOO+WiSzocFvW0sgEF71A4IDzkP4S1SjriaouPcZf+k22hn/bniT6mL5xxKGaHVJS1kc8C/io/z9KhSpPRlb6L4m/gaf9P1yRb2SLdwp26swJEH5sGI4h6A+nL6NaQu8OZ9EVCcnkzJRiLkUMLvELbTXv4yzoH+bfpdcs+MHXl32gdwn4GtBPND17a/PW2xEtvF2NG1wyHDj0CQ=="
+          },
+          "public_inputs": [
+            "0x0000000000000000000000000000000000000000000000000000000000000002",
+            "0x0000000000000000000000000000000000000000000000000000000000534f4c",
+            "0x276cc4776cdeea717902ba96bda89d2b81b09d80225db473d9f624da621efb9b",
+            "0x0d0c94df0567dc5a63abcc7bf3330fcf47c08ebaec5b1aec208f679076c6efab",
+            "0x1323be9e2e992d044776cbcb214a0c48c6b26e75d0e16566205b8d87b7c96426",
+            "0x27a29afe44e845c4ece5d6f0fdf72d31229299094efc99ea1b5ead25bdab2564",
+            "0x00000000000000000000000000000000000000000000000000000000b2d05e00",
+            "0x00000000000000000000000000000000000000000000000000000000000f4240",
+            "0x297c134bc2ba2db527d7d6cf5818de29f838328162eb1566546ec75916e6a33f",
+            "0x0eece29412b5e24841a2a4c68f7cc6b4304cd126e42a6249a994ef9739103745",
+            "0x2d7045b84a16e73d150fc5a97736684af69cabd0ddc22d16131c7ac04c91474b",
+            "0x0e1022643b1f0e53d9abe5bd47b7cc86f0866f5bef88404d46f3669eae71ab31"
+          ],
+          "quote": {
+            "body": {
+              "cap_micro_usdc": "1000000",
+              "control_api_origin": "http://127.0.0.1:8788",
+              "deployment_id": "i05-local",
+              "expires_at": "3000000120",
+              "inference_api_origin": "http://127.0.0.1:8789",
+              "issued_at": "3000000000",
+              "max_concurrency": "4",
+              "mode": "direct_openrouter",
+              "models": [
+                "*"
+              ],
+              "pool": "3mJ5ojuRqQRz2Wu1WTXagW2bT3WJCStTDxLH8VSHGqxm",
+              "provider": "openrouter",
+              "quote_id": "f149ace7-41fe-40ed-a1cd-e1c09af61fad",
+              "session_ttl_seconds": "60",
+              "tariff_hash": "b1ac4f5ef8577b78e0854ddf4618e9c0d2a569a5c3824bf9597862865b219fd3"
+            },
+            "quote_hash": "bb2740f7abf2b4a0beff17754e27e526c736e15468883462db5c5a4a6188beae",
+            "signature": "K4x0akcasr3vgGxOzWih3YlM/Bad8q8GhGfxz6CIaCmrH42Hi1KGJTPJiJO5fC3OvOzCPjSNYpSfzsfI/tSoBw=="
+          }
+        },
+        "rerandomization": "0x0000000000000000000000000000000000000000000000000000000000000017",
+        "tariff": {
+          "model": "*",
+          "operator_fee_micro_usdc": "0",
+          "pricing_basis": "provider_reported_usd",
+          "provider": "openrouter",
+          "rates": [],
+          "tariff_hash": "b1ac4f5ef8577b78e0854ddf4618e9c0d2a569a5c3824bf9597862865b219fd3",
+          "valid_from": "0",
+          "valid_until": "4000000000",
+          "version": "1"
+        }
+      },
+      "receipts": [
+        {
+          "body": {
+            "billing_effect": "charge",
+            "charged_nano_usdc": "0",
+            "deployment_id": "i05-local",
+            "evidence_kind": "UNKNOWN_OPERATOR_LOSS",
+            "observed_at": "3000000001",
+            "observed_nano_usdc": null,
+            "operation_id": null,
+            "operator_loss_nano_usdc": null,
+            "pool": "3mJ5ojuRqQRz2Wu1WTXagW2bT3WJCStTDxLH8VSHGqxm",
+            "provider_evidence_digest": "abababababababababababababababababababababababababababababababab",
+            "provider_reported_usd": null,
+            "provider_request_id": null,
+            "reason": "waived_unknown",
+            "receipt_id": "4ff33489-eb48-4769-a247-2b4cfef9c998",
+            "related_receipt_hash": null,
+            "request_id": "b4341706-4bec-45d1-96f9-61133ac65437",
+            "reservation_nano_usdc": "1000000000",
+            "tariff_hash": "b1ac4f5ef8577b78e0854ddf4618e9c0d2a569a5c3824bf9597862865b219fd3",
+            "usage": [],
+            "version": "1"
+          },
+          "receipt_hash": "e5524353c1b826169b3700dd72aa7bb642ff7b88d30f801a58b439569bfab268",
+          "signature": "vr+MsLxDankJnFDQ0P68P9goHUQ3Yc9q+1kRV99aSFEJtPIgTCp4u+6rZPJWlHaOof3ewUw+YjxvgROxdlf/Bw=="
+        },
+        {
+          "body": {
+            "billing_effect": "charge",
+            "charged_nano_usdc": "0",
+            "deployment_id": "i05-local",
+            "evidence_kind": "UNKNOWN_OPERATOR_LOSS",
+            "observed_at": "3000000001",
+            "observed_nano_usdc": null,
+            "operation_id": null,
+            "operator_loss_nano_usdc": null,
+            "pool": "3mJ5ojuRqQRz2Wu1WTXagW2bT3WJCStTDxLH8VSHGqxm",
+            "provider_evidence_digest": "abababababababababababababababababababababababababababababababab",
+            "provider_reported_usd": null,
+            "provider_request_id": null,
+            "reason": "waived_unknown",
+            "receipt_id": "4ff33489-eb48-4769-a247-2b4cfef9c998",
+            "related_receipt_hash": null,
+            "request_id": "b4341706-4bec-45d1-96f9-61133ac65437",
+            "reservation_nano_usdc": "1000000000",
+            "tariff_hash": "b1ac4f5ef8577b78e0854ddf4618e9c0d2a569a5c3824bf9597862865b219fd3",
+            "usage": [],
+            "version": "1"
+          },
+          "receipt_hash": "e5524353c1b826169b3700dd72aa7bb642ff7b88d30f801a58b439569bfab268",
+          "signature": "vr+MsLxDankJnFDQ0P68P9goHUQ3Yc9q+1kRV99aSFEJtPIgTCp4u+6rZPJWlHaOof3ewUw+YjxvgROxdlf/Bw=="
+        }
+      ],
+      "settlement": {
+        "blind_delta_srv": "0x000000000000000000000000000000000000000000000000000000000000001d",
+        "charge_micro_usdc": "0",
+        "next_anchor": "0x0000000000000000000000000000000000000000000000000000000000000011",
+        "next_commitment": {
+          "x": "0x042dc881d78f060e49038cf462d9e2bba61bc4770e949846786b09dc81ea99a5",
+          "y": "0x110c5b021781c0b9de6d006b2ea83fa941ced3e2108d971b17fe1e968bed6075"
+        },
+        "next_state_signature": {
+          "r_x": "0x2dd0bd0a944313e2cef557915aa1eecd8d272e0da00d09c2fa8e8917e1399583",
+          "r_y": "0x2a2862780b932220596a71414e5d18ef2697d5c3ebe6b79db8b3d13b70938667",
+          "s": "0x0234a6bee9bc56df85a8fb086ea52ab30828c1705bbaab804d5687ff3c05889d"
+        }
+      },
+      "state": {
+        "anchor": "0x0000000000000000000000000000000000000000000000000000000000000001",
+        "balance_blinding": "0x0000000000000000000000000000000000000000000000000000000000000013",
+        "balance_micro_usdc": "5000000",
+        "commitment": {
+          "x": "0x06a679e231a548ee632030cca6b3d7871fc77f8841a9c4cce57f70089d583f97",
+          "y": "0x2da9ed477ff38be2922da9be6c8abff98598d19d9da73da19b03641c8c5c26d7"
+        },
+        "note_leaf": "0x04dbfc272f894c0d1739ac1e19e7479267c98986ceedcb31be08abece82968f8",
+        "state_signature": null
+      }
+    },
+    {
+      "context": {
+        "cap_micro_usdc": "1000000",
+        "control_api_origin": "http://127.0.0.1:8788",
+        "deployment_id": "i05-local",
+        "inference_api_origin": "http://127.0.0.1:8789",
+        "pool": "3mJ5ojuRqQRz2Wu1WTXagW2bT3WJCStTDxLH8VSHGqxm",
+        "quote_public_key": "7v54NWdBtkjuAFJrLGsS2SXnuk8nKam81mZJeeYxVFi9",
+        "receipt_public_key": "mBKqcnGotbsSb5vNrdyhzZ5EhqZdids9QYiTRckvi7v",
+        "request_vk_sha256": "8011244c99fa1a8524870906462d430fc86366b8ad821736c5fa726b479e6d97",
+        "state_key": [
+          "0x1323be9e2e992d044776cbcb214a0c48c6b26e75d0e16566205b8d87b7c96426",
+          "0x27a29afe44e845c4ece5d6f0fdf72d31229299094efc99ea1b5ead25bdab2564"
+        ],
+        "tariff_hashes": [
+          "b1ac4f5ef8577b78e0854ddf4618e9c0d2a569a5c3824bf9597862865b219fd3"
+        ],
+        "vault_binding": "0x276cc4776cdeea717902ba96bda89d2b81b09d80225db473d9f624da621efb9b"
+      },
+      "kind": "settle",
+      "operations": [],
+      "prepared": {
+        "control_token": "zkc1.b4341706-4bec-45d1-96f9-61133ac65437.BwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwc",
+        "proxy_token": null,
+        "request": {
+          "authorization": {
+            "control_secret_hash": "4bb06f8e4e3a7715d201d573d0aa423762e55dabd61a2c02278fa56cc6d294e0",
+            "deployment_id": "i05-local",
+            "mode": "direct_openrouter",
+            "pool": "3mJ5ojuRqQRz2Wu1WTXagW2bT3WJCStTDxLH8VSHGqxm",
+            "proxy_secret_hash": null,
+            "quote_hash": "bb2740f7abf2b4a0beff17754e27e526c736e15468883462db5c5a4a6188beae",
+            "request_id": "b4341706-4bec-45d1-96f9-61133ac65437",
+            "version": "1"
+          },
+          "proof": {
+            "backend": "groth16_bn254",
+            "proof": "AOIRu6LhltMKf6ht0MttAJwMk6BV5emkPm3KAJKhZYcst5IFXCNFnFWg3230MDNrw0fbVnPGzEc/dVdoJWPiIRkuVhmIZGH8GLUSiU3FnDtshxjmtDlonAa8FeyPXASqEueSU3dXOO+WiSzocFvW0sgEF71A4IDzkP4S1SjriaouPcZf+k22hn/bniT6mL5xxKGaHVJS1kc8C/io/z9KhSpPRlb6L4m/gaf9P1yRb2SLdwp26swJEH5sGI4h6A+nL6NaQu8OZ9EVCcnkzJRiLkUMLvELbTXv4yzoH+bfpdcs+MHXl32gdwn4GtBPND17a/PW2xEtvF2NG1wyHDj0CQ=="
+          },
+          "public_inputs": [
+            "0x0000000000000000000000000000000000000000000000000000000000000002",
+            "0x0000000000000000000000000000000000000000000000000000000000534f4c",
+            "0x276cc4776cdeea717902ba96bda89d2b81b09d80225db473d9f624da621efb9b",
+            "0x0d0c94df0567dc5a63abcc7bf3330fcf47c08ebaec5b1aec208f679076c6efab",
+            "0x1323be9e2e992d044776cbcb214a0c48c6b26e75d0e16566205b8d87b7c96426",
+            "0x27a29afe44e845c4ece5d6f0fdf72d31229299094efc99ea1b5ead25bdab2564",
+            "0x00000000000000000000000000000000000000000000000000000000b2d05e00",
+            "0x00000000000000000000000000000000000000000000000000000000000f4240",
+            "0x297c134bc2ba2db527d7d6cf5818de29f838328162eb1566546ec75916e6a33f",
+            "0x0eece29412b5e24841a2a4c68f7cc6b4304cd126e42a6249a994ef9739103745",
+            "0x2d7045b84a16e73d150fc5a97736684af69cabd0ddc22d16131c7ac04c91474b",
+            "0x0e1022643b1f0e53d9abe5bd47b7cc86f0866f5bef88404d46f3669eae71ab31"
+          ],
+          "quote": {
+            "body": {
+              "cap_micro_usdc": "1000000",
+              "control_api_origin": "http://127.0.0.1:8788",
+              "deployment_id": "i05-local",
+              "expires_at": "3000000120",
+              "inference_api_origin": "http://127.0.0.1:8789",
+              "issued_at": "3000000000",
+              "max_concurrency": "4",
+              "mode": "direct_openrouter",
+              "models": [
+                "*"
+              ],
+              "pool": "3mJ5ojuRqQRz2Wu1WTXagW2bT3WJCStTDxLH8VSHGqxm",
+              "provider": "openrouter",
+              "quote_id": "f149ace7-41fe-40ed-a1cd-e1c09af61fad",
+              "session_ttl_seconds": "60",
+              "tariff_hash": "b1ac4f5ef8577b78e0854ddf4618e9c0d2a569a5c3824bf9597862865b219fd3"
+            },
+            "quote_hash": "bb2740f7abf2b4a0beff17754e27e526c736e15468883462db5c5a4a6188beae",
+            "signature": "K4x0akcasr3vgGxOzWih3YlM/Bad8q8GhGfxz6CIaCmrH42Hi1KGJTPJiJO5fC3OvOzCPjSNYpSfzsfI/tSoBw=="
+          }
+        },
+        "rerandomization": "0x0000000000000000000000000000000000000000000000000000000000000017",
+        "tariff": {
+          "model": "*",
+          "operator_fee_micro_usdc": "0",
+          "pricing_basis": "provider_reported_usd",
+          "provider": "openrouter",
+          "rates": [],
+          "tariff_hash": "b1ac4f5ef8577b78e0854ddf4618e9c0d2a569a5c3824bf9597862865b219fd3",
+          "valid_from": "0",
+          "valid_until": "4000000000",
+          "version": "1"
+        }
+      },
+      "receipts": [
+        {
+          "body": {
+            "billing_effect": "charge",
+            "charged_nano_usdc": "0",
+            "deployment_id": "i05-local",
+            "evidence_kind": "UNKNOWN_OPERATOR_LOSS",
+            "observed_at": "3000000001",
+            "observed_nano_usdc": null,
+            "operation_id": null,
+            "operator_loss_nano_usdc": null,
+            "pool": "3mJ5ojuRqQRz2Wu1WTXagW2bT3WJCStTDxLH8VSHGqxm",
+            "provider_evidence_digest": "abababababababababababababababababababababababababababababababab",
+            "provider_reported_usd": null,
+            "provider_request_id": null,
+            "reason": "waived_unknown",
+            "receipt_id": "4ff33489-eb48-4769-a247-2b4cfef9c998",
+            "related_receipt_hash": null,
+            "request_id": "b4341706-4bec-45d1-96f9-61133ac65437",
+            "reservation_nano_usdc": "1000000000",
+            "tariff_hash": "b1ac4f5ef8577b78e0854ddf4618e9c0d2a569a5c3824bf9597862865b219fd3",
+            "usage": [],
+            "version": "1"
+          },
+          "receipt_hash": "e5524353c1b826169b3700dd72aa7bb642ff7b88d30f801a58b439569bfab268",
+          "signature": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=="
+        }
+      ],
+      "settlement": {
+        "blind_delta_srv": "0x000000000000000000000000000000000000000000000000000000000000001d",
+        "charge_micro_usdc": "0",
+        "next_anchor": "0x0000000000000000000000000000000000000000000000000000000000000011",
+        "next_commitment": {
+          "x": "0x042dc881d78f060e49038cf462d9e2bba61bc4770e949846786b09dc81ea99a5",
+          "y": "0x110c5b021781c0b9de6d006b2ea83fa941ced3e2108d971b17fe1e968bed6075"
+        },
+        "next_state_signature": {
+          "r_x": "0x2dd0bd0a944313e2cef557915aa1eecd8d272e0da00d09c2fa8e8917e1399583",
+          "r_y": "0x2a2862780b932220596a71414e5d18ef2697d5c3ebe6b79db8b3d13b70938667",
+          "s": "0x0234a6bee9bc56df85a8fb086ea52ab30828c1705bbaab804d5687ff3c05889d"
+        }
+      },
+      "state": {
+        "anchor": "0x0000000000000000000000000000000000000000000000000000000000000001",
+        "balance_blinding": "0x0000000000000000000000000000000000000000000000000000000000000013",
+        "balance_micro_usdc": "5000000",
+        "commitment": {
+          "x": "0x06a679e231a548ee632030cca6b3d7871fc77f8841a9c4cce57f70089d583f97",
+          "y": "0x2da9ed477ff38be2922da9be6c8abff98598d19d9da73da19b03641c8c5c26d7"
+        },
+        "note_leaf": "0x04dbfc272f894c0d1739ac1e19e7479267c98986ceedcb31be08abece82968f8",
+        "state_signature": null
+      }
+    }
+  ],
+  "success": {
+    "context": {
+      "cap_micro_usdc": "1000000",
+      "control_api_origin": "http://127.0.0.1:8788",
+      "deployment_id": "i05-local",
+      "inference_api_origin": "http://127.0.0.1:8789",
+      "pool": "3mJ5ojuRqQRz2Wu1WTXagW2bT3WJCStTDxLH8VSHGqxm",
+      "quote_public_key": "7v54NWdBtkjuAFJrLGsS2SXnuk8nKam81mZJeeYxVFi9",
+      "receipt_public_key": "mBKqcnGotbsSb5vNrdyhzZ5EhqZdids9QYiTRckvi7v",
+      "request_vk_sha256": "8011244c99fa1a8524870906462d430fc86366b8ad821736c5fa726b479e6d97",
+      "state_key": [
+        "0x1323be9e2e992d044776cbcb214a0c48c6b26e75d0e16566205b8d87b7c96426",
+        "0x27a29afe44e845c4ece5d6f0fdf72d31229299094efc99ea1b5ead25bdab2564"
+      ],
+      "tariff_hashes": [
+        "b1ac4f5ef8577b78e0854ddf4618e9c0d2a569a5c3824bf9597862865b219fd3"
+      ],
+      "vault_binding": "0x276cc4776cdeea717902ba96bda89d2b81b09d80225db473d9f624da621efb9b"
+    },
+    "kind": "settle",
+    "operations": [],
+    "prepared": {
+      "control_token": "zkc1.b4341706-4bec-45d1-96f9-61133ac65437.BwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwc",
+      "proxy_token": null,
+      "request": {
+        "authorization": {
+          "control_secret_hash": "4bb06f8e4e3a7715d201d573d0aa423762e55dabd61a2c02278fa56cc6d294e0",
+          "deployment_id": "i05-local",
+          "mode": "direct_openrouter",
+          "pool": "3mJ5ojuRqQRz2Wu1WTXagW2bT3WJCStTDxLH8VSHGqxm",
+          "proxy_secret_hash": null,
+          "quote_hash": "bb2740f7abf2b4a0beff17754e27e526c736e15468883462db5c5a4a6188beae",
+          "request_id": "b4341706-4bec-45d1-96f9-61133ac65437",
+          "version": "1"
+        },
+        "proof": {
+          "backend": "groth16_bn254",
+          "proof": "AOIRu6LhltMKf6ht0MttAJwMk6BV5emkPm3KAJKhZYcst5IFXCNFnFWg3230MDNrw0fbVnPGzEc/dVdoJWPiIRkuVhmIZGH8GLUSiU3FnDtshxjmtDlonAa8FeyPXASqEueSU3dXOO+WiSzocFvW0sgEF71A4IDzkP4S1SjriaouPcZf+k22hn/bniT6mL5xxKGaHVJS1kc8C/io/z9KhSpPRlb6L4m/gaf9P1yRb2SLdwp26swJEH5sGI4h6A+nL6NaQu8OZ9EVCcnkzJRiLkUMLvELbTXv4yzoH+bfpdcs+MHXl32gdwn4GtBPND17a/PW2xEtvF2NG1wyHDj0CQ=="
+        },
+        "public_inputs": [
+          "0x0000000000000000000000000000000000000000000000000000000000000002",
+          "0x0000000000000000000000000000000000000000000000000000000000534f4c",
+          "0x276cc4776cdeea717902ba96bda89d2b81b09d80225db473d9f624da621efb9b",
+          "0x0d0c94df0567dc5a63abcc7bf3330fcf47c08ebaec5b1aec208f679076c6efab",
+          "0x1323be9e2e992d044776cbcb214a0c48c6b26e75d0e16566205b8d87b7c96426",
+          "0x27a29afe44e845c4ece5d6f0fdf72d31229299094efc99ea1b5ead25bdab2564",
+          "0x00000000000000000000000000000000000000000000000000000000b2d05e00",
+          "0x00000000000000000000000000000000000000000000000000000000000f4240",
+          "0x297c134bc2ba2db527d7d6cf5818de29f838328162eb1566546ec75916e6a33f",
+          "0x0eece29412b5e24841a2a4c68f7cc6b4304cd126e42a6249a994ef9739103745",
+          "0x2d7045b84a16e73d150fc5a97736684af69cabd0ddc22d16131c7ac04c91474b",
+          "0x0e1022643b1f0e53d9abe5bd47b7cc86f0866f5bef88404d46f3669eae71ab31"
+        ],
+        "quote": {
+          "body": {
+            "cap_micro_usdc": "1000000",
+            "control_api_origin": "http://127.0.0.1:8788",
+            "deployment_id": "i05-local",
+            "expires_at": "3000000120",
+            "inference_api_origin": "http://127.0.0.1:8789",
+            "issued_at": "3000000000",
+            "max_concurrency": "4",
+            "mode": "direct_openrouter",
+            "models": [
+              "*"
+            ],
+            "pool": "3mJ5ojuRqQRz2Wu1WTXagW2bT3WJCStTDxLH8VSHGqxm",
+            "provider": "openrouter",
+            "quote_id": "f149ace7-41fe-40ed-a1cd-e1c09af61fad",
+            "session_ttl_seconds": "60",
+            "tariff_hash": "b1ac4f5ef8577b78e0854ddf4618e9c0d2a569a5c3824bf9597862865b219fd3"
+          },
+          "quote_hash": "bb2740f7abf2b4a0beff17754e27e526c736e15468883462db5c5a4a6188beae",
+          "signature": "K4x0akcasr3vgGxOzWih3YlM/Bad8q8GhGfxz6CIaCmrH42Hi1KGJTPJiJO5fC3OvOzCPjSNYpSfzsfI/tSoBw=="
+        }
+      },
+      "rerandomization": "0x0000000000000000000000000000000000000000000000000000000000000017",
+      "tariff": {
+        "model": "*",
+        "operator_fee_micro_usdc": "0",
+        "pricing_basis": "provider_reported_usd",
+        "provider": "openrouter",
+        "rates": [],
+        "tariff_hash": "b1ac4f5ef8577b78e0854ddf4618e9c0d2a569a5c3824bf9597862865b219fd3",
+        "valid_from": "0",
+        "valid_until": "4000000000",
+        "version": "1"
+      }
+    },
+    "receipts": [
+      {
+        "body": {
+          "billing_effect": "charge",
+          "charged_nano_usdc": "0",
+          "deployment_id": "i05-local",
+          "evidence_kind": "UNKNOWN_OPERATOR_LOSS",
+          "observed_at": "3000000001",
+          "observed_nano_usdc": null,
+          "operation_id": null,
+          "operator_loss_nano_usdc": null,
+          "pool": "3mJ5ojuRqQRz2Wu1WTXagW2bT3WJCStTDxLH8VSHGqxm",
+          "provider_evidence_digest": "abababababababababababababababababababababababababababababababab",
+          "provider_reported_usd": null,
+          "provider_request_id": null,
+          "reason": "waived_unknown",
+          "receipt_id": "4ff33489-eb48-4769-a247-2b4cfef9c998",
+          "related_receipt_hash": null,
+          "request_id": "b4341706-4bec-45d1-96f9-61133ac65437",
+          "reservation_nano_usdc": "1000000000",
+          "tariff_hash": "b1ac4f5ef8577b78e0854ddf4618e9c0d2a569a5c3824bf9597862865b219fd3",
+          "usage": [],
+          "version": "1"
+        },
+        "receipt_hash": "e5524353c1b826169b3700dd72aa7bb642ff7b88d30f801a58b439569bfab268",
+        "signature": "vr+MsLxDankJnFDQ0P68P9goHUQ3Yc9q+1kRV99aSFEJtPIgTCp4u+6rZPJWlHaOof3ewUw+YjxvgROxdlf/Bw=="
+      }
+    ],
+    "settlement": {
+      "blind_delta_srv": "0x000000000000000000000000000000000000000000000000000000000000001d",
+      "charge_micro_usdc": "0",
+      "next_anchor": "0x0000000000000000000000000000000000000000000000000000000000000011",
+      "next_commitment": {
+        "x": "0x042dc881d78f060e49038cf462d9e2bba61bc4770e949846786b09dc81ea99a5",
+        "y": "0x110c5b021781c0b9de6d006b2ea83fa941ced3e2108d971b17fe1e968bed6075"
+      },
+      "next_state_signature": {
+        "r_x": "0x2dd0bd0a944313e2cef557915aa1eecd8d272e0da00d09c2fa8e8917e1399583",
+        "r_y": "0x2a2862780b932220596a71414e5d18ef2697d5c3ebe6b79db8b3d13b70938667",
+        "s": "0x0234a6bee9bc56df85a8fb086ea52ab30828c1705bbaab804d5687ff3c05889d"
+      }
+    },
+    "state": {
+      "anchor": "0x0000000000000000000000000000000000000000000000000000000000000001",
+      "balance_blinding": "0x0000000000000000000000000000000000000000000000000000000000000013",
+      "balance_micro_usdc": "5000000",
+      "commitment": {
+        "x": "0x06a679e231a548ee632030cca6b3d7871fc77f8841a9c4cce57f70089d583f97",
+        "y": "0x2da9ed477ff38be2922da9be6c8abff98598d19d9da73da19b03641c8c5c26d7"
+      },
+      "note_leaf": "0x04dbfc272f894c0d1739ac1e19e7479267c98986ceedcb31be08abece82968f8",
+      "state_signature": null
+    }
+  }
+}

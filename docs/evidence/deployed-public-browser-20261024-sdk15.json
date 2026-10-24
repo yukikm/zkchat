@@ -1,0 +1,267 @@
+{
+  "startedAt": "2026-10-23T20:14:29.750Z",
+  "origin": "https://dzt0611ozdx70.cloudfront.net",
+  "sdk": "0.2.0-devnet.15",
+  "profileSha256": "5e15d66c6f45265951cf1f8dd6cc0dae6574c4b8dd6756f828f7543ecaa97b9a",
+  "deploymentId": "public-devnet-20261021-state-v1",
+  "scope": "Actual deployed browser app and authenticated public profile in fresh isolated Chromium. Read-only service preflight; no user browser data, wallet, custody, AUTH, inference, signatures or financial actions.",
+  "profileFixture": false,
+  "blockedRequests": [],
+  "pageErrors": [],
+  "httpErrors": [],
+  "expectedReaderCancellations": [],
+  "networkFailures": [],
+  "requests": [
+    {
+      "origin": "https://dzt0611ozdx70.cloudfront.net",
+      "path": "/",
+      "method": "GET"
+    },
+    {
+      "origin": "https://dzt0611ozdx70.cloudfront.net",
+      "path": "/assets/index-ZDqlua1O.js",
+      "method": "GET"
+    },
+    {
+      "origin": "https://dzt0611ozdx70.cloudfront.net",
+      "path": "/assets/zkapi-sdk-D71Ypy3G.js",
+      "method": "GET"
+    },
+    {
+      "origin": "https://dzt0611ozdx70.cloudfront.net",
+      "path": "/assets/markdown-CvOIYpoV.js",
+      "method": "GET"
+    },
+    {
+      "origin": "https://dzt0611ozdx70.cloudfront.net",
+      "path": "/assets/index-B_S-MAbV.css",
+      "method": "GET"
+    },
+    {
+      "origin": "https://dzt0611ozdx70.cloudfront.net",
+      "path": "/assets/dm-sans-latin-wght-normal-Xz1IZZA0.woff2",
+      "method": "GET"
+    },
+    {
+      "origin": "https://dzt0611ozdx70.cloudfront.net",
+      "path": "/assets/noto-sans-jp-58-wght-normal-BYGgVeN_.woff2",
+      "method": "GET"
+    },
+    {
+      "origin": "https://dzt0611ozdx70.cloudfront.net",
+      "path": "/",
+      "method": "GET"
+    },
+    {
+      "origin": "https://dzt0611ozdx70.cloudfront.net",
+      "path": "/zkapi-config.json",
+      "method": "GET"
+    },
+    {
+      "origin": "https://d366buuvadnp3.cloudfront.net",
+      "path": "/releases/public-devnet-20261021-state-v1/profile.json",
+      "method": "GET"
+    },
+    {
+      "origin": "https://d366buuvadnp3.cloudfront.net",
+      "path": "/releases/public-devnet-20261021-state-v1/assets/bundle.json",
+      "method": "GET"
+    },
+    {
+      "origin": "https://d366buuvadnp3.cloudfront.net",
+      "path": "/releases/public-devnet-20261021-state-v1/assets/manifest.json",
+      "method": "GET"
+    },
+    {
+      "origin": "https://d366buuvadnp3.cloudfront.net",
+      "path": "/releases/public-devnet-20261021-state-v1/assets/idl.bin",
+      "method": "GET"
+    },
+    {
+      "origin": "https://d366buuvadnp3.cloudfront.net",
+      "path": "/releases/public-devnet-20261021-state-v1/assets/requestPk.bin",
+      "method": "GET"
+    },
+    {
+      "origin": "https://d366buuvadnp3.cloudfront.net",
+      "path": "/releases/public-devnet-20261021-state-v1/assets/requestVk.bin",
+      "method": "GET"
+    },
+    {
+      "origin": "https://d366buuvadnp3.cloudfront.net",
+      "path": "/releases/public-devnet-20261021-state-v1/assets/withdrawalPk.bin",
+      "method": "GET"
+    },
+    {
+      "origin": "https://d366buuvadnp3.cloudfront.net",
+      "path": "/releases/public-devnet-20261021-state-v1/assets/withdrawalVk.bin",
+      "method": "GET"
+    },
+    {
+      "origin": "https://d366buuvadnp3.cloudfront.net",
+      "path": "/releases/public-devnet-20261021-state-v1/assets/treePk.bin",
+      "method": "GET"
+    },
+    {
+      "origin": "https://d366buuvadnp3.cloudfront.net",
+      "path": "/releases/public-devnet-20261021-state-v1/assets/treeVk.bin",
+      "method": "GET"
+    },
+    {
+      "origin": "https://d366buuvadnp3.cloudfront.net",
+      "path": "/releases/public-devnet-20261021-state-v1/assets/treeSourceBundle.bin",
+      "method": "GET"
+    },
+    {
+      "origin": "https://d366buuvadnp3.cloudfront.net",
+      "path": "/releases/public-devnet-20261021-state-v1/assets/treeVerifierConstants.bin",
+      "method": "GET"
+    },
+    {
+      "origin": "https://d366buuvadnp3.cloudfront.net",
+      "path": "/releases/public-devnet-20261021-state-v1/assets/additional-0.bin",
+      "method": "GET"
+    },
+    {
+      "origin": "https://d366buuvadnp3.cloudfront.net",
+      "path": "/releases/public-devnet-20261021-state-v1/assets/additional-1.bin",
+      "method": "GET"
+    },
+    {
+      "origin": "https://d366buuvadnp3.cloudfront.net",
+      "path": "/releases/public-devnet-20261021-state-v1/assets/additional-2.bin",
+      "method": "GET"
+    },
+    {
+      "origin": "https://d366buuvadnp3.cloudfront.net",
+      "path": "/releases/public-devnet-20261021-state-v1/assets/additional-3.bin",
+      "method": "GET"
+    },
+    {
+      "origin": "https://d366buuvadnp3.cloudfront.net",
+      "path": "/releases/public-devnet-20261021-state-v1/assets/prover.wasm",
+      "method": "GET"
+    },
+    {
+      "origin": "https://d366buuvadnp3.cloudfront.net",
+      "path": "/releases/public-devnet-20261021-state-v1/assets/Apache-2.0.txt",
+      "method": "GET"
+    },
+    {
+      "origin": "https://d366buuvadnp3.cloudfront.net",
+      "path": "/releases/public-devnet-20261021-state-v1/assets/BUNDLE-PROVENANCE.md",
+      "method": "GET"
+    },
+    {
+      "origin": "https://d366buuvadnp3.cloudfront.net",
+      "path": "/releases/public-devnet-20261021-state-v1/assets/PROVENANCE.md",
+      "method": "GET"
+    },
+    {
+      "origin": "https://d366buuvadnp3.cloudfront.net",
+      "path": "/releases/public-devnet-20261021-state-v1/assets/Rust-dependencies.json",
+      "method": "GET"
+    },
+    {
+      "origin": "https://d366buuvadnp3.cloudfront.net",
+      "path": "/releases/public-devnet-20261021-state-v1/assets/Rust-notices-1.json",
+      "method": "GET"
+    },
+    {
+      "origin": "https://d366buuvadnp3.cloudfront.net",
+      "path": "/releases/public-devnet-20261021-state-v1/assets/Rust-notices-2.json",
+      "method": "GET"
+    },
+    {
+      "origin": "https://d366buuvadnp3.cloudfront.net",
+      "path": "/releases/public-devnet-20261021-state-v1/assets/Solana-zkAPI-LICENSE.txt",
+      "method": "GET"
+    },
+    {
+      "origin": "https://d366buuvadnp3.cloudfront.net",
+      "path": "/releases/public-devnet-20261021-state-v1/assets/ethereum-VENDORED-045b444.md",
+      "method": "GET"
+    },
+    {
+      "origin": "https://d366buuvadnp3.cloudfront.net",
+      "path": "/releases/public-devnet-20261021-state-v1/assets/mingyech-README-8b2d4e3.md",
+      "method": "GET"
+    },
+    {
+      "origin": "https://d366buuvadnp3.cloudfront.net",
+      "path": "/releases/public-devnet-20261021-state-v1/assets/mingyech-setup-README-8b2d4e3.md",
+      "method": "GET"
+    },
+    {
+      "origin": "https://d366buuvadnp3.cloudfront.net",
+      "path": "/rpc",
+      "method": "POST",
+      "rpcMethod": "getGenesisHash"
+    },
+    {
+      "origin": "https://d366buuvadnp3.cloudfront.net",
+      "path": "/rpc",
+      "method": "POST",
+      "rpcMethod": "getAccountInfo"
+    },
+    {
+      "origin": "https://d366buuvadnp3.cloudfront.net",
+      "path": "/zkapi/v1/config",
+      "method": "GET"
+    },
+    {
+      "origin": "https://d366buuvadnp3.cloudfront.net",
+      "path": "/zkapi/v1/catalog",
+      "method": "GET"
+    },
+    {
+      "origin": "https://d366buuvadnp3.cloudfront.net",
+      "path": "/zkapi/v1/tree/snapshot",
+      "method": "GET"
+    },
+    {
+      "origin": "https://d366buuvadnp3.cloudfront.net",
+      "path": "/zkapi/v1/tree/snapshots/04e2b90d2b243df6ead88a0d2da7da5f845474ade0eb64828938e1470d05ddf3.json",
+      "method": "GET"
+    },
+    {
+      "origin": "https://d366buuvadnp3.cloudfront.net",
+      "path": "/rpc",
+      "method": "POST",
+      "rpcMethod": "getGenesisHash"
+    },
+    {
+      "origin": "https://d366buuvadnp3.cloudfront.net",
+      "path": "/rpc",
+      "method": "POST",
+      "rpcMethod": "getBlock"
+    },
+    {
+      "origin": "https://d366buuvadnp3.cloudfront.net",
+      "path": "/rpc",
+      "method": "POST",
+      "rpcMethod": "getMultipleAccounts"
+    },
+    {
+      "origin": "https://d366buuvadnp3.cloudfront.net",
+      "path": "/rpc",
+      "method": "POST",
+      "rpcMethod": "getBlock"
+    },
+    {
+      "origin": "https://d366buuvadnp3.cloudfront.net",
+      "path": "/relay-status",
+      "method": "GET"
+    },
+    {
+      "origin": "https://d366buuvadnp3.cloudfront.net",
+      "path": "/zkapi/v1/readiness",
+      "method": "GET"
+    }
+  ],
+  "visibleResult": "Connection settings\nConnect your wallet\n\nPay for AI with USDC. Keep SOL for network fees.\n\nSolana Devnet\nTest tokens only\n\nNo Solana wallet detected. Install or enable Phantom or Solflare, then reload this page.\n\nNeed USDC or SOL?\n\nYou need USDC for your deposit and SOL for gas fees. If your wallet does not have enough of either token, get it from a faucet before depositing.\n\nUSDC faucet\nSOL faucet\n\nSelect USDC on Circle and Solana Devnet on both faucets. Send the tokens to the wallet you use here.\n\nHave an older deposit?\nConnection details\n\nSDK 0.2.0-devnet.15 · Solana Devnet\n\nDeployment\nSolana zkAPI · Public Devnet\nRoute\nDirect\nAvailable models (1)\nCheck the service\n\nNo wallet, funds, or signatures needed.\n\nCheck service\n\nService ready. Select a wallet to connect.\n\nYour messages go to the AI provider. A proxy operator can also read them.\n\nNo wallet? Try a sample chat.\nTry the demo",
+  "serviceReady": true,
+  "sdkVisible": true,
+  "passed": true,
+  "completedAt": "2026-10-23T20:14:37.006Z"
+}
