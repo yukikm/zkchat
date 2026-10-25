@@ -1,0 +1,23 @@
+{
+  "observedAt": "2026-10-25T06:50:01.942Z",
+  "sdk": "0.2.0-devnet.19",
+  "result": {
+    "blockedByBackup": true,
+    "errorName": "RecoveryError",
+    "recoveryEnabled": false,
+    "elapsedMs": 2206.699999999255,
+    "before": {
+      "wallet": "empty",
+      "balance": "0",
+      "hasWalletOperation": false
+    },
+    "after": {
+      "wallet": "empty",
+      "balance": "0",
+      "hasWalletOperation": false
+    }
+  },
+  "blocked": [],
+  "serviceErrors": [],
+  "scope": "Real published SDK and verified public profile/services in isolated Chromium. Checks the app's required-backup guard and unchanged empty deposit state; does not generate a deposit proof or construct a transaction. Public mutation requests are blocked. Fixture wallet cannot sign; no backup enrollment, advance, broadcast, AUTH or inference. No user wallet or funds are accessed. Real proof generation is covered separately by the SDK's prover-browser and wallet-integration fixtures."
+}

@@ -26,9 +26,11 @@ Faucet、証明の説明、AI提供者へのメッセージ送信の説明、チ
 
 ## 検証
 
-SDKは624テスト、復元サービス12テスト、独立したSDKインストールの346テストとNode.jsのデータ削除後復元テストを通過。SDKのブラウザテストでもローカル保存データ削除後の復元を確認している。アプリの単体テストは431件、ブラウザテストは107件成功（外部サービス用の明示的opt-in 3件は通常テストではスキップ）。現行版と旧SDK 2版のビルド、同一originでの保存領域保持、CloudFrontルーティング・MIME・旧画面への遷移も検証した。
+SDKは624テスト、復元サービス12テスト、独立したSDKインストールの346テストとNode.jsのデータ削除後復元テストを通過。SDKのブラウザテストでもローカル保存データ削除後の復元を確認している。アプリの単体テストは431件、ブラウザテストは107件成功。通常テストでスキップする公開接続のopt-in 3件も別途検証し、公開preflight、空の保存領域の作成・再オープン、バックアップ未設定時の入金拒否を確認した。現行版と旧SDK 2版のビルド、同一originでの保存領域保持、CloudFrontルーティング・MIME・旧画面への遷移も検証した。
 
-資金を扱う経路は合成のSDK状態・チェーン・プロバイダーで検証した。公開サービスでは読み取りだけのprofile・設定・RPC確認を実施。実際の入出金や有料チャットを新たに実行した結果ではない。
+資金を扱う経路は合成のSDK状態・チェーン・プロバイダーで検証した。公開サービスでは読み取りだけのprofile・設定・RPC確認を実施。実際の入出金や有料チャットを新たに実行した結果ではない。公開側のバックアップ必須チェックでは証明生成を行わず、実証明はSDKのブラウザ・wallet fixtureで別途検証している。
+
+[公開接続とバックアップ必須チェック](evidence/public-browser-backup-guard-20261025-sdk19.json)。
 
 ## 画面
 
@@ -41,3 +43,11 @@ SDKは624テスト、復元サービス12テスト、独立したSDKインスト
 - [出金の証明送信](evidence/ux-improvements-20261025/withdrawal-proof-mobile.png)
 - [検証済みの待機終了日時](evidence/ux-improvements-20261025/withdrawal-waiting-desktop.png)
 - [ファイルを紛失した場合の案内](evidence/ux-improvements-20261025/backup-lost-file-guidance.png)
+
+## 配信
+
+- 公開サイト: <https://dzt0611ozdx70.cloudfront.net/>
+- アプリ実装commit: `c78268852c2fa97c578c94d62f4dc73efbabe2cc`（mainへpush済み）
+- CloudFront invalidation: `I4SNBA8FTENDH8T0E478I101Q4`、Completed。
+- 27ファイルのSHA-256・MIME・cache設定、9件のrouting、15件の旧asset保持、demo・同一originの旧SDK画面を配信後に確認した。ウォレットや資金は操作していない。
+- [配信後の検証](evidence/deployment-ux-improvements-20261025.json)

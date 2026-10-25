@@ -280,12 +280,12 @@ test("public SDK browser factory creates and reopens unfunded custody with no si
   });
 });
 
-test("public SDK prepares an inline deposit before any signing", async ({
+test("public app requires backup before preparing a deposit", async ({
   page,
 }, testInfo) => {
   test.skip(
     process.env.ZKCHAT_LIVE_CHECK !== "1",
-    "Opt-in public-service deposit preparation with an isolated fixture wallet.",
+    "Opt-in app backup guard check with the published SDK and an isolated fixture wallet.",
   );
   test.setTimeout(240_000);
   const blocked: string[] = [];
@@ -321,17 +321,23 @@ test("public SDK prepares an inline deposit before any signing", async ({
     await route.continue();
   });
   // Keep this SDK fixture independent of app HMR and any page wallet state.
-  await page.route("**/__deposit-preparation-harness", (route) =>
+  await page.route("**/__deposit-backup-guard-harness", (route) =>
     route.fulfill({
       contentType: "text/html",
-      body: "<!doctype html><title>Isolated SDK deposit preparation</title>",
+      body: "<!doctype html><title>Isolated deposit backup guard</title>",
     }),
   );
-  await page.goto("/__deposit-preparation-harness");
+  await page.goto("/__deposit-backup-guard-harness");
   const result = await page.evaluate(async () => {
     // @ts-expect-error Test-only Vite module; signer always throws.
     const { registerTestWallet } = await import("/tests/walletHarness.ts");
-    const { loadConfig, listWallets, connectWalletAccount, connectZkapi } =
+    const {
+      loadConfig,
+      listWallets,
+      connectWalletAccount,
+      connectZkapi,
+      RecoveryError,
+    } =
       // @ts-expect-error Vite source module in Playwright's fresh browser context.
       await import("/src/lib/zkapi.ts");
     const unregister = registerTestWallet();
@@ -344,43 +350,45 @@ test("public SDK prepares an inline deposit before any signing", async ({
     const handle = await connectZkapi(config, wallet, account, true);
     const started = performance.now();
     try {
-      // Creates only an encrypted local candidate. Never advance it, sign,
-      // broadcast, authorize a session, or request inference.
-      await handle.client.prepareDeposit("2000000");
-      const status = await handle.client.status();
+      const before = await handle.client.status();
+      let blockedByBackup = false;
+      let errorName: string | null = null;
+      try {
+        // The app must reject new funding until the user has saved a recovery
+        // file. Do not bypass that guard or write a backup to the public service.
+        await handle.client.prepareDeposit("2000000");
+      } catch (error) {
+        blockedByBackup =
+          error instanceof RecoveryError &&
+          error.message ===
+            "Save your recovery file and enable backup before depositing.";
+        errorName = error instanceof Error ? error.name : "UnknownError";
+      }
+      const after = await handle.client.status();
       return {
-        completed: true,
+        blockedByBackup,
+        errorName,
+        recoveryEnabled: handle.recoveryEnabled,
         elapsedMs: performance.now() - started,
-        wallet: status.wallet,
-        operation: status.walletOperation && {
-          kind: status.walletOperation.kind,
-          phase: status.walletOperation.phase,
-          signature: status.walletOperation.signature,
+        before: {
+          wallet: before.wallet,
+          balance: before.settledBalanceMicroUsdc,
+          hasWalletOperation: before.walletOperation !== null,
         },
-      };
-    } catch (error) {
-      // Do not export full SDK status, journal contents, or exception details.
-      const knownFailures = [
-        "finalized indexer unavailable",
-        "RPC/indexer finalized cut changed; retry snapshot",
-        "RPC finalized account cut block missing or invalid",
-        "untrusted indexer root",
-      ];
-      return {
-        completed: false,
-        elapsedMs: performance.now() - started,
-        errorName: error instanceof Error ? error.name : "UnknownError",
-        failure:
-          error instanceof Error && knownFailures.includes(error.message)
-            ? error.message
-            : "Unclassified preparation error",
+        after: {
+          wallet: after.wallet,
+          balance: after.settledBalanceMicroUsdc,
+          hasWalletOperation: after.walletOperation !== null,
+        },
       };
     } finally {
       handle.dispose();
       unregister();
     }
   });
-  const report = testInfo.outputPath("public-browser-deposit-preparation.json");
+  const report = testInfo.outputPath(
+    "public-browser-deposit-backup-guard.json",
+  );
   await writeFile(
     report,
     JSON.stringify(
@@ -391,20 +399,22 @@ test("public SDK prepares an inline deposit before any signing", async ({
         blocked,
         serviceErrors,
         scope:
-          "Real published SDK, public profile and services, prover and inline transaction construction in isolated Chromium. Fixture wallet cannot sign; no advance, broadcast, AUTH or inference. No user wallet or funds are accessed.",
+          "Real published SDK and verified public profile/services in isolated Chromium. Checks the app's required-backup guard and unchanged empty deposit state; does not generate a deposit proof or construct a transaction. Public mutation requests are blocked. Fixture wallet cannot sign; no backup enrollment, advance, broadcast, AUTH or inference. No user wallet or funds are accessed. Real proof generation is covered separately by the SDK's prover-browser and wallet-integration fixtures.",
       },
       null,
       2,
     ) + "\n",
   );
-  await testInfo.attach("public-browser-deposit-preparation.json", {
+  await testInfo.attach("public-browser-deposit-backup-guard.json", {
     path: report,
     contentType: "application/json",
   });
   expect(blocked).toEqual([]);
   expect(result).toMatchObject({
-    completed: true,
-    wallet: "unfunded",
-    operation: { kind: "deposit", phase: "ready", signature: null },
+    blockedByBackup: true,
+    errorName: "RecoveryError",
+    recoveryEnabled: false,
+    before: { wallet: "empty", balance: "0", hasWalletOperation: false },
+    after: { wallet: "empty", balance: "0", hasWalletOperation: false },
   });
 });
