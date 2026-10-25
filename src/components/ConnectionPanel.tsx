@@ -1941,7 +1941,7 @@ export function ConnectionPanel({
         )}
         <p>
           {handle?.recoveryEnabled
-            ? "Your recovery file unlocks an encrypted backup of your deposits. Keep it outside this browser. Recovery needs the service to be available and does not extend a deposit’s withdrawal deadline."
+            ? "Your recovery file unlocks an encrypted backup of your deposits, including later deposits and balance updates. Keep it outside this browser. Recovery needs the service to be available."
             : "Without a recovery file, deleting this browser’s data can make your deposits inaccessible. Your wallet alone cannot restore them. Keep the original browser’s data until recovery is set up or you withdraw."}
         </p>
         <p>Chat history is saved in this browser without encryption.</p>
