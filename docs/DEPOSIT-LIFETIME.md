@@ -34,8 +34,8 @@ acceptance; no funded new-Pool lifecycle or paid inference was performed.
   `18446744073709551615` and refuses expiry claims. The SDK authenticates both
   manifest and finalized Pool before reporting `depositExpiryPolicy: "none"`
   and `expiry: null`.
-- The app shows "No deposit expiry" before funding a verified non-expiring
-  deployment. It does not format the canonical identity value as a distant date.
+- Deposit review omits expiry messaging for a verified non-expiring deployment.
+  It does not format the canonical identity value as a distant date.
 - Deposits remain available while their balance covers the existing
   authorization cap and the service and note are otherwise usable. Selecting a
   deposit does not renew it, create a note or move funds.

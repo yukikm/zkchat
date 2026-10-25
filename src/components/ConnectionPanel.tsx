@@ -1537,11 +1537,13 @@ export function ConnectionPanel({
                 Confirm this amount to prepare your deposit and open your wallet
                 for approval.
               </p>
-              <p className="notice" role="status">
-                <strong>{fundingTerms.title}</strong>
-                <br />
-                {fundingTerms.body}
-              </p>
+              {fundingTerms && (
+                <p className="notice" role="status">
+                  <strong>{fundingTerms.title}</strong>
+                  <br />
+                  {fundingTerms.body}
+                </p>
+              )}
               {additionalFunding && (
                 <p className="small muted">
                   This is a separate deposit. Your existing deposit is kept.

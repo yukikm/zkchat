@@ -21,9 +21,7 @@ describe("deposit expiry presentation", () => {
       expiry: null,
     };
     expect(depositExpiryNotice(status, tokyo)).toBeNull();
-    expect(depositTerms(status).title).toBe("No deposit expiry");
-    expect(depositTerms(status).body).toContain("Unused funds do not expire");
-    expect(depositTerms(status).body).toContain("waiting period");
+    expect(depositTerms(status)).toBeNull();
   });
 
   it("discloses forfeiture before funding legacy and finite-expiry deployments", () => {
@@ -32,15 +30,15 @@ describe("deposit expiry presentation", () => {
       active,
       { ...active, depositExpiryPolicy: "fixed" as const },
     ]) {
-      expect(depositTerms(status).title).toBe("This deposit has an expiry");
-      expect(depositTerms(status).body).toContain("including unused funds");
+      expect(depositTerms(status)?.title).toBe("This deposit has an expiry");
+      expect(depositTerms(status)?.body).toContain("including unused funds");
     }
   });
 
   it("does not hide a retained expiry when policy and expiry data conflict", () => {
     const status = { ...active, depositExpiryPolicy: "none" as const };
     expect(depositExpiryNotice(status, tokyo)?.isoDate).toBeDefined();
-    expect(depositTerms(status).title).toBe("This deposit has an expiry");
+    expect(depositTerms(status)?.title).toBe("This deposit has an expiry");
   });
 
   it.each([

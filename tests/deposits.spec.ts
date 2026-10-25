@@ -122,26 +122,23 @@ async function review(page: Page) {
 }
 
 for (const policy of ["none", "fixed"] as const) {
-  test(`deposit review explains ${policy} expiry before any wallet work`, async ({
+  test(`deposit review shows only needed expiry guidance for ${policy} before any wallet work`, async ({
     page,
   }) => {
     await install(page, depositStub("empty", { depositExpiryPolicy: policy }));
     await connect(page);
     await review(page);
-    await expect(
-      panel(page).getByText(
-        policy === "none" ? "No deposit expiry" : "This deposit has an expiry",
-        { exact: true },
-      ),
-    ).toBeVisible();
     if (policy === "none") {
       await expect(
-        panel(page).getByText(/Unused funds do not expire/),
-      ).toBeVisible();
+        panel(page).getByText(/No deposit expiry|Unused funds do not expire/),
+      ).toHaveCount(0);
       await expect(
         panel(page).getByText(/Withdraw by|may lose|can be claimed/),
       ).toHaveCount(0);
     } else {
+      await expect(
+        panel(page).getByText("This deposit has an expiry", { exact: true }),
+      ).toBeVisible();
       await expect(
         panel(page).getByText(
           /entire deposit, including unused funds, can be claimed/,

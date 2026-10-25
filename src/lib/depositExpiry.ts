@@ -19,12 +19,9 @@ type ExpiryStatus = Pick<ClientStatus, "wallet" | "expiry"> & {
 
 export function depositTerms(
   status: ExpiryStatus | null,
-): DepositExpiryDisplay {
+): DepositExpiryDisplay | null {
   if (status?.depositExpiryPolicy === "none" && status.expiry === null) {
-    return {
-      title: "No deposit expiry",
-      body: "Unused funds do not expire. You can keep using your balance for chats. A delayed withdrawal still has a waiting period.",
-    };
+    return null;
   }
   return {
     title: "This deposit has an expiry",
