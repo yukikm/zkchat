@@ -1,6 +1,6 @@
 # zkchat
 
-**2026-10-25 Deposit期限なし対応:** SDK `0.2.0-devnet.20` と新Pool `public-devnet-20261025-nonexpiry-v1` に切り替える設定です。Depositだけで未使用残高を失う期限はなく、Withdrawの待機・challenge期限は維持します。同じ新Poolでは、同じウォレットと保存済み復元ファイルで別ブラウザへ入金データを復元できます。旧Poolのテスト残高は移行せず、手元の旧データは削除しません。[仕様・復元・検証範囲](docs/DEPOSIT-LIFETIME.md)。
+**2026-10-25 Deposit期限なし対応:** 公開版をSDK `0.2.0-devnet.20` と新Pool `public-devnet-20261025-nonexpiry-v1` に切り替えました。Depositだけで未使用残高を失う期限はなく、Withdrawの30分の待機・challenge期間は維持します。同じ新Poolでは、同じウォレットと保存済み復元ファイルで別ブラウザへ最新の入金データを復元できます。公開バックアップでChromiumからFirefox・WebKitへの復元を検証し、公開画面の接続確認も通りました。検証には合成データを使用し、新Poolでの実入金・推論は行っていません。旧Poolのテスト残高は移行せず、手元の旧データは削除しません。[仕様・復元・検証範囲](docs/DEPOSIT-LIFETIME.md)。
 
 Solana zkAPIをLLMバックエンドにするReactチャットアプリです。SDK **[0.2.0-devnet.20](https://github.com/yukikm/solana-zkapi/releases/tag/v0.2.0-devnet.20)** と **public-devnet-20261025-nonexpiry-v1** の認証済みDevnet profileを使います。SDK archiveとprofileはSHA-256で固定します。`.20` のimmutable prereleaseと7配布物の署名証明・内容一致を検証済みです。公開元・配布確認の記録は[Deposit lifetime](docs/DEPOSIT-LIFETIME.md)を参照してください。旧Poolの保存データは保持し、SDK `.12` と `.3` の復旧画面を同じoriginに同梱しています。Solanaは **`@solana/kit` 8.4.0**、ウォレット接続は **`@solana/kit-plugin-wallet` 0.21.0 / Wallet Standard**。`web3.js`は使用しません。
 

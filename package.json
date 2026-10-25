@@ -10,6 +10,7 @@
     "preview": "vite preview --host 127.0.0.1",
     "test": "vitest run",
     "test:e2e": "playwright test",
+    "test:recovery:cross-browser": "ZKCHAT_CROSS_BROWSER_RECOVERY=1 playwright test tests/recoveryStorage.spec.ts --grep @non-expiring-recovery --workers=1",
     "typecheck": "tsc -b",
     "verify:sdk": "node scripts/verify-sdk.mjs",
     "format": "prettier --write src tests scripts *.ts *.json index.html README.md docs/*.md",

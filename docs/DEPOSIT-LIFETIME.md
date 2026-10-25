@@ -1,7 +1,7 @@
 # Deposit lifetime
 
 SDK `0.2.0-devnet.20` supports an explicit non-expiring Deposit policy. The
-activation target is the fresh `public-devnet-20261025-nonexpiry-v1` deployment:
+public app uses the fresh `public-devnet-20261025-nonexpiry-v1` deployment:
 
 - Program: `GnVHYANsc3zsYQfU6EBuFbT8v8tHZtd91baGNKJWFkMZ`
 - Pool: `DfzSmjTetKSNwAcGPM8Th3k2orQtxT1vZVheWr1YttTX`
@@ -18,8 +18,15 @@ was published on 2026-10-25 at 09:58 UTC from source commit
 `813032cd9070a049c97a81eaa1ca26562416460f`. All seven downloaded assets matched
 the reviewed bytes; the release and individual asset attestations passed
 verification. The app's pins and publication metadata are recorded in
-`vendor/patches/solana-sdk-nonexpiring-devnet.20-activation.json`. Public service
-activation and funded lifecycle acceptance are separate from SDK publication.
+`vendor/patches/solana-sdk-nonexpiring-devnet.20-activation.json`.
+
+The matching operator services and new admissions were activated on 2026-10-25.
+The [public app](https://dzt0611ozdx70.cloudfront.net) was published at 10:50 UTC
+and verified at 10:51–10:52 UTC: both authenticated profiles passed SDK preflight,
+all 11 CORS checks passed, and the compiled app displayed SDK `.20` and "Service
+ready." Deployed file hashes, content types, caching, routing, the local demo
+and retained recovery pages also passed. This is public deployment and read-only
+acceptance; no funded new-Pool lifecycle or paid inference was performed.
 
 ## Behavior
 
@@ -90,6 +97,14 @@ final identity/profile pin. The bundled app/SDK harness preserved three
 synthetic notes, later balance/catalog updates and unresolved operations,
 rejected mismatched files, fenced the old owner, and reopened after reload.
 All 97 requests were to recovery storage; there were no provider calls or wallet
-transactions. This verifies the hosted backup path with synthetic records. It
-does not establish a funded lifecycle or Firefox/Safari compatibility; those
-browser engines were not installed in the validation environment.
+transactions. Additional checks passed with separate Chromium 156 → Firefox 157
+and Chromium 156 → WebKit 27.2 browser instances against the same hosted service
+and final Pool identity. Each pair made 97 recovery requests and preserved the
+latest catalog, balances, MAX-u64 witnesses and pending operations, rejected
+mismatched files, fenced the previous owner and reopened after reload. These
+checks verify cross-engine encrypted recovery with synthetic records. They do
+not establish a funded wallet lifecycle or testing in the Safari application.
+
+The same assertions are available as an isolated local regression with
+`npm run test:recovery:cross-browser`; see
+[browser installation and test scope](../tests/fixtures/README.md#cross-browser-deposit-recovery).

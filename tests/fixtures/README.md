@@ -11,3 +11,26 @@ Regenerate with `ZKAPI_DIRECT_WAIVER_FIXTURE_DIR` when running that Rust test,
 then copy its JSON here. `waiverBrowser.ts` is a Vite-served test harness only;
 production code does not import it. It runs the installed WASM in a real Worker
 and commits an isolated IndexedDB journal through the SDK's normal verifier.
+
+## Cross-browser deposit recovery
+
+The non-expiring Pool case in `tests/recoveryStorage.spec.ts` uses
+`nonExpiringRecoveryHarness.ts` to exercise the real app recovery code, SDK
+encryption and each browser's IndexedDB. Its synthetic deposit journals and
+in-memory recovery service never contact hosted services; routes block external
+requests. The same test runs with separate Chromium contexts in the default
+suite. To restore a file created in Chromium into Firefox and WebKit instead:
+
+```sh
+npx playwright install chromium firefox webkit
+npm run test:recovery:cross-browser
+```
+
+On Linux, install the browser system dependencies with
+`npx playwright install --with-deps chromium firefox webkit`.
+The opt-in command runs both engine pairs and checks all deposit balances,
+selection, the maximum expiry witness, exact pending evidence, reload persistence,
+wrong wallet/Pool/secret rejection and old-owner revocation. It also verifies
+that recovery sends no financial requests. This is a local regression for custody
+recovery; it does not establish hosted-service availability or funded transaction
+acceptance. Neither Firefox nor WebKit is required by `npm run test:e2e`.
