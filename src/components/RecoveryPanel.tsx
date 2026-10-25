@@ -102,7 +102,7 @@ export function RecoveryPanel({
           : incomplete
             ? "Setup was interrupted. Use the same recovery file to finish safely."
             : setup
-              ? "Save this file once. You only need it if you lose browser data or move to another device—not for everyday chats."
+              ? "Save this file once to restore access to your deposits when needed. Keep it outside this browser."
               : "Choose your recovery file and connect the same wallet to open your saved deposits here."}
       </p>
       {setup && (

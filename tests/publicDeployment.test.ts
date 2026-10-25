@@ -422,6 +422,70 @@ describe("existing application adapter with public profile", () => {
     expect(handle.invalidated).toBe(true);
   });
   it.each([true, false])(
+    "keeps a busy client attached until disposal succeeds (backup enabled=%s)",
+    async (backupEnabled) => {
+      if (!backupEnabled) sdk.recovery.mockResolvedValue(null);
+      const { account, wallet, client } = make();
+      let busy = true;
+      let notifySdk!: () => void;
+      const stopSdk = vi.fn();
+      client.subscribe.mockImplementation((listener?: () => void) => {
+        notifySdk = listener!;
+        return stopSdk;
+      });
+      client.status.mockImplementation(async () => ({
+        noteId: NOTE_ID,
+        canRequest: !busy,
+        busy,
+      }));
+      const disposeSdk = vi.fn(() => {
+        if (busy) throw new Error("SDK client is busy");
+      });
+      sdk.browser.mockResolvedValue({
+        client,
+        dispose: disposeSdk,
+        persistence: "persistent",
+      });
+      const handle = await connectZkapi(config, wallet as any, account as any);
+      const catalog = await sdk.catalog.mock.results[0].value;
+      const closeCatalog = vi.spyOn(catalog, "close");
+      const remote = await sdk.recovery.mock.results[0].value;
+      const observer = vi.fn();
+      handle.client.subscribe(observer);
+      await vi.waitFor(() => expect(observer).toHaveBeenCalled());
+      observer.mockClear();
+
+      expect(() => handle.dispose()).toThrow("SDK client is busy");
+      expect(handle.invalidated).toBe(false);
+      expect(stopSdk).not.toHaveBeenCalled();
+      expect(closeCatalog).not.toHaveBeenCalled();
+      if (remote) expect(remote.close).not.toHaveBeenCalled();
+      expect(sdk.walletListeners.size).toBeGreaterThan(0);
+
+      // Completion remains observable after the rejected disconnect, and the
+      // still-owned client can finish its saved work before disposal is retried.
+      busy = false;
+      notifySdk();
+      await vi.waitFor(() =>
+        expect(observer).toHaveBeenLastCalledWith(
+          expect.objectContaining({ busy: false, canRequest: true }),
+        ),
+      );
+      await handle.client.recover();
+      expect(client.recover).toHaveBeenCalledTimes(1);
+      handle.dispose();
+      handle.dispose();
+      expect(disposeSdk).toHaveBeenCalledTimes(2);
+      expect(handle.invalidated).toBe(true);
+      expect(stopSdk).toHaveBeenCalledTimes(1);
+      expect(closeCatalog).toHaveBeenCalledTimes(1);
+      if (remote) expect(remote.close).toHaveBeenCalledTimes(1);
+      expect(sdk.walletListeners.size).toBe(0);
+      await expect(handle.client.recover()).rejects.toThrow();
+      expect(client.recover).toHaveBeenCalledTimes(1);
+    },
+  );
+  it.each([true, false])(
     "keeps funded chat usable after a wrong-wallet file (backup enabled=%s)",
     async (backupEnabled) => {
       if (!backupEnabled) sdk.recovery.mockResolvedValue(null);

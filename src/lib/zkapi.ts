@@ -1023,10 +1023,12 @@ export async function connectZkapi(
     assertActiveAccount,
     dispose() {
       if (disposed) return;
+      // The SDK refuses disposal while an operation still owns its locks.
+      // Leave this handle and its observers usable when that refusal is raised.
+      raw.dispose();
       disposed = true;
       notificationRevision++;
       offClient();
-      raw.dispose();
       catalog.close();
       recoveryStorage?.close();
       publicConnection?.clear();

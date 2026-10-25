@@ -3,6 +3,7 @@ import type { ClientStatus, RecoveryResult } from "@zkapi/solana-sdk";
 import {
   paymentRecoveryDetails,
   paymentRecoveryFeedback,
+  recoveryStorageFailure,
 } from "../src/lib/paymentRecovery";
 
 const pending = {
@@ -13,6 +14,46 @@ const pending = {
 } as ClientStatus;
 
 describe("bounded recovery presentation", () => {
+  it.each(["locked", "ownership_changed", "unavailable"] as const)(
+    "recognizes the %s backup failure without exposing exception text",
+    (code) => {
+      const error = Object.assign(new Error("private-vault-token-message"), {
+        name: "RecoveryStorageError",
+        code,
+      });
+      const result = recoveryStorageFailure(error);
+      expect(result?.kind).toBe(code);
+      expect(result?.message).toBeTruthy();
+      expect(result?.message).not.toMatch(
+        /private-|token|Settlement is still pending|no longer pending/,
+      );
+      if (code === "locked") {
+        expect(result?.message).toContain("still locked");
+        expect(result?.message).toContain("other tabs and devices");
+        expect(result?.message).toContain("recovery file");
+      }
+    },
+  );
+
+  it("does not infer backup failures from arbitrary exceptions, messages or causes", () => {
+    const locked = { name: "RecoveryStorageError", code: "locked" };
+    for (const error of [
+      null,
+      undefined,
+      "RecoveryStorageError: locked private-message",
+      new Error("locked private-message"),
+      { code: "locked", message: "private-message" },
+      { ...locked, name: "OtherError" },
+      { ...locked, code: "private-code" },
+      { ...locked, code: "__proto__" },
+      { ...locked, code: null },
+      { ...locked, code: ["locked"] },
+      { cause: locked },
+    ]) {
+      expect(recoveryStorageFailure(error)).toBeNull();
+    }
+  });
+
   it("does not present a reusable live lease as requiring recovery", () => {
     const status = {
       ...pending,

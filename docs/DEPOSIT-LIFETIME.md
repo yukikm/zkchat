@@ -55,6 +55,21 @@ Restoring transfers access to the new browser and rejects further operations
 from the old owner's binding. Chat history is stored separately and is not
 included in deposit recovery.
 
+An interrupted operation can leave a persistent backup lock, including when the
+server has already settled a payment. The app identifies this storage error and
+offers **Restore access** from the pending payment screen. Close other zkChat
+tabs and devices, select the saved recovery file and confirm restoration. This
+authenticated transfer preserves encrypted deposit and payment records while
+fencing the previous owner. Then use **Resolve payment** to import the verified
+settlement. Neither elapsed time nor a server-side `SETTLED` label alone clears
+the browser's pending payment. Do not delete lock records or browser data to
+bypass recovery.
+
+If the SDK refuses disposal because an operation is still running, the app keeps
+the client, subscriptions and backup storage attached until disposal succeeds.
+This protects normal reconnect handling; abruptly closing a tab or process can
+still require the recovery-file flow above.
+
 The storage namespace belongs to this Pool and must remain stable across future
 SDK upgrades for the same Pool. The deployment, Pool, wallet and installed
 profile pin must also match. Changing the profile hash is not an automatic

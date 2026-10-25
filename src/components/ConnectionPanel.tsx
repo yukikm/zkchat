@@ -20,6 +20,7 @@ import { reusableSession } from "../lib/sdkStatus";
 import {
   paymentRecoveryDetails,
   paymentRecoveryFeedback,
+  recoveryStorageFailure,
 } from "../lib/paymentRecovery";
 import {
   BrowserStorageMissing,
@@ -138,6 +139,7 @@ export function ConnectionPanel({
   const [amount, setAmount] = useState("2");
   const [reviewAmount, setReviewAmount] = useState<string | null>(null);
   const [accessMoved, setAccessMoved] = useState(false);
+  const [backupLocked, setBackupLocked] = useState(false);
   const [checkingWithdrawal, setCheckingWithdrawal] = useState(false);
   const [verifiedWithdrawal, setVerifiedWithdrawal] = useState<{
     handle: BrowserClientHandle;
@@ -190,9 +192,13 @@ export function ConnectionPanel({
     setRecoveryIncomplete(false);
     setReviewAmount(null);
     setAccessMoved(false);
+    setBackupLocked(false);
     setRestoreInterrupted(false);
     pendingDeposit.current = null;
   }, [connection?.wallet, connection?.account.address]);
+  useEffect(() => {
+    setBackupLocked(false);
+  }, [handle, status?.noteId, status?.session?.id]);
   useEffect(() => {
     setWithdraw(false);
     setProgressState("");
@@ -228,25 +234,39 @@ export function ConnectionPanel({
     try {
       await fn();
     } catch (e) {
-      if (e instanceof RecoveryAccessMoved) setAccessMoved(true);
+      const backupFailure = recoveryStorageFailure(e);
+      if (
+        backupFailure?.kind === "locked" &&
+        handle?.recoveryEnabled &&
+        !RETIRED_RUNTIME
+      )
+        setBackupLocked(true);
+      if (
+        e instanceof RecoveryAccessMoved ||
+        backupFailure?.kind === "ownership_changed"
+      )
+        setAccessMoved(true);
       if (e instanceof RecoverySetupIncomplete) {
         setRecoveryIncomplete(true);
         setRecoveryView((current) => current ?? "restore");
       }
       setError(
-        e instanceof PublicOnboardingError ||
+        backupFailure?.message ??
+          (e instanceof PublicOnboardingError ||
           e instanceof DepositError ||
           e instanceof WalletConnectionError ||
           e instanceof AmountInputError ||
           e instanceof RecoveryError
-          ? e.message
-          : fallback,
+            ? e.message
+            : fallback),
       );
     } finally {
       if (refreshAfter)
         await refresh().catch(() =>
           setError(
-            "Could not check saved progress. Reconnect with the same wallet.",
+            (current) =>
+              current ||
+              "Could not check saved progress. Reconnect with the same wallet.",
           ),
         );
       actionBusy.current = false;
@@ -362,6 +382,7 @@ export function ConnectionPanel({
         setRecoveryIncomplete(false);
         setIntent("manage");
         setAccessMoved(false);
+        setBackupLocked(false);
         setRestoreInterrupted(false);
         setInfo("Your deposits are restored in this browser.");
       },
@@ -638,6 +659,7 @@ export function ConnectionPanel({
       async () => {
         const result = await handle.client.recover();
         const latest = await handle.client.status();
+        setBackupLocked(false);
         const feedback = paymentRecoveryFeedback(latest, result);
         if (feedback.error) setError(feedback.message);
         else setInfo(feedback.message);
@@ -709,7 +731,9 @@ export function ConnectionPanel({
                           ? needsConversationSettlement
                             ? "Finish payment for your previous chat"
                             : "Review payment"
-                          : "Payment needs attention"
+                          : backupLocked
+                            ? "Restore access to your deposits"
+                            : "Payment needs attention"
                       : servicePaused
                         ? "Chat temporarily unavailable"
                         : showFunding
@@ -1284,7 +1308,28 @@ export function ConnectionPanel({
                       : "Resolve the saved payment before sending again. Your message will not be resent."}
               </p>
               <div className="connection-actions">
-                {reusableSession(status) && !RETIRED_RUNTIME ? (
+                {backupLocked && handle.recoveryEnabled ? (
+                  <>
+                    <button
+                      className="primary"
+                      disabled={disabled}
+                      onClick={() => {
+                        setError("");
+                        setInfo("");
+                        setRecoveryView("restore");
+                      }}
+                    >
+                      Restore access
+                    </button>
+                    <button
+                      className="secondary"
+                      disabled={disabled}
+                      onClick={() => void resolvePayment()}
+                    >
+                      Check again
+                    </button>
+                  </>
+                ) : reusableSession(status) && !RETIRED_RUNTIME ? (
                   <button
                     className="primary"
                     disabled={disabled}
@@ -1842,7 +1887,7 @@ export function ConnectionPanel({
               <summary>Backup and recovery</summary>
               <p className="small muted">
                 {handle.recoveryEnabled
-                  ? "Your recovery file is only needed if you lose browser data or move to another device. Later deposits are backed up automatically."
+                  ? "Keep your recovery file to restore access when needed. Later deposits are backed up automatically."
                   : "Save a recovery file to restore your deposits after losing browser data or changing devices."}
               </p>
               {!handle.recoveryEnabled && (

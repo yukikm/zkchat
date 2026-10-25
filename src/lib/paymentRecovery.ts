@@ -1,6 +1,34 @@
 import type { ClientStatus, RecoveryResult } from "@zkapi/solana-sdk";
 import { reusableSession } from "./sdkStatus";
 
+type RecoveryStorageFailureKind =
+  "locked" | "ownership_changed" | "unavailable";
+const storageFailures: Record<RecoveryStorageFailureKind, string> = {
+  locked:
+    "A saved deposit operation is still locked. Close zkChat on your other tabs and devices, then restore access with your recovery file.",
+  ownership_changed:
+    "Access to this deposit backup moved to another browser. Use that browser, or restore here with your recovery file after closing it.",
+  unavailable:
+    "The deposit backup could not be reached or saved. Your payment is kept. Check your connection and try again.",
+};
+
+/** Recovery storage can fail before the SDK produces a payment result.
+ * Match bounded codes across SDK builds without exposing exception contents. */
+export function recoveryStorageFailure(
+  error: unknown,
+): { kind: RecoveryStorageFailureKind; message: string } | null {
+  if (typeof error !== "object" || error === null) return null;
+  const value = error as { name?: unknown; code?: unknown };
+  if (
+    value.name !== "RecoveryStorageError" ||
+    typeof value.code !== "string" ||
+    !Object.hasOwn(storageFailures, value.code)
+  )
+    return null;
+  const kind = value.code as RecoveryStorageFailureKind;
+  return { kind, message: storageFailures[kind] };
+}
+
 const recoveryReasons: Readonly<Record<string, string>> = {
   issuance_unknown: "The provider key issuance could not be confirmed.",
   provider_key_absent:
