@@ -90,9 +90,9 @@ afterAll(async () => {
 
 describe("new Pool isolation and retained SDK .12 custody", () => {
   it("separates the new Pool while preserving both recovery namespace identities", () => {
-    expect(PUBLIC_PROFILE_SDK_VERSION).toBe("0.2.0-devnet.18");
+    expect(PUBLIC_PROFILE_SDK_VERSION).toBe("0.2.0-devnet.19");
     expect(PREVIOUS_VERSION).toBe("0.2.0-devnet.12");
-    expect(SDK_VERSION).toBe("0.2.0-devnet.18");
+    expect(SDK_VERSION).toBe("0.2.0-devnet.19");
     expect(SDK_STORAGE_VERSION).toBe("public-devnet-20261021-state-v1");
     expect(SDK_STORAGE_NAME).toBe("zkchat-sdk-public-devnet-20261021-state-v1");
     expect(ORIGINAL_NOTE_ID).toBe(
@@ -105,10 +105,11 @@ describe("new Pool isolation and retained SDK .12 custody", () => {
     expect(storageVersionFor("0.2.0-devnet.16")).toBe(SDK_STORAGE_VERSION);
     expect(storageVersionFor("0.2.0-devnet.17")).toBe(SDK_STORAGE_VERSION);
     expect(storageVersionFor("0.2.0-devnet.18")).toBe(SDK_STORAGE_VERSION);
+    expect(storageVersionFor("0.2.0-devnet.19")).toBe(SDK_STORAGE_VERSION);
     expect(() => storageVersionFor("unknown")).toThrow("Unsupported SDK");
   });
 
-  it("retains the .13 public-profile binding when reopening the same account with .18", async () => {
+  it("retains the .13 public-profile binding when reopening the same account with .19", async () => {
     const config: PublicAppConfig = JSON.parse(
       await readFile(
         new URL("../public/zkapi-config.json", import.meta.url),
@@ -155,7 +156,7 @@ describe("new Pool isolation and retained SDK .12 custody", () => {
   });
 
   it.each(["13", "15", "16"])(
-    "opens .%s ciphertext with .18 without changing its unresolved session or catalog",
+    "opens .%s ciphertext with .19 without changing its unresolved session or catalog",
     async (version) => {
       const storage = await memoryCustody();
       const context = {

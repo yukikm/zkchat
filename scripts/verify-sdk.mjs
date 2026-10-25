@@ -1,6 +1,8 @@
 import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 for (const [version, expected] of Object.entries({
+  "0.2.0-devnet.19":
+    "cfdda081148cae2e4ae2d1fe0f821fcbf235f593a55bc50bfc042fb826c09424",
   "0.2.0-devnet.18":
     "027a64e110286ea425b9d2d4333d956c9a3d5ebf0a2d7efc140a86375e8ea503",
   "0.2.0-devnet.17":
@@ -46,5 +48,5 @@ if (
 )
   throw new Error("Published verifier SHA-256 mismatch.");
 console.log(
-  "Published .18 verifier SHA-256 matches the retained bytes; original profile remains pinned.",
+  "Published .19 verifier SHA-256 matches the retained bytes; original profile remains pinned.",
 );

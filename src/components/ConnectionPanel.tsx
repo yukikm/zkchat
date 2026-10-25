@@ -23,6 +23,8 @@ import {
 import {
   BrowserStorageMissing,
   RecoveryError,
+  RecoveryAccessMoved,
+  validateZkchatRecoveryFile,
   RecoverySetupIncomplete,
   restoreZkchatDeposits,
   finishZkchatRecoverySetup,
@@ -55,11 +57,13 @@ import {
   canChangeDeposit,
   DepositError,
   hasLowBalance,
+  type SavedDepositSummary,
 } from "../lib/deposits";
 import { WalletIcon, WalletPicker } from "./WalletPicker";
 import { Modal } from "./Modal";
 import { RecoveryPanel } from "./RecoveryPanel";
 import { depositExpiryNotice } from "../lib/depositExpiry";
+import { withdrawalPresentation } from "../lib/withdrawalPresentation";
 import type { useWalletObservation } from "../lib/walletObservation";
 
 export interface WalletConnection {
@@ -131,6 +135,21 @@ export function ConnectionPanel({
   const [error, setError] = useState("");
   const [info, setInfo] = useState("");
   const [amount, setAmount] = useState("2");
+  const [reviewAmount, setReviewAmount] = useState<string | null>(null);
+  const [accessMoved, setAccessMoved] = useState(false);
+  const [checkingWithdrawal, setCheckingWithdrawal] = useState(false);
+  const [verifiedWithdrawal, setVerifiedWithdrawal] = useState<{
+    handle: BrowserClientHandle;
+    noteId: string;
+  } | null>(null);
+  const withdrawalCheckVersion = useRef(0);
+  const [restoreInterrupted, setRestoreInterrupted] = useState(false);
+  const [summarySnapshot, setSummarySnapshot] = useState<{
+    handle: BrowserClientHandle;
+    entries: SavedDepositSummary[];
+  } | null>(null);
+  const depositSummaries =
+    summarySnapshot?.handle === handle ? summarySnapshot.entries : [];
   const [recoveryView, setRecoveryView] = useState<"setup" | "restore" | null>(
     null,
   );
@@ -156,6 +175,7 @@ export function ConnectionPanel({
     if (request) {
       setIntent(request.intent);
       setWithdraw(false);
+      setReviewAmount(null);
       setInfo("");
     }
   }, [request?.id]);
@@ -167,6 +187,9 @@ export function ConnectionPanel({
     setDepositCompleted(false);
     setRecoveryView(null);
     setRecoveryIncomplete(false);
+    setReviewAmount(null);
+    setAccessMoved(false);
+    setRestoreInterrupted(false);
     pendingDeposit.current = null;
   }, [connection?.wallet, connection?.account.address]);
   useEffect(() => {
@@ -204,6 +227,7 @@ export function ConnectionPanel({
     try {
       await fn();
     } catch (e) {
+      if (e instanceof RecoveryAccessMoved) setAccessMoved(true);
       if (e instanceof RecoverySetupIncomplete) {
         setRecoveryIncomplete(true);
         setRecoveryView((current) => current ?? "restore");
@@ -311,10 +335,23 @@ export function ConnectionPanel({
     if (!config || !connection) return;
     await action(
       async () => {
+        await validateZkchatRecoveryFile(
+          config,
+          connection.wallet,
+          connection.account,
+          fileText,
+          finishSetup,
+        );
         handle?.dispose();
-        const connected = await (
-          finishSetup ? finishZkchatRecoverySetup : restoreZkchatDeposits
-        )(config, connection.wallet, connection.account, fileText);
+        let connected;
+        try {
+          connected = await (
+            finishSetup ? finishZkchatRecoverySetup : restoreZkchatDeposits
+          )(config, connection.wallet, connection.account, fileText);
+        } catch (error) {
+          if (handle?.invalidated && !finishSetup) setRestoreInterrupted(true);
+          throw error;
+        }
         onWalletConnect({
           wallet: connection.wallet,
           account: connection.account,
@@ -323,6 +360,8 @@ export function ConnectionPanel({
         setRecoveryView(null);
         setRecoveryIncomplete(false);
         setIntent("manage");
+        setAccessMoved(false);
+        setRestoreInterrupted(false);
         setInfo("Your deposits are restored in this browser.");
       },
       "Could not restore deposits. Check your file and connected wallet, then try again.",
@@ -344,6 +383,78 @@ export function ConnectionPanel({
     ["mutual_close", "initiate_escape", "finalize_escape"].includes(
       operation.kind,
     );
+  const withdrawalCopy = operation ? withdrawalPresentation(operation) : null;
+  const escapeWithdrawal = (
+    status as
+      | (ClientStatus & {
+          escapeWithdrawal?: {
+            availability: string;
+            executableAt: string | null;
+          } | null;
+        })
+      | null
+  )?.escapeWithdrawal;
+  const waitingTime = escapeWithdrawal?.executableAt
+    ? Number(escapeWithdrawal.executableAt) * 1000
+    : NaN;
+  const waitingDate =
+    Number.isFinite(waitingTime) &&
+    Number.isFinite(new Date(waitingTime).getTime())
+      ? new Intl.DateTimeFormat(undefined, {
+          year: "numeric",
+          month: "short",
+          day: "numeric",
+          hour: "numeric",
+          minute: "2-digit",
+          timeZoneName: "short",
+        }).format(waitingTime)
+      : null;
+  const waitingClient = handle?.client as
+    | (BrowserClientHandle["client"] & {
+        checkEscapeWithdrawal?: () => Promise<unknown>;
+      })
+    | undefined;
+  const canCheckWithdrawal =
+    !RETIRED_RUNTIME &&
+    typeof waitingClient?.checkEscapeWithdrawal === "function";
+  async function checkWithdrawal() {
+    if (!waitingClient?.checkEscapeWithdrawal || !handle || !status) return;
+    const version = ++withdrawalCheckVersion.current;
+    setVerifiedWithdrawal(null);
+    setCheckingWithdrawal(true);
+    setError("");
+    try {
+      await waitingClient.checkEscapeWithdrawal();
+      await refresh();
+      if (version === withdrawalCheckVersion.current)
+        setVerifiedWithdrawal({ handle, noteId: status.noteId });
+    } catch {
+      if (version !== withdrawalCheckVersion.current) return;
+      setVerifiedWithdrawal(null);
+      setError(
+        "Could not check the waiting period. Your withdrawal is saved. Try checking again.",
+      );
+    } finally {
+      if (version === withdrawalCheckVersion.current)
+        setCheckingWithdrawal(false);
+    }
+  }
+  useEffect(() => {
+    if (
+      status?.wallet === "pending_escape" &&
+      !operation &&
+      canCheckWithdrawal
+    ) {
+      void checkWithdrawal();
+    }
+    return () => {
+      withdrawalCheckVersion.current++;
+    };
+  }, [handle, status?.noteId, status?.wallet, !!operation, canCheckWithdrawal]);
+  const withdrawalReady =
+    escapeWithdrawal?.availability === "ready" &&
+    verifiedWithdrawal?.handle === handle &&
+    verifiedWithdrawal?.noteId === status?.noteId;
   const automaticConfirmation =
     !!operation?.signature && walletObservation.supported && !RETIRED_RUNTIME;
   const withdrawalPending =
@@ -361,6 +472,35 @@ export function ConnectionPanel({
     (initialDeposit || (wantsAdd && canAddDeposit(status))) &&
     !servicePaused &&
     !handle.invalidated;
+  useEffect(() => {
+    let active = true;
+    if (
+      !managing ||
+      !handle ||
+      typeof handle.listDepositSummaries !== "function"
+    ) {
+      setSummarySnapshot(null);
+      return;
+    }
+    void handle
+      .listDepositSummaries()
+      .then((summaries) => {
+        if (active) setSummarySnapshot({ handle, entries: summaries });
+      })
+      .catch(() => {
+        if (active) setSummarySnapshot(null);
+      });
+    return () => {
+      active = false;
+    };
+  }, [
+    managing,
+    handle,
+    status?.noteId,
+    status?.wallet,
+    status?.settledBalanceMicroUsdc,
+    handle?.deposits.length,
+  ]);
   const additionalFunding =
     (wantsAdd && !initialDeposit) || (handle?.deposits?.length ?? 0) > 1;
   const needsBackup = showFunding && !handle?.recoveryEnabled;
@@ -407,16 +547,22 @@ export function ConnectionPanel({
     );
   function startAdding() {
     setIntent("add");
+    setReviewAmount(null);
     setDepositCompleted(false);
     setWithdraw(false);
     setInfo("");
     setError("");
   }
-  async function reviewDeposit() {
-    if (!handle || !handle.recoveryEnabled || amountError) return;
+  function reviewDeposit() {
+    if (!handle || !handle.recoveryEnabled || amountError || disabled) return;
+    setReviewAmount(amount);
+    setError("");
+  }
+  async function confirmDeposit() {
+    if (!handle || !handle.recoveryEnabled || reviewAmount === null) return;
+    const value = microUsdc(reviewAmount);
     await action(
       async () => {
-        const value = microUsdc(amount);
         let latest = await handle.client.status();
         if (BigInt(value) < BigInt(latest.authorizationCapMicroUsdc))
           throw new AmountInputError(
@@ -440,8 +586,22 @@ export function ConnectionPanel({
         await handle.client.prepareDeposit(value).catch((e) => {
           throw depositPreparationError(e);
         });
+        setReviewAmount(null);
         setProgressState("");
         setDepositCompleted(false);
+        // This click commits the reviewed amount and explicitly requests wallet
+        // approval. A saved proof/retry state still requires its own next action.
+        const prepared = await handle.client.status();
+        if (
+          prepared.walletOperation?.kind === "deposit" &&
+          prepared.walletOperation.phase === "ready" &&
+          !prepared.walletOperation.signature
+        ) {
+          const result = await handle.client.advanceWallet().catch((e) => {
+            throw walletStepError(e);
+          });
+          setProgressState(result.state);
+        }
       },
       "Could not prepare this deposit. Your amount and saved progress are kept.",
       "Preparing your deposit…",
@@ -486,28 +646,42 @@ export function ConnectionPanel({
     );
   }
   useEffect(() => {
-    if (showFunding && !needsBackup && presentation !== "hidden") {
+    if (
+      showFunding &&
+      !needsBackup &&
+      reviewAmount === null &&
+      presentation !== "hidden"
+    ) {
       amountInput.current?.focus({ preventScroll: true });
     }
-  }, [showFunding, needsBackup, presentation, request?.id, custodyKey]);
+  }, [
+    showFunding,
+    needsBackup,
+    reviewAmount,
+    presentation,
+    request?.id,
+    custodyKey,
+  ]);
   const title = recoveryIncomplete
     ? "Finish recovery setup"
     : recoveryMode === "restore"
       ? "Restore deposits"
       : recoveryMode === "setup"
-        ? "Back up your deposits"
+        ? "Save your recovery file"
         : !config
           ? configLoading
             ? "Loading service…"
             : "Service unavailable"
           : !handle
             ? storageMissing
-              ? "Set up this browser"
-              : RETIRED_RUNTIME
-                ? "Open saved deposits"
-                : "Start chatting"
+              ? "Create or restore deposits"
+              : accessMoved
+                ? "Restore access to your deposits"
+                : RETIRED_RUNTIME
+                  ? "Open saved deposits"
+                  : "Start chatting"
             : handle.invalidated
-              ? "Reconnect your wallet"
+              ? "Reopen your deposits"
               : !status
                 ? "Opening your deposits…"
                 : operation
@@ -537,10 +711,12 @@ export function ConnectionPanel({
                       : servicePaused
                         ? "Chat temporarily unavailable"
                         : showFunding
-                          ? initialDeposit &&
-                            (handle.deposits?.length ?? 1) <= 1
-                            ? "Add funds to chat"
-                            : "Add funds"
+                          ? reviewAmount !== null
+                            ? "Review your deposit"
+                            : initialDeposit &&
+                                (handle.deposits?.length ?? 1) <= 1
+                              ? "Add funds to chat"
+                              : "Add funds"
                           : wantsAdd && disabled
                             ? "Your chat is in progress"
                             : withdraw
@@ -682,12 +858,13 @@ export function ConnectionPanel({
           key={`${custodyKey || connection.account.address}:${recoveryMode}`}
           mode={recoveryMode}
           incomplete={recoveryIncomplete}
+          restoreInterrupted={restoreInterrupted}
           disabled={disabled}
           createFile={handle ? () => handle.createRecoveryFile() : undefined}
           onEnable={enableRecovery}
           onRestore={restoreRecovery}
           onCancel={
-            !needsBackup && !recoveryIncomplete
+            !needsBackup && !recoveryIncomplete && !handle?.invalidated
               ? () => setRecoveryView(null)
               : undefined
           }
@@ -728,15 +905,18 @@ export function ConnectionPanel({
               , then reload this page.
             </p>
           )}
-          {connection && !storageMissing && !recoveryIncomplete && (
-            <button
-              className="primary full"
-              disabled={disabled}
-              onClick={() => void connect()}
-            >
-              {busy ? "Opening your deposits…" : "Continue to deposits"}
-            </button>
-          )}
+          {connection &&
+            !storageMissing &&
+            !recoveryIncomplete &&
+            !accessMoved && (
+              <button
+                className="primary full"
+                disabled={disabled}
+                onClick={() => void connect()}
+              >
+                {busy ? "Opening your deposits…" : "Continue to deposits"}
+              </button>
+            )}
           {storageMissing && (
             <>
               <p>No deposits are saved in this browser for this wallet.</p>
@@ -756,26 +936,28 @@ export function ConnectionPanel({
                     disabled={disabled}
                     onClick={() => void connect(true)}
                   >
-                    Set up this browser
-                  </button>
-                  <button
-                    className="secondary"
-                    disabled={disabled}
-                    onClick={() => setRecoveryView("restore")}
-                  >
-                    Restore from recovery file
+                    Create new deposits
                   </button>
                 </>
               )}
             </>
+          )}
+          {connection && !RETIRED_RUNTIME && (
+            <button
+              className={accessMoved ? "primary" : "secondary"}
+              disabled={disabled}
+              onClick={() => setRecoveryView("restore")}
+            >
+              Restore from recovery file
+            </button>
           )}
         </div>
       ) : (
         <>
           {handle.invalidated && (
             <p className="error-message" role="alert">
-              Wallet changed. Disconnect, then reconnect with the original
-              account: {handle.account.address}.
+              This saved connection is no longer active. Reopen your deposits
+              with the original wallet: {handle.account.address}.
             </p>
           )}
           {!status && (
@@ -825,6 +1007,12 @@ export function ConnectionPanel({
             <div className="pending-card connection-step">
               {withdrawalInProgress ? (
                 <>
+                  <strong>{withdrawalCopy?.stageLabel}</strong>
+                  {withdrawalCopy?.detail && (
+                    <p className="inline-status" role="status">
+                      {withdrawalCopy.detail}
+                    </p>
+                  )}
                   <p>
                     {operation?.kind === "initiate_escape"
                       ? "Starting a delayed withdrawal sends a proof in several transactions. Approve when your wallet asks. A waiting period follows before you can finish withdrawing."
@@ -976,7 +1164,9 @@ export function ConnectionPanel({
                       }
                     >
                       {withdrawalInProgress
-                        ? "Continue withdrawal"
+                        ? operation && "progress" in operation
+                          ? withdrawalCopy?.actionLabel
+                          : "Continue withdrawal"
                         : status.walletOperation.signature
                           ? "Continue deposit confirmation"
                           : "Approve deposit in wallet"}
@@ -1205,17 +1395,43 @@ export function ConnectionPanel({
           {status?.wallet === "pending_escape" && !operation && (
             <div className="pending-card">
               <p>
-                Wait for the withdrawal deadline, then finish the withdrawal.
+                {RETIRED_RUNTIME
+                  ? "Wait for the withdrawal deadline, then finish the withdrawal."
+                  : withdrawalReady
+                    ? "The waiting period has ended. You can now return your USDC to your wallet."
+                    : escapeWithdrawal?.availability === "unavailable"
+                      ? "This withdrawal needs another status check before it can finish."
+                      : waitingDate
+                        ? `You can finish withdrawing from ${waitingDate}.`
+                        : "Check the waiting period before finishing this withdrawal."}
+              </p>
+              <p className="small muted">
+                Your deposit cannot pay for chats during this withdrawal.
               </p>
               <button
                 className="primary"
-                disabled={disabled}
+                disabled={
+                  disabled ||
+                  checkingWithdrawal ||
+                  (!RETIRED_RUNTIME && !withdrawalReady)
+                }
                 onClick={() =>
                   void action(() => handle.client.prepareFinalizeEscape())
                 }
               >
                 Finish withdrawal
               </button>
+              {canCheckWithdrawal && (
+                <button
+                  className="secondary"
+                  disabled={disabled || checkingWithdrawal}
+                  onClick={() => void checkWithdrawal()}
+                >
+                  {checkingWithdrawal
+                    ? "Checking waiting period…"
+                    : "Check waiting period"}
+                </button>
+              )}
             </div>
           )}
           {!RETIRED_RUNTIME && servicePaused && (
@@ -1235,7 +1451,7 @@ export function ConnectionPanel({
               </button>
             </div>
           )}
-          {showFunding && (
+          {showFunding && reviewAmount === null && (
             <form
               className="fund-form connection-step"
               onSubmit={(e) => {
@@ -1298,6 +1514,50 @@ export function ConnectionPanel({
                 </button>
               )}
             </form>
+          )}
+          {showFunding && reviewAmount !== null && (
+            <section className="connection-step" aria-label="Review deposit">
+              <div className="funding-summary">
+                <span>Deposit amount</span>
+                <strong>{formatUsdc(microUsdc(reviewAmount))} USDC</strong>
+                <small>Network fee in SOL · shown in your wallet</small>
+              </div>
+              <p>
+                Confirm this amount to prepare your deposit and open your wallet
+                for approval.
+              </p>
+              {additionalFunding && (
+                <p className="small muted">
+                  This is a separate deposit. Your existing deposit is kept.
+                </p>
+              )}
+              <button
+                className="primary"
+                disabled={disabled || !handle.publicAdmissionReady}
+                onClick={() => void confirmDeposit()}
+              >
+                Approve deposit in wallet
+              </button>
+              <button
+                className="secondary"
+                disabled={disabled}
+                onClick={() => setReviewAmount(null)}
+              >
+                Edit amount
+              </button>
+              {wantsAdd && !initialDeposit && (
+                <button
+                  className="text-button"
+                  disabled={disabled}
+                  onClick={() => {
+                    setReviewAmount(null);
+                    setIntent("manage");
+                  }}
+                >
+                  Back to balance
+                </button>
+              )}
+            </section>
           )}
           {!operation &&
             !showPayment &&
@@ -1363,36 +1623,6 @@ export function ConnectionPanel({
               className="deposit-management connection-secondary"
               aria-label="Manage deposits"
             >
-              {!RETIRED_RUNTIME && (
-                <div className="connection-context">
-                  <strong>
-                    {handle.recoveryEnabled
-                      ? "Recovery is set up"
-                      : "Protect your saved deposits"}
-                  </strong>
-                  <p className="small muted">
-                    {handle.recoveryEnabled
-                      ? "Your recovery file also covers new deposits. Keep it safe."
-                      : "A recovery file lets you get your deposits back if this browser loses its data."}
-                  </p>
-                  {!handle.recoveryEnabled && (
-                    <button
-                      className="secondary"
-                      disabled={disabled || handle.invalidated}
-                      onClick={() => setRecoveryView("setup")}
-                    >
-                      Set up recovery
-                    </button>
-                  )}
-                  <button
-                    className="text-button"
-                    disabled={disabled}
-                    onClick={() => setRecoveryView("restore")}
-                  >
-                    Restore from recovery file
-                  </button>
-                </div>
-              )}
               {reusableSession(status) && !showPayment && (
                 <div className="connection-context">
                   <p className="small muted">
@@ -1408,6 +1638,7 @@ export function ConnectionPanel({
               )}
               {!RETIRED_RUNTIME &&
                 !initialDeposit &&
+                !withdrawalPending &&
                 !showFunding &&
                 !hasLowBalance(status) &&
                 status.wallet !== "closed" &&
@@ -1437,18 +1668,47 @@ export function ConnectionPanel({
                       );
                     }}
                   >
-                    {handle.deposits?.map((deposit, index) => (
-                      <option key={deposit.id} value={deposit.id}>
-                        Deposit {index + 1}
-                        {deposit.id === status.noteId
-                          ? ` · ${formatUsdc(fundedNoteBalance(status))} USDC${status.wallet === "closed" ? " · Withdrawn" : ""}`
-                          : ""}
-                      </option>
-                    ))}
+                    {handle.deposits?.map((deposit, index) => {
+                      const summary = depositSummaries.find(
+                        (item) => item.id === deposit.id,
+                      );
+                      const saved =
+                        deposit.id === status.noteId ? status : summary?.status;
+                      const stateLabel =
+                        saved?.wallet === "closed"
+                          ? "Withdrawn"
+                          : saved?.wallet === "pending_escape" ||
+                              (saved?.walletOperation &&
+                                saved.walletOperation.kind !== "deposit")
+                            ? "Withdrawal in progress"
+                            : saved?.walletOperation
+                              ? "Deposit in progress"
+                              : saved?.session
+                                ? "Payment pending"
+                                : saved?.canRequest
+                                  ? "Available"
+                                  : saved
+                                    ? "Not ready for chat"
+                                    : "Balance not checked";
+                      return (
+                        <option key={deposit.id} value={deposit.id}>
+                          Deposit {index + 1}
+                          {saved
+                            ? ` · ${formatUsdc(fundedNoteBalance(saved))} USDC`
+                            : ""}
+                          {` · ${stateLabel}`}
+                          {deposit.createdAt
+                            ? ` · ${new Intl.DateTimeFormat(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }).format(deposit.createdAt)}`
+                            : ""}
+                        </option>
+                      );
+                    })}
                   </select>
                   <small>
-                    Each deposit is saved separately. zkChat creates proofs for
-                    the deposit you select. Balances are not combined.
+                    Balances reflect the last saved confirmation; unsettled chat
+                    charges are not included. Each deposit is saved separately.
+                    zkChat creates proofs for the deposit you select. Balances
+                    are not combined.
                     {!canChangeDeposit(status)
                       ? " Finish the saved operation before switching deposits."
                       : ""}
@@ -1557,6 +1817,43 @@ export function ConnectionPanel({
                 )}
               </div>
             )}
+          {(managing || RETIRED_RUNTIME) && status && !RETIRED_RUNTIME && (
+            <details className="connection-details recovery-management">
+              <summary>Backup and recovery</summary>
+              <p className="small muted">
+                {handle.recoveryEnabled
+                  ? "Your recovery file is only needed if you lose browser data or move to another device. Later deposits are backed up automatically."
+                  : "Save a recovery file to restore your deposits after losing browser data or changing devices."}
+              </p>
+              {!handle.recoveryEnabled && (
+                <button
+                  className="secondary"
+                  disabled={disabled || handle.invalidated}
+                  onClick={() => setRecoveryView("setup")}
+                >
+                  Set up recovery
+                </button>
+              )}
+              <button
+                className="text-button"
+                disabled={disabled}
+                onClick={() => setRecoveryView("restore")}
+              >
+                Restore from recovery file
+              </button>
+              {handle.recoveryEnabled && (
+                <details>
+                  <summary>Lost your recovery file?</summary>
+                  <p className="small muted">
+                    You can still use this browser to chat and withdraw. Keep
+                    its data until you withdraw your deposits. The original file
+                    cannot be downloaded again because its recovery key is not
+                    kept in this browser.
+                  </p>
+                </details>
+              )}
+            </details>
+          )}
         </>
       )}
       {!handle && onTryDemo && (

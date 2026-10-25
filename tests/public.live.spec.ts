@@ -222,33 +222,33 @@ test("public SDK browser factory creates and reopens unfunded custody with no si
     .click();
   await expect(
     page.getByRole("button", {
-      name: "Set up this browser",
+      name: "Create new deposits",
       exact: true,
     }),
   ).toBeEnabled({ timeout: 90_000 });
   await page
     .getByRole("button", {
-      name: "Set up this browser",
+      name: "Create new deposits",
       exact: true,
     })
     .click();
-  await expect(page.locator(".topbar-status")).toHaveText("ZKAPI", {
+  await expect(page.locator(".topbar-status")).toHaveText("Wallet connected", {
     timeout: 90_000,
   });
   await expect(
-    page.getByRole("button", { name: "Review deposit", exact: true }),
-  ).toBeDisabled();
+    page.getByRole("button", { name: "Download recovery file", exact: true }),
+  ).toBeEnabled();
   await page.getByRole("button", { name: "Disconnect", exact: true }).click();
   await page
     .getByRole("dialog", { name: "Wallet & balance" })
     .getByRole("button", { name: "Connect wallet", exact: true })
     .click();
-  await expect(page.locator(".topbar-status")).toHaveText("ZKAPI", {
+  await expect(page.locator(".topbar-status")).toHaveText("Wallet connected", {
     timeout: 90_000,
   });
   await expect(
     page.getByRole("button", {
-      name: "Set up this browser",
+      name: "Create new deposits",
       exact: true,
     }),
   ).toHaveCount(0);
@@ -259,7 +259,7 @@ test("public SDK browser factory creates and reopens unfunded custody with no si
     JSON.stringify(
       {
         observedAt: new Date().toISOString(),
-        sdk: "0.2.0-devnet.18",
+        sdk: "0.2.0-devnet.19",
         result: "initialized and reopened",
         blocked,
         visibleResult: await page.getByRole("dialog").innerText(),
@@ -386,7 +386,7 @@ test("public SDK prepares an inline deposit before any signing", async ({
     JSON.stringify(
       {
         observedAt: new Date().toISOString(),
-        sdk: "0.2.0-devnet.18",
+        sdk: "0.2.0-devnet.19",
         result,
         blocked,
         serviceErrors,

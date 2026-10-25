@@ -3,6 +3,8 @@ import { expect, test, type Page } from "@playwright/test";
 const fixture = `
 export class BrowserStorageMissing extends Error {}
 export class RecoveryError extends Error {}
+export class RecoveryAccessMoved extends RecoveryError {}
+export async function validateZkchatRecoveryFile() {}
 export class RecoverySetupIncomplete extends RecoveryError {}
 export const restoreZkchatDeposits = async () => { throw new Error('Unexpected recovery'); };
 export const finishZkchatRecoverySetup = async () => { throw new Error('Unexpected recovery setup'); };
@@ -1071,7 +1073,11 @@ test("explicit Resolve payment releases an unaccepted authorization without chan
   await expect(panel).toContainText("Your message will not be resent.");
   const deposits = panel.getByLabel("Saved deposits");
   await expect(deposits).toHaveValue("fixture");
-  const depositOptions = await deposits.locator("option").allTextContents();
+  const depositIds = await deposits
+    .locator("option")
+    .evaluateAll((options) =>
+      options.map((option) => (option as HTMLOptionElement).value),
+    );
   const balance = await panel.locator(".balance-panel strong").innerText();
   const attempts = await callAttempts(page);
   expect(attempts).toHaveLength(1);
@@ -1090,8 +1096,15 @@ test("explicit Resolve payment releases an unaccepted authorization without chan
     panel.getByRole("heading", { name: "Payment needs attention" }),
   ).toHaveCount(0);
   await expect(deposits).toHaveValue("fixture");
-  expect(await deposits.locator("option").allTextContents()).toEqual(
-    depositOptions,
+  expect(
+    await deposits
+      .locator("option")
+      .evaluateAll((options) =>
+        options.map((option) => (option as HTMLOptionElement).value),
+      ),
+  ).toEqual(depositIds);
+  await expect(deposits.locator('option[value="fixture"]')).toContainText(
+    "Available",
   );
   await expect(panel.locator(".balance-panel strong")).toHaveText(balance);
   expect(await callAttempts(page)).toEqual(attempts);

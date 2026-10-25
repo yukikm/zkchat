@@ -1,0 +1,32 @@
+{
+  "sdk": "0.2.0-devnet.19",
+  "completedAt": "2026-10-25T06:43:24.882Z",
+  "scope": "Read-only public HTTP and SDK preflight. No custody, signatures, AUTH or inference.",
+  "profileSha256": "5e15d66c6f45265951cf1f8dd6cc0dae6574c4b8dd6756f828f7543ecaa97b9a",
+  "checks": [
+    {
+      "stage": "profile",
+      "passed": true
+    },
+    {
+      "stage": "preflight",
+      "passed": true
+    },
+    {
+      "stage": "model_profile",
+      "passed": true
+    },
+    {
+      "stage": "model_compatibility",
+      "passed": true
+    },
+    {
+      "stage": "model_preflight",
+      "passed": true
+    },
+    {
+      "stage": "readiness",
+      "passed": true
+    }
+  ]
+}

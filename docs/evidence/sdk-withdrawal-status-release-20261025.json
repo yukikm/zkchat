@@ -1,0 +1,46 @@
+{
+  "schema": 1,
+  "sdkVersion": "0.2.0-devnet.19",
+  "sourceRevision": "16859f71f501684b86aa778e0e1e3aaf53543844",
+  "releaseUrl": "https://github.com/yukikm/solana-zkapi/releases/tag/v0.2.0-devnet.19",
+  "immutable": true,
+  "releaseAttestationVerified": true,
+  "verifiedDownloadedAssetNames": [
+    "zkapi-solana-sdk-0.2.0-devnet.19.tgz",
+    "verifier-runtime-0.2.0-devnet.19.json",
+    "zkapi-client-prover-0.2.0-devnet.19.wasm"
+  ],
+  "officialTarballMatchesIsolatedTestedPackage": true,
+  "assets": {
+    "verifier-notices-0.2.0-devnet.19.zip": {
+      "sha256": "0b4adde286bc9df4d50c2d409e035bd8c3216a55d8d997322527585592136095",
+      "bytes": 134823
+    },
+    "verifier-runtime-0.2.0-devnet.19.json": {
+      "sha256": "77f80241d0bd70e0ef89def4c3442c65b7fd09e0358b90ef919deba97573e93d",
+      "bytes": 4846
+    },
+    "zkapi-client-prover-0.2.0-devnet.19.wasm": {
+      "sha256": "395465e39aef68ff1e9fd3167cb80d03a653bab09a54c83c18cbf8df06c60d84",
+      "bytes": 3929040
+    },
+    "zkapi-solana-sdk-0.2.0-devnet.19.tgz": {
+      "sha256": "cfdda081148cae2e4ae2d1fe0f821fcbf235f593a55bc50bfc042fb826c09424",
+      "bytes": 173154
+    }
+  },
+  "verification": {
+    "sdk_tests": 624,
+    "sdk_tests_passed": 624,
+    "recovery_service_tests": 12,
+    "isolated_installed_lifecycle_tests": 346,
+    "isolated_installed_recovery_tests": 1,
+    "real_browser": "SDK suite tests browser data deletion and restore; installed package test restores after Node device-directory deletion. Synthetic chain/provider fixtures.",
+    "sdk_ci_status": "success",
+    "real_funded_lifecycle": false,
+    "paid_provider_inference": false,
+    "sdk_ci": "https://github.com/yukikm/solana-zkapi/actions/runs/40169716360"
+  },
+  "profileAndStorageBindingsUnchanged": true,
+  "backendAndRecoveryServiceChangesRequired": false
+}

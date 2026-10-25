@@ -43,10 +43,15 @@ import {
   restoreDeposits,
   openLocalRecoverySource,
   assertLocalRecoveryNotMoved,
+  validateRecoveryFile,
   RecoveryError,
   type DepositRecoveryContext,
 } from "./currentRecovery";
-export { RecoveryError, RecoverySetupIncomplete } from "./currentRecovery";
+export {
+  RecoveryError,
+  RecoverySetupIncomplete,
+  RecoveryAccessMoved,
+} from "./currentRecovery";
 import type { PublicPreflightResult } from "@zkapi/solana-sdk/public-profile";
 import type { ServiceReadiness } from "./readiness";
 import { WalletConnectionError } from "./walletErrors";
@@ -63,6 +68,7 @@ import {
   DepositError,
   type DepositCatalog,
   type SavedDeposit,
+  type SavedDepositSummary,
 } from "./deposits";
 export { BrowserStorageMissing };
 export type { StandardAccount };
@@ -103,6 +109,7 @@ export interface BrowserClientHandle {
   readonly deposits: readonly SavedDeposit[];
   readonly selectedDepositId: string;
   readonly recoveryEnabled: boolean;
+  listDepositSummaries(): Promise<SavedDepositSummary[]>;
   createRecoveryFile(): string;
   enableRecovery(fileText: string): Promise<BrowserClientHandle>;
   addDeposit(): Promise<void>;
@@ -917,6 +924,39 @@ export async function connectZkapi(
       return selectedId;
     },
     recoveryEnabled: !!recoveryStorage,
+    async listDepositSummaries() {
+      const requestedId = selectedId;
+      return catalog.withLock(async () => {
+        assertActiveAccount();
+        await assertSelectedDeposit(requestedId);
+        const summaries: SavedDepositSummary[] = [];
+        for (const deposit of saved.deposits) {
+          let temporary: typeof raw | undefined;
+          try {
+            // Opening an existing ID with initializeStorage=false and reading
+            // SDK status neither creates a note nor changes its selected ID.
+            const source =
+              deposit.id === selectedId
+                ? raw
+                : (temporary = await openClient(deposit.id));
+            const status = await source.client.status();
+            if (status.noteId !== deposit.id)
+              throw new DepositError(
+                "The deposit status does not match its saved ID.",
+              );
+            summaries.push({ ...deposit, status, checkedAt: Date.now() });
+          } catch {
+            // One unreadable note must not conceal the other saved deposits.
+            summaries.push({ ...deposit, status: null, checkedAt: null });
+          } finally {
+            temporary?.dispose();
+          }
+        }
+        assertActiveAccount();
+        await assertSelectedDeposit(requestedId);
+        return summaries;
+      });
+    },
     createRecoveryFile() {
       assertActiveAccount();
       if (!recoveryContext || recoveryStorage)
@@ -936,6 +976,8 @@ export async function connectZkapi(
         throw new RecoveryError(
           "Wait for the current action to finish before setting up recovery.",
         );
+      await validateRecoveryFile(recoveryContext, fileText, true);
+      assertActiveAccount();
       // Stop the client before copying. The adapter holds the catalog lock and
       // freezes local custody before copying any financial records.
       invalidated = true;
@@ -999,13 +1041,11 @@ export async function connectZkapi(
 
 /** A recovery file can only restore the app's independently pinned deployment.
  * Its contents never choose the network, profile, or wallet account. */
-async function recoverZkchatDeposits(
+async function verifiedRecoveryContext(
   config: AppConfig,
   wallet: AppWallet,
   account: StandardAccount,
-  fileText: string,
-  finishSetup: boolean,
-): Promise<BrowserClientHandle> {
+) {
   const installed = parseConfig(config);
   if (installed.schema !== 2 || RETIRED_RUNTIME)
     throw new RecoveryError(
@@ -1026,6 +1066,35 @@ async function recoverZkchatDeposits(
     profileSha256: installed.profileSha256,
   };
   selectConnectedAccount(wallet, account);
+  return { installed, signer, context };
+}
+
+/** Validates local file compatibility without closing the current client,
+ * changing device ownership, or sending recovery credentials to the service. */
+export async function validateZkchatRecoveryFile(
+  config: AppConfig,
+  wallet: AppWallet,
+  account: StandardAccount,
+  fileText: string,
+  finishSetup = false,
+): Promise<void> {
+  const { context } = await verifiedRecoveryContext(config, wallet, account);
+  await validateRecoveryFile(context, fileText, finishSetup);
+  selectConnectedAccount(wallet, account);
+}
+
+async function recoverZkchatDeposits(
+  config: AppConfig,
+  wallet: AppWallet,
+  account: StandardAccount,
+  fileText: string,
+  finishSetup: boolean,
+): Promise<BrowserClientHandle> {
+  const { installed, signer, context } = await verifiedRecoveryContext(
+    config,
+    wallet,
+    account,
+  );
   let recovered;
   if (finishSetup) {
     const source = await openLocalRecoverySource(context);

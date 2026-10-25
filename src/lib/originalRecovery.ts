@@ -25,6 +25,14 @@ export class RecoveryError extends Error {
   }
 }
 export class RecoverySetupIncomplete extends RecoveryError {}
+export class RecoveryAccessMoved extends RecoveryError {}
+export async function validateRecoveryFile(
+  _context: DepositRecoveryContext,
+  _file: string,
+  _finishSetup = false,
+): Promise<void> {
+  throw new RecoveryError();
+}
 export function createRecoveryFile(_context: DepositRecoveryContext): string {
   throw new RecoveryError();
 }

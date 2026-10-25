@@ -258,6 +258,8 @@ test("offline state retains the draft and prevents sending", async ({
 const liveStub = `
 export class BrowserStorageMissing extends Error {}
 export class RecoveryError extends Error {}
+export class RecoveryAccessMoved extends RecoveryError {}
+export async function validateZkchatRecoveryFile() {}
 export class RecoverySetupIncomplete extends RecoveryError {}
 export const restoreZkchatDeposits = async () => { throw new Error('Unexpected recovery'); };
 export const finishZkchatRecoverySetup = async () => { throw new Error('Unexpected recovery setup'); };
@@ -493,7 +495,7 @@ test("public onboarding connects without invitation controls or a token argument
     .getByRole("dialog", { name: "Wallet & balance" })
     .getByRole("button", { name: "Connect wallet", exact: true })
     .click();
-  await expect(page.locator(".topbar-status")).toHaveText("ZKAPI");
+  await expect(page.locator(".topbar-status")).toHaveText("Ready to chat");
   expect(
     await page.evaluate(() => (window as any).testConnectArgumentCount),
   ).toBe(4);
@@ -734,7 +736,7 @@ test("wallet rejection shows actionable diagnostics and a retry connects without
     "Check your balance",
   );
   await connect.click();
-  await expect(page.locator(".topbar-status")).toHaveText("ZKAPI");
+  await expect(page.locator(".topbar-status")).toHaveText("Ready to chat");
   await expect(
     page.getByRole("button", { name: "Wallet & balance", exact: true }),
   ).toHaveAttribute("title", /1111/);
@@ -861,7 +863,7 @@ for (const width of [375, 1280]) {
       .getByRole("dialog", { name: "Wallet & balance" })
       .getByRole("button", { name: "Connect wallet", exact: true })
       .click();
-    await expect(page.locator(".topbar-status")).toHaveText("ZKAPI");
+    await expect(page.locator(".topbar-status")).toHaveText("Ready to chat");
     expect(await connectionCalls(page)).toEqual({
       wallets: ["Second Wallet"],
       sdk: [
@@ -928,7 +930,7 @@ test("pending wallet approval prevents duplicate connects and only opens SDK aft
       window as unknown as { testApproveWallet: () => void }
     ).testApproveWallet(),
   );
-  await expect(page.locator(".topbar-status")).toHaveText("ZKAPI");
+  await expect(page.locator(".topbar-status")).toHaveText("Ready to chat");
   await expect(
     page.getByRole("button", { name: "Wallet & balance", exact: true }),
   ).toHaveAttribute("title", /1111/);
@@ -961,7 +963,7 @@ test("SDK setup retry keeps the approved wallet after closing and reopening sett
   await page
     .getByRole("button", { name: "Continue to deposits", exact: true })
     .click();
-  await expect(page.locator(".topbar-status")).toHaveText("ZKAPI");
+  await expect(page.locator(".topbar-status")).toHaveText("Ready to chat");
   expect(await connectionCalls(page)).toEqual({
     wallets: ["Test Wallet"],
     sdk: [
@@ -984,7 +986,7 @@ test("first-time browser storage setup keeps the approved address and requires e
 }) => {
   await connectFixture(page, connectionFlowStub({ storageMissing: true }));
   const setup = page.getByRole("button", {
-    name: "Set up this browser",
+    name: "Create new deposits",
     exact: true,
   });
   await expect(setup).toBeEnabled();
@@ -1022,7 +1024,7 @@ test("first-time browser storage setup keeps the approved address and requires e
   await connected.click();
   await expect(setup).toBeEnabled();
   await setup.click();
-  await expect(page.locator(".topbar-status")).toHaveText("ZKAPI");
+  await expect(page.locator(".topbar-status")).toHaveText("Ready to chat");
   expect(await connectionCalls(page)).toEqual({
     wallets: ["Test Wallet"],
     sdk: [
@@ -1283,10 +1285,11 @@ test("withdrawal explains its irreversible start and preserves explicit approval
     page.getByText(/Finish the saved operation before switching deposits/),
   ).toBeVisible();
   await expect(page.getByLabel("Saved deposits")).toBeDisabled();
-  await page
-    .getByRole("dialog")
-    .getByRole("button", { name: "Add funds", exact: true })
-    .click();
+  await expect(
+    page
+      .getByRole("dialog")
+      .getByRole("button", { name: "Add funds", exact: true }),
+  ).toHaveCount(0);
   await expect(
     page.getByRole("button", { name: "Review deposit", exact: true }),
   ).toHaveCount(0);
@@ -1329,7 +1332,11 @@ test("withdrawal explains its irreversible start and preserves explicit approval
     .getByRole("dialog")
     .getByRole("button", { name: "Continue withdrawal", exact: true })
     .click();
-  // The earlier Add funds request resumes only after the withdrawal completes.
+  // Additional funding is offered only once the withdrawal has completed.
+  await page
+    .getByRole("dialog")
+    .getByRole("button", { name: "Add funds", exact: true })
+    .click();
   await expect(
     page.getByRole("button", { name: "Review deposit", exact: true }),
   ).toBeVisible();

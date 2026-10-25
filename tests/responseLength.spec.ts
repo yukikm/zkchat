@@ -19,6 +19,8 @@ const filterNotice =
 const fixture = `
 export class BrowserStorageMissing extends Error {}
 export class RecoveryError extends Error {}
+export class RecoveryAccessMoved extends RecoveryError {}
+export async function validateZkchatRecoveryFile() {}
 export class RecoverySetupIncomplete extends RecoveryError {}
 export const restoreZkchatDeposits = async () => { throw new Error('Unexpected recovery'); };
 export const finishZkchatRecoverySetup = async () => { throw new Error('Unexpected recovery setup'); };

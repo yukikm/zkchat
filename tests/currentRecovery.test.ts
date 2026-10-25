@@ -4,6 +4,7 @@ import { importJournalKey } from "@zkapi/solana-sdk/journal";
 import {
   createRecoveryStorage,
   parseRecoveryKit,
+  restoreRecoveryStorage,
   type RecoverySession,
 } from "@zkapi/solana-sdk/recovery";
 import {
@@ -12,7 +13,10 @@ import {
   enrollRecovery,
   getRecoveryStorage,
   RecoverySetupIncomplete,
+  RecoveryAccessMoved,
+  RECOVERY_ENDPOINT,
   restoreDeposits,
+  validateRecoveryFile,
 } from "../src/lib/currentRecovery";
 import { ORIGINAL_NOTE_ID } from "../src/lib/deposits";
 import { memoryCustody } from "./depositStore";
@@ -78,6 +82,67 @@ beforeEach(() => {
 });
 
 describe("current deployment recovery custody", () => {
+  it("identifies a previous owner's access without falling back to retained original data", async () => {
+    const server = recoveryService(),
+      source = await original(),
+      before = await seedDeposits(source),
+      file = createRecoveryFile(context);
+    (await enrollRecovery(context, file, source, options(server))).close();
+    const oldBinding = structuredClone([...local.bindings.values()][0]);
+    // A different device takes ownership using the same kit. The original
+    // browser retains both its old binding and its original encrypted notes.
+    (
+      await restoreRecoveryStorage(parseRecoveryKit(file), {
+        ...options(server),
+        expectedEndpoint: RECOVERY_ENDPOINT,
+      })
+    ).close();
+    const writes = server.writes;
+    await expect(
+      getRecoveryStorage(context, options(server)),
+    ).rejects.toBeInstanceOf(RecoveryAccessMoved);
+    expect(server.writes).toBe(writes);
+    expect([...local.bindings.values()][0]).toEqual(oldBinding);
+    expect(await snapshotDeposits(source)).toEqual(before);
+  });
+
+  it("validates file, binding and source before changing an active backup or its owner", async () => {
+    const server = recoveryService(),
+      source = await original(),
+      before = await seedDeposits(source),
+      file = createRecoveryFile(context);
+    const target = await enrollRecovery(context, file, source, options(server));
+    const requests = server.requests;
+    await expect(validateRecoveryFile(context, "{}")).rejects.toThrow(
+      "valid zkChat recovery file",
+    );
+    await expect(
+      validateRecoveryFile(
+        context,
+        createRecoveryFile({ ...context, wallet: "another-wallet" }),
+      ),
+    ).rejects.toThrow("wallet used");
+    await expect(
+      validateRecoveryFile(context, createRecoveryFile(context)),
+    ).rejects.toThrow("different recovery setup");
+    await validateRecoveryFile(context, file);
+    expect(server.requests).toBe(requests);
+    expect(await snapshotDeposits(target)).toEqual(before);
+    target.close();
+  });
+
+  it("rejects restoring over unmigrated funds before any transfer, while allowing their enrollment", async () => {
+    const source = await original(),
+      before = await seedDeposits(source),
+      file = createRecoveryFile(context);
+    await expect(validateRecoveryFile(context, file)).rejects.toThrow(
+      "not in this recovery setup",
+    );
+    await validateRecoveryFile(context, file, true);
+    expect(local.bindings.size).toBe(0);
+    expect(await snapshotDeposits(source)).toEqual(before);
+  });
+
   it("migrates every validated note and catalog, keeps later changes, and restores after all original data is deleted", async () => {
     const server = recoveryService(),
       source = await original(),

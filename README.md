@@ -1,6 +1,8 @@
 # zkchat
 
-Solana zkAPIをLLMバックエンドにするReactチャットアプリです。公開SDK **[0.2.0-devnet.18](https://github.com/yukikm/solana-zkapi/releases/tag/v0.2.0-devnet.18)** と **public-devnet-20261021-state-v1** の認証済み公開Devnet profileを使います。GitHubのimmutable releaseとSDK・verifierのattestationを検証した配布物を使用しています。旧Poolの保存データは保持し、SDK `.12` と `.3` の復旧画面を同じoriginに同梱しています。Solanaは **`@solana/kit` 8.4.0**、ウォレット接続は **`@solana/kit-plugin-wallet` 0.21.0 / Wallet Standard**。`web3.js`は使用しません。
+Solana zkAPIをLLMバックエンドにするReactチャットアプリです。公開SDK **[0.2.0-devnet.19](https://github.com/yukikm/solana-zkapi/releases/tag/v0.2.0-devnet.19)** と **public-devnet-20261021-state-v1** の認証済み公開Devnet profileを使います。GitHubのimmutable releaseとSDK・verifierのattestationを検証した配布物を使用しています。旧Poolの保存データは保持し、SDK `.12` と `.3` の復旧画面を同じoriginに同梱しています。Solanaは **`@solana/kit` 8.4.0**、ウォレット接続は **`@solana/kit-plugin-wallet` 0.21.0 / Wallet Standard**。`web3.js`は使用しません。
+
+**2026-10-25 UX 改善:** SDK `.19` を使い、復元失敗時の導線、編集できる入金確認、入金一覧、出金の進捗・待機終了日時を改善しました。Faucet と従来の保存データを維持しています。[変更内容と検証](docs/UX-IMPROVEMENTS-20261025.md)。
 
 **2026-10-25 入金バックアップ:** 公開SDK `.18` の復元機能を組み込みました。初回に復元ファイルを保存すると、追加の入金や未確定の処理も暗号化して自動保存します。ブラウザのデータを失った場合は、同じウォレットと復元ファイルで入金一覧を復元できます。復元にはファイルとバックアップサービスの両方が必要です。複数端末の同時利用には対応しません。[設計・検証・制約](docs/SDK-PORTABLE-RECOVERY-20261025.md)。
 
@@ -52,10 +54,10 @@ npm run dev
 
 旧SDK・profile・note ID・暗号化journal・会話履歴を削除したり、新Poolへ付け替えたりしません。`Wallet & balance` → `Older deposit data` から、保存した世代に合う画面を開きます。
 
-| 保存した世代                               | 本番の入口                                      | ローカル起動               |
-| ------------------------------------------ | ----------------------------------------------- | -------------------------- |
+| 保存した世代                               | 本番の入口                                       | ローカル起動               |
+| ------------------------------------------ | ------------------------------------------------ | -------------------------- |
 | `.8` 以降の旧Pool（最後の実行SDKは `.12`） | `Open October 8 deposit data` → `/recovery-v12/` | `npm run dev:recovery-v12` |
-| 元の `.3`                                  | `Open original deposit data` → `/recovery-v3/`    | `npm run dev:recovery`     |
+| 元の `.3`                                  | `Open original deposit data` → `/recovery-v3/`   | `npm run dev:recovery`     |
 
 ローカルでは開発サーバーを停止して対象のコマンドを実行し、**元と同じURL・ポート・ブラウザ・アカウント**で再接続します。カスタムポートを使っていた場合は `-- --port 元のポート` を付けます。本番の両入口は本体と同じoriginなので、元のブラウザ保存データを参照できます。
 
@@ -130,11 +132,11 @@ npm run check:browser
 
 [`.15` 更新ガイド](https://github.com/yukikm/solana-zkapi/blob/94e4969f3169bfc790fc6f4186fc2bf94dbe074a/docs/getting-started/direct-recovery-upgrade.md)に従い、実行SDKと保存領域の世代を分離しています。公開SDKの配布元はnpm registryではなくGitHub releaseです。現行 `.16` はローカル復旧プレビューで、`verify:sdk`はレビューしたローカルarchiveとWASMのSHA-256を照合します。保持した `.15`・`.13`・`.12`・`.10`・`.8`・`.3` は公開SHA-256と照合します。現行 `.16` も現在の `.13` profileをそのまま受け入れ、profileと保存領域を変更しません。
 
-| 画面       | 固定設定                                                       | 保存名 / 初回note ID                                                                             |
-| ---------- | -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| 画面                             | 固定設定                                                       | 保存名 / 初回note ID                                                                             |
+| -------------------------------- | -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
 | 通常 `.16`（ローカルプレビュー） | `public/zkapi-config.json` / `public-devnet-20261021-state-v1` | `zkchat-sdk-public-devnet-20261021-state-v1` / `zkchat-note-sdk-public-devnet-20261021-state-v1` |
-| 復旧 `.12` | `config/zkapi-config.devnet.12.json` / 元のrevision-6 profile  | `zkchat-sdk-0.2.0-devnet.8` / `zkchat-note-sdk-0.2.0-devnet.8`                                   |
-| 復旧 `.3`  | `config/zkapi-config.devnet.3.json` / 元のrevision-2 profile   | `zkchat-sdk-0.2.0-devnet.3` / `zkchat-note-sdk-0.2.0-devnet.3`                                   |
+| 復旧 `.12`                       | `config/zkapi-config.devnet.12.json` / 元のrevision-6 profile  | `zkchat-sdk-0.2.0-devnet.8` / `zkchat-note-sdk-0.2.0-devnet.8`                                   |
+| 復旧 `.3`                        | `config/zkapi-config.devnet.3.json` / 元のrevision-2 profile   | `zkchat-sdk-0.2.0-devnet.3` / `zkchat-note-sdk-0.2.0-devnet.3`                                   |
 
 追加モデルの設定は、元のprofile URL・SHA-256・保存領域のbindingを置き換えません。既存の残高、note ID、未精算session、復旧用Verifierはそのまま使用し、保存済み操作を再送しません。
 

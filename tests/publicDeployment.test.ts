@@ -67,7 +67,9 @@ import {
   loadConfig,
   configuredModels,
   configuredStreaming,
+  validateZkchatRecoveryFile,
 } from "../src/lib/zkapi";
+import { createRecoveryFile } from "../src/lib/currentRecovery";
 const config: PublicAppConfig = {
   schema: 2,
   chain: "solana:devnet",
@@ -418,6 +420,89 @@ describe("existing application adapter with public profile", () => {
     handle.dispose();
     expect(remote.close).toHaveBeenCalledTimes(1);
     expect(handle.invalidated).toBe(true);
+  });
+  it.each([true, false])(
+    "keeps funded chat usable after a wrong-wallet file (backup enabled=%s)",
+    async (backupEnabled) => {
+      if (!backupEnabled) sdk.recovery.mockResolvedValue(null);
+      const f = depositFixture("active"),
+        handle = await f.connect(),
+        raw = f.opened[0];
+      const file = createRecoveryFile({
+        storageName: STORAGE_NAME,
+        deploymentId: "deployment",
+        pool: "pool",
+        wallet: "another-account",
+        profileSha256: config.profileSha256,
+      });
+      await expect(
+        backupEnabled
+          ? validateZkchatRecoveryFile(
+              config,
+              f.wallet as any,
+              f.wallet.accounts[0] as any,
+              file,
+            )
+          : handle.enableRecovery(file),
+      ).rejects.toThrow("wallet used");
+      expect(handle.invalidated).toBe(false);
+      expect(raw.dispose).not.toHaveBeenCalled();
+      expect((await handle.client.status()).wallet).toBe("active");
+      await handle.client.chat({
+        model: "model",
+        stream: false,
+        maxOutputTokens: 128,
+      } as any);
+      expect(raw.client.chat).toHaveBeenCalledTimes(1);
+      handle.dispose();
+    },
+  );
+  it("reads every saved SDK status without selecting, creating or altering a deposit", async () => {
+    const f = depositFixture("active");
+    const handle = await f.connect();
+    await handle.addDeposit();
+    const selected = handle.selectedDepositId;
+    f.states.set(NOTE_ID, {
+      ...f.states.get(NOTE_ID),
+      wallet: "closed",
+      settledBalanceMicroUsdc: "0",
+    });
+    f.states.set(selected, {
+      ...f.states.get(selected),
+      wallet: "active",
+      settledBalanceMicroUsdc: "3000000",
+      session: { phase: "send_unknown" },
+    });
+    const catalog = await sdk.catalog.mock.results[0].value;
+    const save = vi.spyOn(catalog, "save");
+    const previous = await catalog.read();
+    const summaries = await handle.listDepositSummaries();
+    expect(
+      summaries.map(({ id, status }) => [
+        id,
+        status?.wallet,
+        status?.settledBalanceMicroUsdc,
+      ]),
+    ).toEqual([
+      [NOTE_ID, "closed", "0"],
+      [selected, "active", "3000000"],
+    ]);
+    expect(summaries[1].status?.session?.phase).toBe("send_unknown");
+    expect(summaries.every((summary) => summary.checkedAt !== null)).toBe(true);
+    expect(handle.selectedDepositId).toBe(selected);
+    expect(await catalog.read()).toEqual(previous);
+    expect(save).not.toHaveBeenCalled();
+    expect(f.states.size).toBe(2);
+    for (const [options] of sdk.browser.mock.calls)
+      expect(options.initializeStorage).toBe(false);
+    expect(f.opened.at(-1).id).toBe(NOTE_ID);
+    expect(f.opened.at(-1).dispose).toHaveBeenCalledTimes(1);
+    for (const raw of f.opened) {
+      expect(raw.client.prepareDeposit).not.toHaveBeenCalled();
+      expect(raw.client.prepareWithdrawal).not.toHaveBeenCalled();
+      expect(raw.client.advanceWallet).not.toHaveBeenCalled();
+    }
+    handle.dispose();
   });
   it("requires backup for new funds but keeps existing local chat and withdrawal available", async () => {
     sdk.recovery.mockResolvedValue(null);

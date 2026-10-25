@@ -5,6 +5,7 @@ import { Download, Upload } from "lucide-react";
 export function RecoveryPanel({
   mode,
   incomplete,
+  restoreInterrupted = false,
   disabled,
   createFile,
   onEnable,
@@ -13,6 +14,7 @@ export function RecoveryPanel({
 }: {
   mode: "setup" | "restore";
   incomplete: boolean;
+  restoreInterrupted?: boolean;
   disabled: boolean;
   createFile?: () => string;
   onEnable: (file: string) => Promise<void>;
@@ -95,17 +97,24 @@ export function RecoveryPanel({
       aria-label={setup ? "Back up deposits" : "Restore deposits"}
     >
       <p>
-        {incomplete
-          ? "Setup was interrupted. Use the same recovery file to finish safely."
-          : setup
-            ? "Save one recovery file before depositing. It restores your deposits if you lose this browser’s data, including deposits you add later."
-            : "Choose your recovery file and connect the same wallet to open your saved deposits here."}
+        {restoreInterrupted
+          ? "Restoration was interrupted. Keep this file and retry to finish opening your deposits here."
+          : incomplete
+            ? "Setup was interrupted. Use the same recovery file to finish safely."
+            : setup
+              ? "Save this file once. You only need it if you lose browser data or move to another device—not for everyday chats."
+              : "Choose your recovery file and connect the same wallet to open your saved deposits here."}
       </p>
+      {setup && (
+        <p className="small muted">
+          Later deposits are backed up automatically.
+        </p>
+      )}
       {setup ? (
         <>
           <button
             type="button"
-            className="secondary"
+            className={downloadedFile ? "text-button" : "primary"}
             disabled={disabled}
             onClick={download}
           >
@@ -115,15 +124,20 @@ export function RecoveryPanel({
               : "Download recovery file"}
           </button>
           {downloadedFile && (
-            <label className="check-label">
-              <input
-                type="checkbox"
-                checked={saved}
-                disabled={disabled}
-                onChange={(e) => setSaved(e.target.checked)}
-              />
-              I saved this file somewhere I can find later
-            </label>
+            <>
+              <p className="small recovery-filename">
+                zkchat-deposit-recovery.json
+              </p>
+              <label className="check-label">
+                <input
+                  type="checkbox"
+                  checked={saved}
+                  disabled={disabled}
+                  onChange={(e) => setSaved(e.target.checked)}
+                />
+                I saved this file somewhere I can find later
+              </label>
+            </>
           )}
         </>
       ) : (
@@ -141,15 +155,17 @@ export function RecoveryPanel({
       <p className="small muted">
         Keep this file private. Anyone with it can access your deposits.
       </p>
-      <label className="check-label">
-        <input
-          type="checkbox"
-          checked={stopped}
-          disabled={disabled}
-          onChange={(e) => setStopped(e.target.checked)}
-        />
-        I closed zkChat on my other tabs and devices
-      </label>
+      {(!setup || downloadedFile) && (
+        <label className="check-label">
+          <input
+            type="checkbox"
+            checked={stopped}
+            disabled={disabled}
+            onChange={(e) => setStopped(e.target.checked)}
+          />
+          I closed zkChat on my other tabs and devices
+        </label>
+      )}
       {!setup && (
         <p className="small muted">
           Use one browser at a time. Restoring replaces access on the previous
@@ -161,25 +177,29 @@ export function RecoveryPanel({
           {error}
         </p>
       )}
-      <button
-        type="button"
-        className="primary"
-        disabled={disabled || reading || !file || !stopped || (setup && !saved)}
-        onClick={() =>
-          void (setup && !incomplete
-            ? onEnable(file)
-            : onRestore(file, incomplete))
-        }
-      >
-        {!setup && <Upload size={16} />}
-        {disabled
-          ? "Opening your deposits…"
-          : incomplete
-            ? "Finish recovery setup"
-            : setup
-              ? "Protect deposits and continue"
-              : "Restore deposits"}
-      </button>
+      {(!setup || downloadedFile) && (
+        <button
+          type="button"
+          className="primary"
+          disabled={
+            disabled || reading || !file || !stopped || (setup && !saved)
+          }
+          onClick={() =>
+            void (setup && !incomplete
+              ? onEnable(file)
+              : onRestore(file, incomplete))
+          }
+        >
+          {!setup && <Upload size={16} />}
+          {disabled
+            ? "Opening your deposits…"
+            : incomplete
+              ? "Finish recovery setup"
+              : setup
+                ? "Continue to deposit"
+                : "Restore deposits"}
+        </button>
+      )}
       <details className="connection-details">
         <summary>What this file restores</summary>
         <p className="small muted">

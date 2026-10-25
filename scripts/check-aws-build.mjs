@@ -183,7 +183,7 @@ try {
       .click();
     assert.match(
       await page.getByRole("dialog").textContent(),
-      /SDK 0\.2\.0-devnet\.18/,
+      /SDK 0\.2\.0-devnet\.19/,
     );
     await page.getByText("Older deposit data", { exact: true }).click();
     await page.getByRole("link", { name: label, exact: true }).click();

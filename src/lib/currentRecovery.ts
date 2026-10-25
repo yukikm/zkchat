@@ -18,6 +18,7 @@ import {
   parseRecoveryKit,
   restoreRecoveryStorage,
   serializeRecoveryKit,
+  RecoveryStorageError,
   type RecoveryKit,
   type RecoverySession,
   type RecoveryStorage,
@@ -69,6 +70,14 @@ export class RecoverySetupIncomplete extends RecoveryError {
       "Backup setup was interrupted. Use your saved recovery file in the original browser to finish setup. Your original deposit data is kept.",
     );
     this.name = "RecoverySetupIncomplete";
+  }
+}
+export class RecoveryAccessMoved extends RecoveryError {
+  constructor() {
+    super(
+      "Access to these deposits moved to another browser. Use that browser, or restore here with your recovery file after closing zkChat on other devices.",
+    );
+    this.name = "RecoveryAccessMoved";
   }
 }
 interface Marker {
@@ -275,6 +284,29 @@ async function checkSource(
   }
   return intent;
 }
+/** Read-only checks before stopping a usable client. Ownership and bindings are
+ * checked again by enrollment/restoration under their mutation lock. */
+export async function validateRecoveryFile(
+  context: DepositRecoveryContext,
+  fileText: string,
+  finishSetup = false,
+): Promise<void> {
+  const c = checkedContext(context),
+    kit = parseFile(c, fileText),
+    existing = await loadRecoverySession(bindingName(c));
+  if (existing) checkSession(existing.session, c, kit.vaultId);
+  const source = finishSetup
+    ? await openLocalRecoverySource(c)
+    : await optionalSource(c);
+  try {
+    if (source)
+      await createDepositCatalog(source, c).withLock(async () => {
+        await checkSource(c, source, kit.vaultId, !finishSetup);
+      });
+  } finally {
+    source?.close();
+  }
+}
 async function verifyComplete(
   c: DepositRecoveryContext,
   storage: RecoveryStorage,
@@ -318,16 +350,22 @@ export async function getRecoveryStorage(
   } finally {
     source?.close();
   }
-  const opened = await openRecoveryStorage(local.session, {
-    key: local.key,
-    expectedEndpoint: RECOVERY_ENDPOINT,
-    fetch: options.fetch,
-  });
+  let opened: RecoveryStorage | undefined;
   try {
+    opened = await openRecoveryStorage(local.session, {
+      key: local.key,
+      expectedEndpoint: RECOVERY_ENDPOINT,
+      fetch: options.fetch,
+    });
     await verifyComplete(c, opened);
     return opened;
   } catch (error) {
-    opened.close();
+    opened?.close();
+    if (
+      error instanceof RecoveryStorageError &&
+      error.code === "ownership_changed"
+    )
+      throw new RecoveryAccessMoved();
     throw error;
   }
 }

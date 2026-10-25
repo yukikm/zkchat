@@ -2,7 +2,7 @@
 export const LEGACY_SDK_VERSION = "0.2.0-devnet.3";
 export const PREVIOUS_SDK_VERSION = "0.2.0-devnet.12";
 export const SDK_VERSION: string =
-  import.meta.env.VITE_ZKCHAT_SDK_VERSION ?? "0.2.0-devnet.18";
+  import.meta.env.VITE_ZKCHAT_SDK_VERSION ?? "0.2.0-devnet.19";
 export const LOCAL_RECOVERY_PREVIEW = [
   "0.2.0-devnet.16",
   "0.2.0-devnet.17",
@@ -26,6 +26,7 @@ export function storageVersionFor(sdkVersion: string) {
     case "0.2.0-devnet.16":
     case "0.2.0-devnet.17":
     case "0.2.0-devnet.18":
+    case "0.2.0-devnet.19":
       return "public-devnet-20261021-state-v1";
     default:
       throw new Error("Unsupported SDK runtime. Reopen the original app.");

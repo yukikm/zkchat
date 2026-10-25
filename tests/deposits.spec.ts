@@ -12,6 +12,8 @@ function depositStub(
   return `
 export class BrowserStorageMissing extends Error {}
 export class RecoveryError extends Error {}
+export class RecoveryAccessMoved extends RecoveryError {}
+export async function validateZkchatRecoveryFile() {}
 export class RecoverySetupIncomplete extends RecoveryError {}
 export const restoreZkchatDeposits = async () => { throw new Error('Unexpected recovery'); };
 export const finishZkchatRecoverySetup = async () => { throw new Error('Unexpected recovery setup'); };
@@ -27,7 +29,7 @@ export const watchWallets = () => () => {};
 export const connectWalletAccount = async () => account;
 const count = key => localStorage.setItem('test:'+key,String(Number(localStorage.getItem('test:'+key)||'0')+1));
 const balance=options.balance||'200000';
-let data = JSON.parse(localStorage.getItem('test-deposits') || 'null') || { selected:'original', entries:[{id:'original'}], states: {original:{ noteId:'original',mode:'direct_openrouter',wallet:'${wallet}',busy:false,session:null,walletOperation:null,emergencyEscape:null,settledBalanceMicroUsdc:'${wallet === "empty" || wallet === "closed" ? "0" : "' + balance + '"}',authorizationCapMicroUsdc:'1000000',canRequest:${wallet === "active"}&&BigInt(balance)>=1000000n }} };
+let data = JSON.parse(localStorage.getItem('test-deposits') || 'null') || { selected:'original', entries:[{id:'original',createdAt:1792800000000}], states: {original:{ noteId:'original',mode:'direct_openrouter',wallet:'${wallet}',busy:false,session:null,walletOperation:null,emergencyEscape:null,settledBalanceMicroUsdc:'${wallet === "empty" || wallet === "closed" ? "0" : "' + balance + '"}',authorizationCapMicroUsdc:'1000000',canRequest:${wallet === "active"}&&BigInt(balance)>=1000000n }} };
 const listeners = new Set();
 const state = () => data.states[data.selected];
 const publish = () => {localStorage.setItem('test-deposits',JSON.stringify(data)); for (const fn of listeners) fn({...state()});};
@@ -40,7 +42,8 @@ export const connectZkapi = async (_config,_wallet,_account,initialize=false) =>
  publish();
  return { account,wallet,recoveryEnabled:true,persistence:'persistent',publicAdmissionReady:true, deployment:{mint:'test-mint'},
   get deposits(){return data.entries},get selectedDepositId(){return data.selected},
-  addDeposit:async()=>{ count('adds'); if(state().session||state().walletOperation)throw new Error('Cannot replace pending work'); const id='deposit-'+data.entries.length; data.entries.push({id});data.states[id]={...state(),noteId:id,wallet:'empty',canRequest:false,settledBalanceMicroUsdc:'0'};data.selected=id;publish(); },
+  listDepositSummaries:async()=>data.entries.map(entry=>({...entry,status:data.states[entry.id],checkedAt:Date.now()})),
+  addDeposit:async()=>{ count('adds'); if(state().session||state().walletOperation)throw new Error('Cannot replace pending work'); const id='deposit-'+data.entries.length; data.entries.push({id,createdAt:1792803600000});data.states[id]={...state(),noteId:id,wallet:'empty',canRequest:false,settledBalanceMicroUsdc:'0'};data.selected=id;publish(); },
   selectDeposit:async id=>{if(state().session||state().walletOperation)throw new Error('Cannot replace pending work');data.selected=id;publish();},
   async refreshPreflight(){count('refreshes')},dispose(){},client:{
     status:async()=>({...state()}),subscribe:fn=>{listeners.add(fn);return()=>listeners.delete(fn)},
@@ -154,7 +157,7 @@ test("first-time setup stays inline, explains proof, and keeps faucets available
     .getByRole("button", { name: "Connect wallet", exact: true })
     .click();
   const setup = page.getByRole("button", {
-    name: "Set up this browser",
+    name: "Create new deposits",
     exact: true,
   });
   await expect(setup).toBeVisible();
@@ -191,7 +194,7 @@ test("first-time setup stays inline, explains proof, and keeps faucets available
   expect(await count(page, "chats")).toBe(1);
 });
 
-test("opening additional funding creates no note until review and never aggregates balances", async ({
+test("opening and reviewing additional funding creates no note until confirmation and never aggregates balances", async ({
   page,
 }) => {
   await install(page, depositStub("active", { balance: "2000000" }));
@@ -210,10 +213,11 @@ test("opening additional funding creates no note until review and never aggregat
     name: "Add funds",
     exact: true,
   });
-  if (await add.count()) await add.click();
+  await add.click();
   expect((await saved(page)).entries).toHaveLength(1);
   await review(page);
-  expect(await count(page, "adds")).toBe(1);
+  expect(await count(page, "adds")).toBe(0);
+  expect(await count(page, "prepares")).toBe(0);
   expect((await saved(page)).states.original.settledBalanceMicroUsdc).toBe(
     "2000000",
   );
@@ -242,6 +246,9 @@ test("deposit preparation explains an unavailable indexer without requesting a s
   await panel(page)
     .getByRole("button", { name: "Review deposit", exact: true })
     .click();
+  await panel(page)
+    .getByRole("button", { name: "Approve deposit in wallet", exact: true })
+    .click();
   await expect(panel(page).getByRole("alert")).toContainText(
     "chain indexer is unavailable",
   );
@@ -253,7 +260,10 @@ test("deposit preparation explains an unavailable indexer without requesting a s
       name: "Approve deposit in wallet",
       exact: true,
     }),
-  ).toHaveCount(0);
+  ).toBeEnabled();
+  await expect(
+    panel(page).getByRole("button", { name: "Edit amount", exact: true }),
+  ).toBeEnabled();
   expect((await saved(page)).entries).toHaveLength(2);
   expect(await count(page, "advances")).toBe(0);
 });
@@ -278,6 +288,10 @@ for (const signature of [null, "saved-test-signature"]) {
     await panel(page)
       .getByRole("button", { name: "Review deposit", exact: true })
       .click();
+    if (signature)
+      await panel(page)
+        .getByRole("button", { name: "Approve deposit in wallet", exact: true })
+        .click();
     const next = panel(page).getByRole("button", {
       name: signature
         ? "Continue deposit confirmation"
@@ -330,12 +344,23 @@ for (const initial of ["closed", "active"] as const) {
     await panel(page).getByLabel("USDC to deposit").fill("2");
     await review(page);
     await expect(panel(page).getByLabel("Saved deposits")).toHaveCount(0);
+    await panel(page)
+      .getByRole("button", { name: "Approve deposit in wallet", exact: true })
+      .click();
     await page.reload();
     await connect(page);
     await expect(panel(page).getByLabel("Saved deposits")).toHaveValue(
       "deposit-1",
     );
-    await confirmDeposit(page);
+    await panel(page)
+      .getByRole("button", {
+        name: "Continue deposit confirmation",
+        exact: true,
+      })
+      .click();
+    await expect(
+      panel(page).getByRole("button", { name: "Return to chat", exact: true }),
+    ).toBeEnabled();
     await panel(page).getByLabel("Saved deposits").selectOption("original");
     await expect(panel(page).locator(".balance-panel strong")).toHaveText(
       initial === "closed" ? "0.00" : "0.2",
@@ -543,4 +568,76 @@ test("signed initial and additional deposits confirm automatically without anoth
   await expect(message(page)).toHaveValue("My next chat");
   await expect(send(page)).toBeEnabled();
   expect(await count(page, "chats")).toBe(0);
+});
+
+test("the deposit review is editable without creating SDK work and confirms the edited amount once", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 375, height: 812 });
+  await install(page, depositStub("active", { balance: "2000000" }));
+  await connect(page);
+  await panel(page)
+    .getByRole("button", { name: "Add funds", exact: true })
+    .click();
+  await panel(page).getByLabel("USDC to deposit").fill("3");
+  await review(page);
+  await expect(panel(page).locator(".funding-summary strong")).toHaveText(
+    "3.00 USDC",
+  );
+  expect(await count(page, "adds")).toBe(0);
+  expect(await count(page, "prepares")).toBe(0);
+  await page.screenshot({
+    path: "docs/evidence/ux-improvements-20261025/editable-deposit-review-mobile.png",
+    animations: "disabled",
+    fullPage: true,
+  });
+  await panel(page)
+    .getByRole("button", { name: "Edit amount", exact: true })
+    .click();
+  await expect(panel(page).getByLabel("USDC to deposit")).toBeFocused();
+  await panel(page).getByLabel("USDC to deposit").fill("4");
+  await review(page);
+  await panel(page)
+    .getByRole("button", { name: "Back to balance", exact: true })
+    .click();
+  expect(await count(page, "adds")).toBe(0);
+  await panel(page)
+    .getByRole("button", { name: "Add funds", exact: true })
+    .click();
+  await review(page);
+  await confirmDeposit(page);
+  expect(await count(page, "adds")).toBe(1);
+  expect(await count(page, "prepares")).toBe(1);
+  expect((await saved(page)).states["deposit-1"].settledBalanceMicroUsdc).toBe(
+    "4000000",
+  );
+  await expect(
+    panel(page).getByLabel("Saved deposits").locator("option").first(),
+  ).toContainText("2.00 USDC · Available");
+  await page.screenshot({
+    path: "docs/evidence/ux-improvements-20261025/deposit-summaries-mobile.png",
+    animations: "disabled",
+    fullPage: true,
+  });
+  await page.setViewportSize({ width: 1280, height: 1100 });
+  await page.screenshot({
+    path: "docs/evidence/ux-improvements-20261025/deposit-summaries-desktop.png",
+    animations: "disabled",
+    fullPage: true,
+  });
+  await panel(page).getByText("Backup and recovery", { exact: true }).click();
+  await panel(page)
+    .getByText("Lost your recovery file?", { exact: true })
+    .click();
+  await expect(
+    panel(page).getByText(/original file cannot be downloaded again/),
+  ).toBeVisible();
+  await page.screenshot({
+    path: "docs/evidence/ux-improvements-20261025/backup-lost-file-guidance.png",
+    fullPage: true,
+  });
+
+  expect(
+    await panel(page).evaluate((el) => el.scrollWidth <= el.clientWidth),
+  ).toBe(true);
 });

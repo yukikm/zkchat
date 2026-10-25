@@ -10,6 +10,12 @@ export interface SavedDeposit {
   id: string;
   createdAt: number | null;
 }
+/** SDK journal status read at list refresh time; never an aggregate balance or
+ * a claim that an unobserved on-chain transaction has completed. */
+export interface SavedDepositSummary extends SavedDeposit {
+  status: ClientStatus | null;
+  checkedAt: number | null;
+}
 export interface CatalogValue {
   schema: 1;
   selectedId: string;

@@ -135,6 +135,8 @@ for (const pending of [
     const source = `
       export class BrowserStorageMissing extends Error {}
 export class RecoveryError extends Error {}
+export class RecoveryAccessMoved extends RecoveryError {}
+export async function validateZkchatRecoveryFile() {}
 export class RecoverySetupIncomplete extends RecoveryError {}
 export const restoreZkchatDeposits = async () => { throw new Error('Unexpected recovery'); };
 export const finishZkchatRecoverySetup = async () => { throw new Error('Unexpected recovery setup'); };
@@ -173,7 +175,7 @@ export const finishZkchatRecoverySetup = async () => { throw new Error('Unexpect
       .getByRole("dialog", { name: "Wallet & balance" })
       .getByRole("button", { name: "Connect wallet", exact: true })
       .click();
-    await expect(page.locator(".topbar-status")).toHaveText("ZKAPI");
+    await expect(page.locator(".topbar-status")).toHaveText("Wallet connected");
     await page.getByRole("button", { name: "Close", exact: true }).click();
     fixture.reply({
       status: 200,

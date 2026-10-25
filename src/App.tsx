@@ -81,7 +81,12 @@ import {
   getConnectedWalletAccount,
 } from "./lib/walletConnector";
 import { PublicOnboardingError } from "./lib/publicDeployment";
-import { canChangeDeposit, DepositError, hasLowBalance } from "./lib/deposits";
+import {
+  canAddDeposit,
+  canChangeDeposit,
+  DepositError,
+  hasLowBalance,
+} from "./lib/deposits";
 const suggestions = [
   {
     icon: Feather,
@@ -226,6 +231,7 @@ export default function App() {
     !handle.invalidated &&
     !RETIRED_RUNTIME &&
     !!status?.canRequest &&
+    status.wallet === "active" &&
     !status.busy &&
     !status.walletOperation &&
     (config?.schema !== 2 || handle.publicAdmissionReady) &&
@@ -250,8 +256,8 @@ export default function App() {
     );
   const connectionBlocker = handle?.invalidated
     ? {
-        message: "Reconnect the wallet used for this deposit.",
-        label: "Reconnect wallet",
+        message: "Reopen your saved deposits with their original wallet.",
+        label: "Reopen deposits",
         intent: "manage" as const,
       }
     : status?.walletOperation || status?.wallet === "pending_escape"
@@ -878,7 +884,9 @@ export default function App() {
                 (status?.walletOperation &&
                   status.walletOperation.kind !== "deposit")
                   ? "Withdrawing"
-                  : "Deposit balance"}
+                  : status?.session
+                    ? "Last confirmed balance"
+                    : "Deposit balance"}
               </span>
               <span className="network-label">
                 <span className="status-dot" />
@@ -890,8 +898,8 @@ export default function App() {
               <span>USDC</span>
               {!RETIRED_RUNTIME &&
                 handle &&
-                (status?.wallet === "active" ||
-                  status?.wallet === "closed") && (
+                !handle.invalidated &&
+                canAddDeposit(status) && (
                   <button
                     className="icon-button"
                     aria-label="Add funds"
@@ -905,6 +913,9 @@ export default function App() {
               (status?.walletOperation &&
                 status.walletOperation.kind !== "deposit")) && (
               <p>Last confirmed amount · unavailable for chats</p>
+            )}
+            {!withdrawalPending && status?.session && (
+              <p>Current usage has not been deducted yet.</p>
             )}
             <p>
               {walletConnection
@@ -978,9 +989,11 @@ export default function App() {
             <span className="topbar-status">
               {selectedMode === "demo"
                 ? "Demo"
-                : handle
-                  ? "ZKAPI"
-                  : "Disconnected"}
+                : liveChatReady
+                  ? "Ready to chat"
+                  : walletConnection
+                    ? "Wallet connected"
+                    : "Disconnected"}
             </span>
           </div>
           <div className="topbar-right">
@@ -1030,7 +1043,7 @@ export default function App() {
               aria-label="Wallet & balance"
               title={
                 walletConnection
-                  ? `${handle?.invalidated ? "Wallet changed. Reconnect to continue. " : ""}${walletConnection.wallet.name}: ${address}`
+                  ? `${handle?.invalidated ? "Reopen your saved deposits to continue. " : ""}${walletConnection.wallet.name}: ${address}`
                   : undefined
               }
               onClick={() => openConnection()}

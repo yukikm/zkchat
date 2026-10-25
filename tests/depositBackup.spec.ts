@@ -13,11 +13,15 @@ function fixture(
     interrupted?: boolean;
     pendingSetup?: boolean;
     networkFailure?: boolean;
+    moved?: boolean;
+    restoreFailure?: boolean;
   } = {},
 ) {
   return `
 export class BrowserStorageMissing extends Error {}
 export class RecoveryError extends Error {}
+export class RecoveryAccessMoved extends RecoveryError {}
+export async function validateZkchatRecoveryFile(_c,_w,_a,text) { count("validate"); if(text!==kit) throw new RecoveryError("This recovery file belongs to another wallet or deployment."); }
 export class RecoverySetupIncomplete extends RecoveryError {}
 const options = ${JSON.stringify(options)};
 const kit = ${JSON.stringify(recoveryFile)};
@@ -57,6 +61,7 @@ function makeHandle() {
  }};
 }
 export const connectZkapi = async (_c,_w,_a,initialize=false) => {
+ if(options.moved && !protectedStorage) throw new RecoveryAccessMoved('Access to these deposits moved to another browser. Restore with your recovery file to use them here.');
  if(pendingSetup) throw new RecoverySetupIncomplete('Finish recovery setup with your saved file.');
  if(missing && !initialize) throw new BrowserStorageMissing();
  if(initialize){count('initialize');missing=false}
@@ -64,6 +69,7 @@ export const connectZkapi = async (_c,_w,_a,initialize=false) => {
 };
 export const restoreZkchatDeposits = async (_c,_w,_a,text) => {
  count('restore');
+ if(options.restoreFailure && localStorage.getItem('fixture:restore')==='1') throw new Error('Synthetic network interruption');
  if(text!==kit) throw new RecoveryError('This recovery file belongs to another wallet or deployment.');
  protectedStorage=true;missing=false;state={...state,wallet:'active',settledBalanceMicroUsdc:'2000000',canRequest:true};return makeHandle();
 };
@@ -120,8 +126,8 @@ test("first deposit requires a downloaded backup; further deposits use the same 
   await open(page);
   await expect(page.getByLabel("USDC to deposit")).toHaveCount(0);
   await expect(
-    page.getByRole("button", { name: "Protect deposits and continue" }),
-  ).toBeDisabled();
+    page.getByRole("button", { name: "Continue to deposit" }),
+  ).toHaveCount(0);
   await expect(
     page.getByRole("link", { name: "Get test USDC", exact: true }),
   ).toBeVisible();
@@ -129,14 +135,25 @@ test("first deposit requires a downloaded backup; further deposits use the same 
     page.getByRole("link", { name: "Get test SOL", exact: true }),
   ).toBeVisible();
   await page.screenshot({
-    path: test.info().outputPath("backup-before-first-deposit.png"),
+    path: "docs/evidence/ux-improvements-20261025/backup-initial-desktop.png",
+    animations: "disabled",
+    fullPage: true,
+  });
+  await page.setViewportSize({ width: 375, height: 812 });
+  await page.screenshot({
+    path: "docs/evidence/ux-improvements-20261025/backup-initial-mobile.png",
+    animations: "disabled",
     fullPage: true,
   });
   await saveBackup(page);
+  await page.screenshot({
+    path: "docs/evidence/ux-improvements-20261025/backup-saved-mobile.png",
+    animations: "disabled",
+    fullPage: true,
+  });
+  await page.setViewportSize({ width: 1280, height: 1100 });
   expect(await count(page, "enable")).toBe(0);
-  await page
-    .getByRole("button", { name: "Protect deposits and continue" })
-    .click();
+  await page.getByRole("button", { name: "Continue to deposit" }).click();
   await expect(page.getByLabel("USDC to deposit")).toHaveValue("2");
   await expect(page.getByText("I will keep this browser’s data")).toHaveCount(
     0,
@@ -198,6 +215,7 @@ test("existing deposits can chat and withdraw before optional recovery setup", a
   await expect(
     page.getByRole("button", { name: "Withdraw balance", exact: true }),
   ).toBeEnabled();
+  await page.getByText("Backup and recovery", { exact: true }).click();
   await page
     .getByRole("button", { name: "Set up recovery", exact: true })
     .click();
@@ -266,9 +284,7 @@ test("an interrupted enrollment finishes with the same saved file", async ({
 }) => {
   await open(page, { interrupted: true });
   await saveBackup(page);
-  await page
-    .getByRole("button", { name: "Protect deposits and continue" })
-    .click();
+  await page.getByRole("button", { name: "Continue to deposit" }).click();
   await expect(
     page.getByRole("button", { name: "Finish recovery setup", exact: true }),
   ).toBeEnabled();
@@ -306,13 +322,12 @@ test("network interruption can finish after reopening the panel with the same fi
   await page
     .getByRole("button", { name: "Wallet & balance", exact: true })
     .click();
+  await page.getByText("Backup and recovery", { exact: true }).click();
   await page
     .getByRole("button", { name: "Set up recovery", exact: true })
     .click();
   await saveBackup(page);
-  await page
-    .getByRole("button", { name: "Protect deposits and continue" })
-    .click();
+  await page.getByRole("button", { name: "Continue to deposit" }).click();
   await expect(
     page.getByRole("button", { name: "Finish recovery setup", exact: true }),
   ).toBeEnabled();
@@ -357,4 +372,104 @@ test("recovery forms fit a small screen and reject malformed files locally", asy
     ),
   ).toBe(true);
   expect(await count(page, "restore")).toBe(0);
+});
+
+test("the previous browser explains moved access and can restore without deleting data", async ({
+  page,
+}) => {
+  await open(page, { moved: true });
+  await expect(page.getByRole("alert")).toContainText(
+    "moved to another browser",
+  );
+  await expect(
+    page.getByRole("button", { name: "Continue to deposits", exact: true }),
+  ).toHaveCount(0);
+  await page
+    .getByRole("button", { name: "Restore from recovery file", exact: true })
+    .click();
+  await upload(page);
+  await page.getByLabel("I closed zkChat on my other tabs and devices").check();
+  await page
+    .getByRole("button", { name: "Restore deposits", exact: true })
+    .click();
+  await expect(
+    page.getByRole("button", { name: "Start chatting", exact: true }),
+  ).toBeEnabled();
+  expect(await count(page, "initialize")).toBe(0);
+});
+
+test("a wrong recovery file keeps the current funded deposit and draft usable", async ({
+  page,
+}) => {
+  await open(page, { funded: true });
+  await page
+    .getByRole("button", { name: "Start chatting", exact: true })
+    .click();
+  await page
+    .getByRole("textbox", { name: "Message", exact: true })
+    .fill("Keep my draft");
+  await page
+    .getByRole("button", { name: "Wallet & balance", exact: true })
+    .click();
+  await page.getByText("Backup and recovery", { exact: true }).click();
+  await page
+    .getByRole("button", { name: "Restore from recovery file", exact: true })
+    .click();
+  await upload(page, '{"schema":1,"wrong":"wallet"}');
+  await page.getByLabel("I closed zkChat on my other tabs and devices").check();
+  await page
+    .getByRole("button", { name: "Restore deposits", exact: true })
+    .click();
+  await expect(page.getByRole("alert")).toContainText(
+    "another wallet or deployment",
+  );
+  expect(await count(page, "dispose")).toBe(0);
+  expect(await count(page, "restore")).toBe(0);
+  await page.getByRole("button", { name: "Back", exact: true }).click();
+  await expect(page.getByText(/Wallet changed/)).toHaveCount(0);
+  await expect(
+    page.getByRole("button", { name: "Withdraw balance", exact: true }),
+  ).toBeEnabled();
+  await page
+    .getByRole("button", { name: "Return to chat", exact: true })
+    .click();
+  await expect(
+    page.getByRole("textbox", { name: "Message", exact: true }),
+  ).toHaveValue("Keep my draft");
+  await expect(
+    page.getByRole("button", { name: "Send message", exact: true }),
+  ).toBeEnabled();
+});
+
+test("an interrupted restore retains its file and offers retry without claiming the wallet changed", async ({
+  page,
+}) => {
+  await open(page, { funded: true, restoreFailure: true });
+  await page
+    .getByRole("button", { name: "Start chatting", exact: true })
+    .click();
+  await page
+    .getByRole("button", { name: "Wallet & balance", exact: true })
+    .click();
+  await page.getByText("Backup and recovery", { exact: true }).click();
+  await page
+    .getByRole("button", { name: "Restore from recovery file", exact: true })
+    .click();
+  await upload(page);
+  await page.getByLabel("I closed zkChat on my other tabs and devices").check();
+  await page
+    .getByRole("button", { name: "Restore deposits", exact: true })
+    .click();
+  await expect(page.getByText(/Restoration was interrupted/)).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Back", exact: true }),
+  ).toHaveCount(0);
+  await expect(page.getByText(/Wallet changed/)).toHaveCount(0);
+  await page
+    .getByRole("button", { name: "Restore deposits", exact: true })
+    .click();
+  await expect(
+    page.getByRole("button", { name: "Return to chat", exact: true }),
+  ).toBeEnabled();
+  expect(await count(page, "restore")).toBe(2);
 });

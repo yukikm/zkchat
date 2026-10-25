@@ -16,7 +16,7 @@ export default defineConfig(({ mode }) => {
       `node_modules/.vite-${mode}`,
     define: {
       "import.meta.env.VITE_ZKCHAT_SDK_VERSION": JSON.stringify(
-        `0.2.0-devnet.${recoveryVersion ?? "18"}`,
+        `0.2.0-devnet.${recoveryVersion ?? "19"}`,
       ),
     },
     resolve: {
