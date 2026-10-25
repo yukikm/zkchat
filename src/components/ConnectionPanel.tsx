@@ -905,18 +905,6 @@ export function ConnectionPanel({
               , then reload this page.
             </p>
           )}
-          {connection &&
-            !storageMissing &&
-            !recoveryIncomplete &&
-            !accessMoved && (
-              <button
-                className="primary full"
-                disabled={disabled}
-                onClick={() => void connect()}
-              >
-                {busy ? "Opening your deposits…" : "Continue to deposits"}
-              </button>
-            )}
           {storageMissing && (
             <>
               <p>No deposits are saved in this browser for this wallet.</p>
@@ -924,33 +912,46 @@ export function ConnectionPanel({
                 Already deposited? Restore from your recovery file, or use the
                 original browser and wallet.
               </p>
-              {RETIRED_RUNTIME ? (
+              {RETIRED_RUNTIME && (
                 <p>
                   No saved deposit was found for this wallet. This retired Pool
                   cannot create new payment storage.
                 </p>
-              ) : (
-                <>
-                  <button
-                    className="primary"
-                    disabled={disabled}
-                    onClick={() => void connect(true)}
-                  >
-                    Create new deposits
-                  </button>
-                </>
               )}
             </>
           )}
-          {connection && !RETIRED_RUNTIME && (
-            <button
-              className={accessMoved ? "primary" : "secondary"}
-              disabled={disabled}
-              onClick={() => setRecoveryView("restore")}
-            >
-              Restore from recovery file
-            </button>
-          )}
+          <div className="connection-actions">
+            {connection &&
+              !storageMissing &&
+              !recoveryIncomplete &&
+              !accessMoved && (
+                <button
+                  className="primary full"
+                  disabled={disabled}
+                  onClick={() => void connect()}
+                >
+                  {busy ? "Opening your deposits…" : "Continue to deposits"}
+                </button>
+              )}
+            {storageMissing && !RETIRED_RUNTIME && (
+              <button
+                className="primary"
+                disabled={disabled}
+                onClick={() => void connect(true)}
+              >
+                Create new deposits
+              </button>
+            )}
+            {connection && !RETIRED_RUNTIME && (
+              <button
+                className={accessMoved ? "primary" : "secondary"}
+                disabled={disabled}
+                onClick={() => setRecoveryView("restore")}
+              >
+                Restore from recovery file
+              </button>
+            )}
+          </div>
         </div>
       ) : (
         <>
@@ -1280,32 +1281,34 @@ export function ConnectionPanel({
                       ? "Payment settlement is not confirmed yet. Sending stays paused until it finishes."
                       : "Resolve the saved payment before sending again. Your message will not be resent."}
               </p>
-              {reusableSession(status) && !RETIRED_RUNTIME ? (
-                <button
-                  className="primary"
-                  disabled={disabled}
-                  onClick={() => void settlePayment()}
-                >
-                  {wantsAdd ? "Settle and continue" : "Settle charges"}
-                </button>
-              ) : (
-                <button
-                  className="primary"
-                  disabled={disabled}
-                  onClick={() => void resolvePayment()}
-                >
-                  <RefreshCw size={15} />
-                  Resolve payment
-                </button>
-              )}
-              {wantsAdd && !operation && (
-                <button
-                  className="text-button"
-                  onClick={() => setIntent("manage")}
-                >
-                  Back to balance
-                </button>
-              )}
+              <div className="connection-actions">
+                {reusableSession(status) && !RETIRED_RUNTIME ? (
+                  <button
+                    className="primary"
+                    disabled={disabled}
+                    onClick={() => void settlePayment()}
+                  >
+                    {wantsAdd ? "Settle and continue" : "Settle charges"}
+                  </button>
+                ) : (
+                  <button
+                    className="primary"
+                    disabled={disabled}
+                    onClick={() => void resolvePayment()}
+                  >
+                    <RefreshCw size={15} />
+                    Resolve payment
+                  </button>
+                )}
+                {wantsAdd && !operation && (
+                  <button
+                    className="text-button"
+                    onClick={() => setIntent("manage")}
+                  >
+                    Back to balance
+                  </button>
+                )}
+              </div>
               <details className="connection-details">
                 <summary>Payment details and recovery</summary>
                 <code>{status.session.phase}</code>
@@ -1319,50 +1322,52 @@ export function ConnectionPanel({
                     {detail}
                   </p>
                 ))}
-                {reusableSession(status) && (
-                  <button
-                    className="secondary"
-                    disabled={disabled}
-                    onClick={() => void resolvePayment()}
-                  >
-                    Resolve saved payment
-                  </button>
-                )}
-                {status.session.phase === "prepared" &&
-                  status.session.operations.length === 0 &&
-                  !status.walletOperation && (
+                <div className="connection-actions">
+                  {reusableSession(status) && (
                     <button
                       className="secondary"
                       disabled={disabled}
-                      onClick={() =>
-                        void action(async () => {
-                          await handle.client.cancelUnsentAuthorization();
-                          setInfo(
-                            "Authorization cancelled. No message was sent.",
-                          );
-                        })
-                      }
+                      onClick={() => void resolvePayment()}
                     >
-                      Cancel unused authorization
+                      Resolve saved payment
                     </button>
                   )}
-                {status.mode === "proxy" &&
-                  status.session.operations.some(
-                    (o) => o.phase === "send_unknown",
-                  ) && (
-                    <button
-                      className="secondary"
-                      disabled={disabled}
-                      onClick={() =>
-                        void action(async () => {
-                          await handle.client.reconcileAbsentOperations();
-                          setInfo("Request checked. No message was resent.");
-                        })
-                      }
-                    >
-                      Check unsent request
-                    </button>
-                  )}
+                  {status.session.phase === "prepared" &&
+                    status.session.operations.length === 0 &&
+                    !status.walletOperation && (
+                      <button
+                        className="secondary"
+                        disabled={disabled}
+                        onClick={() =>
+                          void action(async () => {
+                            await handle.client.cancelUnsentAuthorization();
+                            setInfo(
+                              "Authorization cancelled. No message was sent.",
+                            );
+                          })
+                        }
+                      >
+                        Cancel unused authorization
+                      </button>
+                    )}
+                  {status.mode === "proxy" &&
+                    status.session.operations.some(
+                      (o) => o.phase === "send_unknown",
+                    ) && (
+                      <button
+                        className="secondary"
+                        disabled={disabled}
+                        onClick={() =>
+                          void action(async () => {
+                            await handle.client.reconcileAbsentOperations();
+                            setInfo("Request checked. No message was resent.");
+                          })
+                        }
+                      >
+                        Check unsent request
+                      </button>
+                    )}
+                </div>
                 {status.canReconcileUnacceptedAuthorization && (
                   <div className="notice">
                     <p>
@@ -1408,30 +1413,32 @@ export function ConnectionPanel({
               <p className="small muted">
                 Your deposit cannot pay for chats during this withdrawal.
               </p>
-              <button
-                className="primary"
-                disabled={
-                  disabled ||
-                  checkingWithdrawal ||
-                  (!RETIRED_RUNTIME && !withdrawalReady)
-                }
-                onClick={() =>
-                  void action(() => handle.client.prepareFinalizeEscape())
-                }
-              >
-                Finish withdrawal
-              </button>
-              {canCheckWithdrawal && (
+              <div className="connection-actions">
                 <button
-                  className="secondary"
-                  disabled={disabled || checkingWithdrawal}
-                  onClick={() => void checkWithdrawal()}
+                  className="primary"
+                  disabled={
+                    disabled ||
+                    checkingWithdrawal ||
+                    (!RETIRED_RUNTIME && !withdrawalReady)
+                  }
+                  onClick={() =>
+                    void action(() => handle.client.prepareFinalizeEscape())
+                  }
                 >
-                  {checkingWithdrawal
-                    ? "Checking waiting period…"
-                    : "Check waiting period"}
+                  Finish withdrawal
                 </button>
-              )}
+                {canCheckWithdrawal && (
+                  <button
+                    className="secondary"
+                    disabled={disabled || checkingWithdrawal}
+                    onClick={() => void checkWithdrawal()}
+                  >
+                    {checkingWithdrawal
+                      ? "Checking waiting period…"
+                      : "Check waiting period"}
+                  </button>
+                )}
+              </div>
             </div>
           )}
           {!RETIRED_RUNTIME && servicePaused && (
@@ -1492,27 +1499,29 @@ export function ConnectionPanel({
                     `Minimum ${formatUsdc(status?.authorizationCapMicroUsdc)} USDC · Keep SOL for network fees.`}
                 </small>
               </div>
-              <button
-                className="primary"
-                disabled={
-                  disabled ||
-                  !handle.recoveryEnabled ||
-                  !!amountError ||
-                  !handle.publicAdmissionReady
-                }
-              >
-                <ArrowDownLeft size={16} />
-                {busy ? "Preparing deposit…" : "Review deposit"}
-              </button>
-              {wantsAdd && !initialDeposit && (
+              <div className="connection-actions">
                 <button
-                  type="button"
-                  className="text-button"
-                  onClick={() => setIntent("manage")}
+                  className="primary"
+                  disabled={
+                    disabled ||
+                    !handle.recoveryEnabled ||
+                    !!amountError ||
+                    !handle.publicAdmissionReady
+                  }
                 >
-                  Back to balance
+                  <ArrowDownLeft size={16} />
+                  {busy ? "Preparing deposit…" : "Review deposit"}
                 </button>
-              )}
+                {wantsAdd && !initialDeposit && (
+                  <button
+                    type="button"
+                    className="text-button"
+                    onClick={() => setIntent("manage")}
+                  >
+                    Back to balance
+                  </button>
+                )}
+              </div>
             </form>
           )}
           {showFunding && reviewAmount !== null && (
@@ -1531,32 +1540,34 @@ export function ConnectionPanel({
                   This is a separate deposit. Your existing deposit is kept.
                 </p>
               )}
-              <button
-                className="primary"
-                disabled={disabled || !handle.publicAdmissionReady}
-                onClick={() => void confirmDeposit()}
-              >
-                Approve deposit in wallet
-              </button>
-              <button
-                className="secondary"
-                disabled={disabled}
-                onClick={() => setReviewAmount(null)}
-              >
-                Edit amount
-              </button>
-              {wantsAdd && !initialDeposit && (
+              <div className="connection-actions">
                 <button
-                  className="text-button"
-                  disabled={disabled}
-                  onClick={() => {
-                    setReviewAmount(null);
-                    setIntent("manage");
-                  }}
+                  className="primary"
+                  disabled={disabled || !handle.publicAdmissionReady}
+                  onClick={() => void confirmDeposit()}
                 >
-                  Back to balance
+                  Approve deposit in wallet
                 </button>
-              )}
+                <button
+                  className="secondary"
+                  disabled={disabled}
+                  onClick={() => setReviewAmount(null)}
+                >
+                  Edit amount
+                </button>
+                {wantsAdd && !initialDeposit && (
+                  <button
+                    className="text-button"
+                    disabled={disabled}
+                    onClick={() => {
+                      setReviewAmount(null);
+                      setIntent("manage");
+                    }}
+                  >
+                    Back to balance
+                  </button>
+                )}
+              </div>
             </section>
           )}
           {!operation &&

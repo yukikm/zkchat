@@ -2457,6 +2457,9 @@ textarea {
   gap: 10px;
   margin-top: 16px;
 }
+.connection-actions:empty {
+  display: none;
+}
 .funding-summary {
   display: flex;
   justify-content: space-between;
