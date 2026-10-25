@@ -1,0 +1,95 @@
+# Deposit lifetime
+
+SDK `0.2.0-devnet.20` supports an explicit non-expiring Deposit policy. The
+activation target is the fresh `public-devnet-20261025-nonexpiry-v1` deployment:
+
+- Program: `GnVHYANsc3zsYQfU6EBuFbT8v8tHZtd91baGNKJWFkMZ`
+- Pool: `DfzSmjTetKSNwAcGPM8Th3k2orQtxT1vZVheWr1YttTX`
+- Pool policy: `note_ttl_seconds: "0"`
+- Main profile SHA-256: `6a050132ad02df94996521d37337faf13d9a77c979e47fac11742ac65538121a`
+- Model profile SHA-256: `c4c74bc9c980c2e2549ea513aa1792b7e94cc00442f1954573cd3791f6843706`
+- Browser namespace: `zkchat-sdk-public-devnet-20261025-nonexpiry-v1`
+- First note ID: `zkchat-note-sdk-public-devnet-20261025-nonexpiry-v1`
+
+The archive SHA-256 is
+`58538cd0e8a566c6b094c1f523e9275a68c640b14f239f2a6ce281728d728e8c`.
+The [immutable SDK `.20` prerelease](https://github.com/yukikm/solana-zkapi/releases/tag/v0.2.0-devnet.20)
+was published on 2026-10-25 at 09:58 UTC from source commit
+`813032cd9070a049c97a81eaa1ca26562416460f`. All seven downloaded assets matched
+the reviewed bytes; the release and individual asset attestations passed
+verification. The app's pins and publication metadata are recorded in
+`vendor/patches/solana-sdk-nonexpiring-devnet.20-activation.json`. Public service
+activation and funded lifecycle acceptance are separate from SDK publication.
+
+## Behavior
+
+- A zero-TTL Pool requires the canonical max-u64 Note expiry
+  `18446744073709551615` and refuses expiry claims. The SDK authenticates both
+  manifest and finalized Pool before reporting `depositExpiryPolicy: "none"`
+  and `expiry: null`.
+- The app shows "No deposit expiry" before funding a verified non-expiring
+  deployment. It does not format the canonical identity value as a distant date.
+- Deposits remain available while their balance covers the existing
+  authorization cap and the service and note are otherwise usable. Selecting a
+  deposit does not renew it, create a note or move funds.
+- Withdrawal challenge timing and pending-state restrictions remain in place.
+  Quote, authorization and provider-lease expiry are separate and unchanged.
+- Finite and legacy deployments retain their expiry/forfeiture warnings. An
+  existing Note's expiry is bound into its tree leaf and private signed state.
+
+## Same-Pool recovery across browsers
+
+Save the recovery file when setting up the new Pool. Later deposits, balances,
+selection and pending financial operations are encrypted and saved automatically;
+the file does not become stale when another deposit is added. To switch browsers,
+close the old browser's zkChat tabs, connect the same wallet in the new browser,
+and choose the saved recovery file. The backup service must remain available.
+Restoring transfers access to the new browser and rejects further operations
+from the old owner's binding. Chat history is stored separately and is not
+included in deposit recovery.
+
+The storage namespace belongs to this Pool and must remain stable across future
+SDK upgrades for the same Pool. The deployment, Pool, wallet and installed
+profile pin must also match. Changing the profile hash is not an automatic
+recovery migration. Keep these identities unchanged when updating only SDK/UI
+code.
+
+## Previous Pools
+
+This is a fresh prelaunch Pool. Earlier test balances are not transferred to it.
+Existing browser records and recovery files are not deleted, relabeled or
+rewritten. SDK `.13`–`.19` and the earlier `.20-noexpiry.1` preview keep their
+`public-devnet-20261021-state-v1` mapping; `.12` and `.3` recovery runtimes keep
+their own original identities. A saved file for another Pool is rejected by the
+new-Pool recovery flow.
+
+The protocol policy and operational steps are documented in the companion
+`solana-zkapi` repository at `docs/adr/0004-non-expiring-deposits.md` and
+`docs/getting-started/non-expiring-deposits.md`.
+
+## Validation
+
+Protocol tests use real request/withdrawal/tree proofs and Vault SBF execution
+in LiteSVM. They cover max-expiry deposits, rejection of expiry claims, late
+withdrawals, challenge boundaries and compatibility with finite Pools. SDK
+tests cover authenticated policy, admission, proof rebuilding and recovery.
+
+App tests cover finite/non-expiring deposit review and storage isolation.
+`tests/recoveryStorage.spec.ts` uses separate Chromium contexts with the real
+SDK and a mocked encrypted backup service: a file exported before subsequent
+deposit and balance changes restores the entire latest catalog, MAX-u64
+witnesses and unresolved operations. Wrong Pool/wallet/file/secret attempts are
+rejected; the old owner cannot read, write cached state or fall back to retained
+local custody. No financial requests are sent. These tests do not replace a
+public funded lifecycle acceptance test.
+
+On 2026-10-25 at 09:58 UTC, the same recovery checks also passed against the
+hosted `https://d366buuvadnp3.cloudfront.net/recovery/v1` service from two isolated
+Chromium contexts using the allowed zkChat production origin and the new Pool's
+final identity/profile pin. The bundled app/SDK harness preserved three
+synthetic notes, later balance/catalog updates and unresolved operations,
+rejected mismatched files, fenced the old owner, and reopened after reload.
+All 97 requests were to recovery storage; there were no provider calls or wallet
+transactions. This verifies the hosted backup path with synthetic records. It
+does not establish a funded lifecycle or Firefox/Safari compatibility; those
+browser engines were not installed in the validation environment.

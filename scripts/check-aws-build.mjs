@@ -115,7 +115,7 @@ try {
     );
   }
   for (const [base, pin] of [
-    ["/", "5e15d66c6f45265951cf1f8dd6cc0dae6574c4b8dd6756f828f7543ecaa97b9a"],
+    ["/", "6a050132ad02df94996521d37337faf13d9a77c979e47fac11742ac65538121a"],
     [
       "/recovery-v12/",
       "ec10c1ab41bb5105222d3e25c7e1eba6b96b1b397abd0f854657030269992a77",
@@ -183,7 +183,7 @@ try {
       .click();
     assert.match(
       await page.getByRole("dialog").textContent(),
-      /SDK 0\.2\.0-devnet\.19/,
+      /SDK 0\.2\.0-devnet\.20/,
     );
     await page.getByText("Older deposit data", { exact: true }).click();
     await page.getByRole("link", { name: label, exact: true }).click();

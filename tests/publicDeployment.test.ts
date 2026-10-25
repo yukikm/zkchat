@@ -1285,10 +1285,13 @@ describe("existing application adapter with public profile", () => {
 });
 
 it("new Pool profile binding uses separate custody without adopting old bindings", async () => {
-  const oldKey = profileBindingKey("zkchat-v1", "account");
+  const oldKey = profileBindingKey(
+    "zkchat-sdk-public-devnet-20261021-state-v1",
+    "account",
+  );
   storage.set(oldKey, "b".repeat(64));
-  expect(STORAGE_NAME).toBe("zkchat-sdk-public-devnet-20261021-state-v1");
-  expect(NOTE_ID).toBe("zkchat-note-sdk-public-devnet-20261021-state-v1");
+  expect(STORAGE_NAME).toBe("zkchat-sdk-public-devnet-20261025-nonexpiry-v1");
+  expect(NOTE_ID).toBe("zkchat-note-sdk-public-devnet-20261025-nonexpiry-v1");
   const newKey = profileBindingKey(STORAGE_NAME, "account");
   expect(newKey).not.toBe(oldKey);
   const hasNewCustody = vi.fn(async () => false);

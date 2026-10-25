@@ -1,0 +1,584 @@
+diff --git a/packages/sdk/package.json b/packages/sdk/package.json
+index af48960..0510053 100644
+--- a/packages/sdk/package.json
++++ b/packages/sdk/package.json
+@@ -1,6 +1,6 @@
+ {
+   "name": "@zkapi/solana-sdk",
+-  "version": "0.2.0-devnet.19",
++  "version": "0.2.0-devnet.20-noexpiry.1",
+   "private": true,
+   "type": "module",
+   "exports": {
+diff --git a/packages/sdk/src/client.ts b/packages/sdk/src/client.ts
+index f5b01d4..ceef368 100644
+--- a/packages/sdk/src/client.ts
++++ b/packages/sdk/src/client.ts
+@@ -19,6 +19,8 @@ import { walletOperationProgress, type WalletOperationProgress, type EscapeWithd
+ export type { WalletOperationProgress, EscapeWithdrawalStatus } from './wallet-progress.ts';
+ import { SolanaWalletChain } from './wallet-chain.ts';
+ import { authorizationSnapshot } from './session-snapshot.ts';
++import { depositExpiryStatus, type DepositExpiryPolicy } from './deposit-expiry.ts';
++export type { DepositExpiryPolicy } from './deposit-expiry.ts';
+ import { validateDaemonModelPolicy, validateModelRequestCapabilities, type DaemonApi } from './clientd-models.ts';
+ import { privacyProfile, planClientUpgrade, type PrivacyProfile } from './client-guidance.ts';
+ export { privacyProfile, planClientUpgrade, type PrivacyProfile, type UpgradePlan } from './client-guidance.ts';
+@@ -88,6 +90,8 @@ export interface ClientStatus {
+   session: { id: string; phase: string; serverState: string | null; recovery: RecoveryResult['recovery']; operations: { id: string; phase: string }[] } | null;
+   recovery: RecoveryResult;
+   walletOperation: { kind: string; phase: string; signature: string | null; destinationOwner: string | null; progress: WalletOperationProgress } | null;
++  /** Authenticated Pool policy. 'none' requires canonical witness and verified zero-TTL Pool. */
++  depositExpiryPolicy: DepositExpiryPolicy;
+   expiry: ReturnType<typeof expiryNotice> | null;
+   lastSettlement: { chargeMicroUsdc: string; operationIds: string[] } | null;
+   privacyNotice: string;
+@@ -164,7 +168,7 @@ export class ZkApiClient {
+     this.options = { ...options, wallet: { ...options.wallet, wallets: [...options.wallet.wallets] } };
+     this.walletClient = new WalletClient(this.options.wallet);
+     const reuse = options.keyReuseSeconds ?? (options.mode === 'proxy' ? 0 : 300);
+-    this.daemon = new ClientDaemon({ client: options.control, journal: options.wallet.journal,
++    this.daemon = new ClientDaemon({ client: options.control, journal: options.wallet.journal, manifest: options.wallet.manifest,
+       noteId: options.noteId, mode: options.mode, models: this.models, keyReuseSeconds: reuse,
+       services:this.services,gateway:structuredClone(options.gateway),
+       minimumLeaseRemainingSeconds: options.keyReuseSeconds === undefined && options.mode !== 'proxy' ? 90 : 1,
+@@ -197,7 +201,8 @@ export class ZkApiClient {
+   /** Local read only. No AUTH, inference, wallet prompt or transaction is sent. */
+   async status(): Promise<ClientStatus> {
+     const r = await this.options.wallet.journal.read(this.options.noteId), v = r?.value, w = v?.wallet, p = v?.pending;
+-    const expiry = v?.witness ? expiryNotice(BigInt(v.witness.expiry), BigInt(Math.floor(Date.now() / 1000))) : null;
++    const deposit = depositExpiryStatus(this.options.wallet.manifest, v?.witness, BigInt(Math.floor(Date.now() / 1000)));
++    const { expiry, depositExpiryPolicy } = deposit;
+     const last = v?.history.at(-1);
+     const emergency = w?.emergencyEscapes?.find(e => e.phase !== 'settled') ?? w?.emergencyEscapes?.at(-1), unresolvedEscape = w?.emergencyEscapes?.some(e => e.phase !== 'settled');
+     const escapeOperation = emergency
+@@ -207,7 +212,7 @@ export class ZkApiClient {
+     return { noteId: this.options.noteId, mode: this.options.mode, wallet: w?.status ?? 'empty',
+       settledBalanceMicroUsdc: v?.state.balance_micro_usdc ?? '0', authorizationCapMicroUsdc: this.options.wallet.manifest.cap_micro_usdc,
+       canRequest: !this.disposed && !this.busy && w?.status === 'active' && !w.operation && !w.clearance && (!p || this.daemon.canContinue(p)) && !v?.gatewayRecoveryHold && !unresolvedEscape
+-        && expiry !== null && expiry.severity !== 'expired' && BigInt(v!.state.balance_micro_usdc) >= BigInt(this.options.wallet.manifest.cap_micro_usdc),
++        && deposit.canRequest && BigInt(v!.state.balance_micro_usdc) >= BigInt(this.options.wallet.manifest.cap_micro_usdc),
+       canReconcileUnacceptedAuthorization: !this.disposed && !this.busy && w?.status === 'active' && !w.operation
+         && p?.phase === 'send_unknown' && p.operations.length === 0 && p.providerKey === undefined && p.serverState === undefined,
+       canPrepareEmergencyEscape: !this.disposed && !this.busy && w?.status === 'active' && !w.operation
+@@ -229,7 +234,7 @@ export class ZkApiClient {
+       recovery: this.daemon.recoveryStatus(v),
+       walletOperation: w?.operation ? { kind: w.operation.kind, phase: w.operation.phase, signature: w.operation.current ?? null,
+         destinationOwner: w.operation.destinationOwner ?? null, progress: await walletOperationProgress(w.operation) } : null,
+-      expiry, lastSettlement: last ? { chargeMicroUsdc: last.settlement.charge_micro_usdc, operationIds: last.operations.map(o => o.id) } : null,
++      depositExpiryPolicy, expiry, lastSettlement: last ? { chargeMicroUsdc: last.settlement.charge_micro_usdc, operationIds: last.operations.map(o => o.id) } : null,
+       privacyNotice: this.options.mode === 'proxy' ? PROXY_PRIVACY_NOTICE : this.options.mode === 'direct_openrouter' ? DIRECT_OPENROUTER_PRIVACY_NOTICE : DIRECT_PRIVACY_NOTICE,
+       privacy: privacyProfile(this.options.mode, this.options.keyReuseSeconds ?? (this.options.mode === 'proxy' ? 0 : 300)),
+     };
+@@ -396,7 +401,7 @@ export class ZkApiClient {
+         const r = await this.options.wallet.journal.read(this.options.noteId);
+         const pending = r?.value.pending;
+         if (s.wallet !== 'active' || pending && !this.daemon.canContinue(pending) || s.walletOperation || r?.value.wallet?.clearance
+-          || r?.value.gatewayRecoveryHold || r?.value.wallet?.emergencyEscapes?.some(e => e.phase !== 'settled') || !s.expiry || s.expiry.severity === 'expired'
++          || !r?.value.witness || r.value.gatewayRecoveryHold || r.value.wallet?.emergencyEscapes?.some(e => e.phase !== 'settled') || s.depositExpiryPolicy !== 'none' && (!s.expiry || s.expiry.severity === 'expired')
+           || BigInt(s.settledBalanceMicroUsdc) < BigInt(s.authorizationCapMicroUsdc)) {
+           throw new ClientActionError('not_ready', 'Fund the note or recover its saved operation before a new request.');
+         }
+diff --git a/packages/sdk/src/clientd-bridge.ts b/packages/sdk/src/clientd-bridge.ts
+index c965210..b4d9dc3 100644
+--- a/packages/sdk/src/clientd-bridge.ts
++++ b/packages/sdk/src/clientd-bridge.ts
+@@ -5,7 +5,8 @@ import { ControlClient, createCredentials, expiryNotice, apiOperationPath, isApi
+ import { JournalConflictError, JournalIntegrityError, type EncryptedJournal } from './journal.ts';
+ import { directRequestBytes } from './direct-request.ts';
+ import { privacyProfile, planClientUpgrade } from './client-guidance.ts';
+-import { parseStrictJson } from './trust.ts';
++import { parseStrictJson, type VerifiedManifest } from './trust.ts';
++import { depositExpiryStatus } from './deposit-expiry.ts';
+ import { daemonApiPaths, validateDaemonModelPolicy, validateModelRequestCapabilities, type DaemonModelPolicy } from './clientd-models.ts';
+ import { ControlHttpError } from './control.ts';
+ import { ChatCompletionStreamParser } from './chat-stream.ts';
+@@ -14,6 +15,8 @@ import { jcsBytes, sha256Hex } from './trust.ts';
+ 
+ export interface DaemonOptions {
+   client: ControlClient; journal: EncryptedJournal<NoteJournal>; noteId: string; mode: Mode;
++  /** Independently authenticated manifest and finalized Pool; omitted for legacy hosts. */
++  manifest?: VerifiedManifest;
+   models: readonly (string | DaemonModelPolicy)[]; keyReuseSeconds?: number; now?: () => bigint;
+   services?: readonly ApiService[];
+   gateway?: GatewayConfiguration;
+@@ -244,9 +247,11 @@ export class ClientDaemon {
+   async status(): Promise<unknown> {
+     const record = await this.o.journal.read(this.o.noteId);
+     const privacy = privacyProfile(this.o.mode,this.reuse);
++    const deposit = this.o.manifest ? depositExpiryStatus(this.o.manifest, record?.value.witness, this.now()) : undefined;
+     if (!record) return { mode:this.o.mode, balance_micro_usdc:'0', phase:'unfunded', in_flight:this.inflight, recovery_required:false,
+       server_state:null, recovery:this.recoveryStatus(undefined),
+       unresolved_operations:[], key_reuse_seconds:this.reuse, journal_head:null, privacy_notice:this.o.mode === 'proxy' ? PROXY_PRIVACY_NOTICE : this.o.mode === 'direct_openrouter' ? DIRECT_OPENROUTER_PRIVACY_NOTICE : DIRECT_PRIVACY_NOTICE,
++      ...(deposit ? { deposit_expiry_policy: deposit.depositExpiryPolicy, expiry: deposit.expiry } : {}),
+       privacy, wallet_status:'unfunded', wallet_operation:null, wallet_emergency_escape:null };
+     const {value,head} = record;
+     const witness = (value as NoteJournal & { witness?: {expiry:string} }).witness;
+@@ -257,7 +262,7 @@ export class ClientDaemon {
+       key_reuse_seconds:this.reuse, journal_head:head, privacy_notice:this.o.mode === 'proxy' ? PROXY_PRIVACY_NOTICE : this.o.mode === 'direct_openrouter' ? DIRECT_OPENROUTER_PRIVACY_NOTICE : DIRECT_PRIVACY_NOTICE,
+       privacy, wallet_status:value.wallet?.status ?? 'legacy_import', wallet_operation:value.wallet?.operation ? {kind:value.wallet.operation.kind,phase:value.wallet.operation.phase} : null,
+       wallet_emergency_escape:emergency?{phase:emergency.phase,funds_withdrawn:closed}:null,
+-      ...(witness ? {expiry:expiryNotice(BigInt(witness.expiry),this.now())} : {}) };
++      ...(deposit ? { deposit_expiry_policy: deposit.depositExpiryPolicy, expiry: deposit.expiry } : witness ? {expiry:expiryNotice(BigInt(witness.expiry),this.now())} : {}) };
+   }
+   async management(action: 'close' | 'recover' | 'reconcile' | 'cancel-unsent' | 'purge-settled-bodies' | 'wallet', body?: unknown): Promise<unknown> {
+     return this.exclusive(async()=>{
+@@ -374,6 +379,10 @@ export class ClientDaemon {
+       admissionSignal?.throwIfAborted();
+       if (!this.started || this.stopping || this.inflight >= (this.reuse === 0 || selection.singleRequest ? 1 : 4)) throw new DaemonConflict();
+       let r = await this.record();
++      if (this.o.manifest) {
++        const deposit = depositExpiryStatus(this.o.manifest, r.value.witness, this.now());
++        if (deposit.depositExpiryPolicy === 'none' && !deposit.canRequest) throw new Error('non-expiring deposit witness required');
++      }
+       if(r.value.gatewayRecoveryHold)throw new DaemonConflict();
+       if(r.value.wallet?.emergencyEscapes?.some(e=>e.phase!=='settled'))throw new DaemonConflict();
+       if (r.value.history.some(h=>h.operations.some(o=>o.id===operationId)) || r.value.pending?.operations.some(o=>o.id===operationId)) throw new DaemonConflict();
+diff --git a/packages/sdk/src/public-profile.ts b/packages/sdk/src/public-profile.ts
+index d81b497..4615775 100644
+--- a/packages/sdk/src/public-profile.ts
++++ b/packages/sdk/src/public-profile.ts
+@@ -103,8 +103,8 @@ function validateProfile(value: unknown): PublicDeploymentProfile {
+     && value.sdkVersions.every((v: unknown) => typeof v === 'string' && /^[0-9]+\.[0-9]+\.[0-9]+(?:-[a-zA-Z0-9.-]+)?$/.test(v))
+     && new Set(value.sdkVersions).size === value.sdkVersions.length);
+   const compatible = value.sdkVersions.includes(PUBLIC_PROFILE_SDK_VERSION)
+-    // Observation/verifier updates preserve authenticated .13 through .16 selections.
+-    || value.sdkVersions.some((version: string) => ['0.2.0-devnet.13','0.2.0-devnet.14','0.2.0-devnet.15','0.2.0-devnet.16','0.2.0-devnet.17','0.2.0-devnet.18'].includes(version))
++    // Compatible runtime updates preserve authenticated finite-Pool selections.
++    || value.sdkVersions.some((version: string) => ['0.2.0-devnet.13','0.2.0-devnet.14','0.2.0-devnet.15','0.2.0-devnet.16','0.2.0-devnet.17','0.2.0-devnet.18','0.2.0-devnet.19'].includes(version))
+     || value.schema === 1 && value.sdkVersions.some((version: string) => LEGACY_PROFILE_SDK_VERSIONS.has(version));
+   if (!compatible || value.protocolLayoutVersion !== 2) throw new PublicProfileError('compatibility');
+   fields(value.bundle,['url','sha256']); publicUrl(value.bundle.url); digest(value.bundle.sha256);
+diff --git a/packages/sdk/src/trust.ts b/packages/sdk/src/trust.ts
+index d3c7d19..168d9c8 100644
+--- a/packages/sdk/src/trust.ts
++++ b/packages/sdk/src/trust.ts
+@@ -43,6 +43,7 @@ export interface Manifest {
+ declare const verifiedManifestBrand: unique symbol;
+ export type VerifiedManifest = Manifest & { readonly [verifiedManifestBrand]: true };
+ const verifiedManifests = new WeakSet<object>();
++const verifiedNonExpiringPools = new WeakSet<object>();
+ 
+ export interface ManifestTrustPolicy {
+   /** An out-of-band digest or distribution key. A manifest cannot supply its own trust root. */
+@@ -223,7 +224,7 @@ function validateManifest(value: unknown): asserts value is Manifest {
+   strings(value.transaction_formats, true);
+   requireTrue(value.transaction_formats.includes('v0_buffer') && value.transaction_formats.every(v => ['v0_buffer', 'v0_inline', 'v1_inline', 'v0_inline_deposit_v1'].includes(v)), 'mandatory v0_buffer');
+   requireTrue(typeof value.cap_micro_usdc === 'string' && parseMicroUsdc(value.cap_micro_usdc) > 0n, 'positive cap');
+-  uint(value.note_ttl_seconds, true); uint(value.challenge_seconds, true); uint(value.db_schema_version, true);
++  uint(value.note_ttl_seconds); uint(value.challenge_seconds, true); uint(value.db_schema_version, true);
+   url(value.control_api_origin, value.deployment_environment === 'local', true);
+   url(value.inference_api_origin, value.deployment_environment === 'local', true);
+   url(value.proving_keys_base_url, value.deployment_environment === 'local', false);
+@@ -258,6 +259,15 @@ export function supportsInlineDeposit(manifest: VerifiedManifest): boolean {
+   return manifest.transaction_formats.includes('v0_inline_deposit_v1');
+ }
+ 
++/** Zero TTL is a protocol policy, never inferred from a note timestamp. A
++ * matching finalized Pool must have been authenticated in this SDK instance. */
++export function hasNonExpiringDeposits(manifest: VerifiedManifest): boolean {
++  if (manifest.note_ttl_seconds !== '0') return false;
++  trusted(manifest);
++  requireTrue(verifiedNonExpiringPools.has(manifest), 'non-expiring deposits require a verified finalized PoolConfig');
++  return true;
++}
++
+ async function verifyCompactDepositIdl(idl: Record<string, Json>): Promise<void> {
+   requireTrue(Array.isArray(idl.instructions), 'compact deposit IDL instructions');
+   const named = (name: string) => (idl.instructions as Json[]).filter(i => i !== null && typeof i === 'object' && !Array.isArray(i) && i.name === name);
+@@ -359,6 +369,7 @@ export async function verifyPoolConfig(manifest: VerifiedManifest, observedGenes
+   const view = new DataView(raw.buffer, raw.byteOffset, raw.byteLength);
+   requireTrue(view.getBigUint64(331, true) === BigInt(manifest.note_ttl_seconds) && view.getBigUint64(339, true) === BigInt(manifest.challenge_seconds) && view.getBigUint64(347, true) === BigInt(manifest.cap_micro_usdc), 'PoolConfig timing/cap');
+   requireTrue(raw[355] <= 1 && raw[356] === 1 && raw[357] === 1, 'PoolConfig flags/backend'); same(358, hashBytes(manifest.circuit_profile_hash));
++  if (manifest.note_ttl_seconds === '0') verifiedNonExpiringPools.add(manifest);
+   return Object.freeze({ paused: raw[355] === 1, slot: observation.slot, treasuryOwner: bs58.encode(raw.subarray(171, 203)) });
+ }
+ 
+diff --git a/packages/sdk/src/version.ts b/packages/sdk/src/version.ts
+index 220e4b5..5288fd3 100644
+--- a/packages/sdk/src/version.ts
++++ b/packages/sdk/src/version.ts
+@@ -1,2 +1,2 @@
+ /** Generated from packages/sdk/package.json by build.mjs. */
+-export const SDK_VERSION = "0.2.0-devnet.19";
++export const SDK_VERSION = "0.2.0-devnet.20-noexpiry.1";
+diff --git a/packages/sdk/src/wallet.ts b/packages/sdk/src/wallet.ts
+index 8c2f378..dbd3510 100644
+--- a/packages/sdk/src/wallet.ts
++++ b/packages/sdk/src/wallet.ts
+@@ -14,6 +14,7 @@ import { buildUploadPlan, snapshotPlan, restorePlan, prepareAttempt, recoverAtte
+   type Attempt, type FinalizationAttempt, type PlanRecord, type V0Wallet, type TransportRpc, type Recovery, type FinalizationPlan } from './transport.ts';
+ import type { WalletChain, WalletSnapshot } from './wallet-chain.ts';
+ import { unknownEscapeWithdrawal, type EscapeWithdrawalStatus } from './wallet-progress.ts';
++import { canonicalDepositExpiry, validateDepositExpiry } from './deposit-expiry.ts';
+ 
+ export interface WalletRoles { uploader?:string;rentPayer?:string;feePayer:string;payer:string;tokenOwner?:string }
+ export interface InlineDepositRoles { feePayer:string;payer:string;tokenOwner:string }
+@@ -59,14 +60,14 @@ export class WalletClient {
+   private readonly o:WalletOptions;
+   private readonly escapeObservations = new Map<string, { revision: number; status: EscapeWithdrawalStatus }>();
+   constructor(options:WalletOptions){if(options.priorityFeeMicroLamports!==undefined)u64(options.priorityFeeMicroLamports);this.o={...options,wallets:[...options.wallets]};}
+-  private async record(id:string):Promise<JournalRecord<NoteJournal>>{const r=await this.o.journal.read(id);requireTrue(r?.value.witness&&r.value.wallet,'full note witness and wallet journal required');const op=r.value.wallet.operation;if(op?.transport==='v0_inline_deposit_v1')this.inlinePins(op.inlineContext);return r;}
++  private async record(id:string):Promise<JournalRecord<NoteJournal>>{const r=await this.o.journal.read(id);requireTrue(r?.value.witness&&r.value.wallet,'full note witness and wallet journal required');validateDepositExpiry(this.o.manifest,r.value.witness.expiry);const op=r.value.wallet.operation;if(op?.transport==='v0_inline_deposit_v1')this.inlinePins(op.inlineContext);return r;}
+   private inlineContext():InlineContext{const m=this.o.manifest;return {deploymentId:m.deployment_id,manifestHash:m.manifest_hash,programId:m.program_id,pool:m.pool,mint:m.mint,vaultBinding:m.vault_binding};}
+   private inlinePins(p:InlineContext):void{requireTrue(supportsInlineDeposit(this.o.manifest)&&Object.entries(this.inlineContext()).every(([k,v])=>p[k as keyof InlineContext]===v),'inline deployment pins changed');}
+   private save(id:string,r:JournalRecord<NoteJournal>):Promise<JournalRecord<NoteJournal>>{return this.o.journal.compareAndSwap(id,r.revision,r.value);}
+   private roles(roles:WalletRoles):WalletRoles{const copy=structuredClone(roles);for(const v of Object.values(copy))if(v!==undefined)address(v);return copy;}
+   private signers(instruction:Instruction,feePayer:Address):V0Wallet[]{const required=new Set([feePayer,...(instruction.accounts??[]).filter(k=>isSignerRole(k.role)).map(k=>k.address)]);return this.o.wallets.filter(w=>required.has(w.publicKey));}
+   private async note(r:JournalRecord<NoteJournal>,s:WalletSnapshot):Promise<PublicNote>{
+-    const w=r.value.witness!,identity=await this.o.prover.inspect(w,r.value.state);
++    const w=r.value.witness!;validateDepositExpiry(this.o.manifest,w.expiry);const identity=await this.o.prover.inspect(w,r.value.state);
+     requireTrue(s.note&&s.note.note_id===w.note_id&&s.note.registration_commitment===identity.registration_commitment&&s.note.deposit_micro_usdc===w.deposit_micro_usdc&&s.note.expiry===w.expiry,'finalized note does not match secret witness');
+     return {note_id:w.note_id,registration_commitment:identity.registration_commitment,deposit_micro_usdc:w.deposit_micro_usdc,expiry:w.expiry};
+   }
+@@ -129,8 +130,9 @@ export class WalletClient {
+     }else requireTrue(roles.uploader&&roles.rentPayer,'explicit buffer roles required');
+     await this.o.journal.withNoteLock(id,async()=>{
+       const s=await this.o.chain.snapshot();requireTrue(!s.paused,'pool paused');
+-      const expiry=((BigInt(s.clock)+BigInt(this.o.manifest.note_ttl_seconds)+86399n)/86400n*86400n).toString();
++      const expiry=canonicalDepositExpiry(this.o.manifest,s.clock);
+       const candidate=await this.o.prover.deposit(s.nextNoteId,amount,expiry);
++      validateDepositExpiry(this.o.manifest,candidate.witness.expiry);
+       const base:WalletOperationBase={id:crypto.randomUUID(),kind:'deposit',phase:'proving',roles,step:0,attempts:[],finalized:[]};
+       const operation:WalletOperation=inline?{...base,kind:'deposit',transport:'v0_inline_deposit_v1',inlineContext:this.inlineContext(),priorityFeeMicroLamports:(this.o.priorityFeeMicroLamports??0n).toString()}:base;
+       const r=await this.o.journal.create(id,{schema:inline?2:1,witness:candidate.witness,state:candidate.state,pending:null,history:[],wallet:{status:'unfunded',history:[],operation}});
+@@ -352,9 +354,9 @@ export class WalletClient {
+     requireTrue(!s.paused,'pool paused');
+     let note:PublicNote;
+     if(op.kind==='deposit'){
+-      const expiry=((BigInt(s.clock)+BigInt(this.o.manifest.note_ttl_seconds)+86399n)/86400n*86400n).toString();
++      const expiry=canonicalDepositExpiry(this.o.manifest,s.clock);
+       if(r.value.witness!.note_id!==s.nextNoteId||r.value.witness!.expiry!==expiry){
+-        const c=await this.o.prover.rebaseDeposit(r.value.witness!,s.nextNoteId,expiry);r.value.witness=c.witness;r.value.state=c.state;r=await this.save(id,r);op=r.value.wallet!.operation!;
++        const c=await this.o.prover.rebaseDeposit(r.value.witness!,s.nextNoteId,expiry);validateDepositExpiry(this.o.manifest,c.witness.expiry);r.value.witness=c.witness;r.value.state=c.state;r=await this.save(id,r);op=r.value.wallet!.operation!;
+       }
+       const identity=await this.o.prover.inspect(r.value.witness!,r.value.state);note={note_id:s.nextNoteId,registration_commitment:identity.registration_commitment,deposit_micro_usdc:r.value.witness!.deposit_micro_usdc,expiry};
+     }else{note=await this.note(r,s);requireTrue(s.note!.status==='active','note not active');
+@@ -554,7 +556,7 @@ export class WalletClient {
+           // Refresh only an unsigned preparation. A signed prior attempt is
+           // permitted here solely after retryRejected has persisted its receipt.
+           const latest=await this.o.chain.snapshot(undefined,'zero',p.snapshotSlot);
+-          const expiry=((BigInt(latest.clock)+BigInt(m.note_ttl_seconds)+86399n)/86400n*86400n).toString();
++          const expiry=canonicalDepositExpiry(m,latest.clock);
+           requireTrue(!latest.paused&&latest.slot>=p.snapshotSlot,'invalid pre-sign snapshot');
+           if(latest.root.slice(2)!==p.expectedRoot||latest.nextNoteId!==p.expectedNoteId||expiry!==p.expiry){
+             op.priorityFeeMicroLamports??=p.priorityFeeMicroLamports??'0';
+diff --git a/packages/sdk/test/chain-fixture.ts b/packages/sdk/test/chain-fixture.ts
+index 1cf3d51..6e0bfbb 100644
+--- a/packages/sdk/test/chain-fixture.ts
++++ b/packages/sdk/test/chain-fixture.ts
+@@ -9,7 +9,7 @@ import { discriminator } from '../src/transport.ts';
+ import { circuitProfileDigest, jcsBytes, manifestDigest, sha256Hex, verifyManifest, type Manifest } from '../src/trust.ts';
+ 
+ export const key=(n:number)=>getAddressDecoder().decode(new Uint8Array(32).fill(n));
+-export async function chainFixture() {
++export async function chainFixture(options: {noteTtlSeconds?: string; capMicroUsdc?: string; transactionFormats?: Manifest['transaction_formats']} = {}) {
+   const read=async(p:string)=>new Uint8Array(await readFile(new URL('../../../'+p,import.meta.url)));
+   const profile=JSON.parse(new TextDecoder().decode(await read('tests/fixtures/layout2/profile.json')));
+   const original=JSON.parse(new TextDecoder().decode(await read('tests/fixtures/layout2/a.json')));
+@@ -21,7 +21,7 @@ export async function chainFixture() {
+     mint:key(4),token_program:'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA',decimals:6,vault_binding:'',
+     state_key:{x:original.auth.escape.public_inputs[4],y:original.auth.escape.public_inputs[5]},
+     clearance_key:{x:original.auth.escape.public_inputs[6],y:original.auth.escape.public_inputs[7]},
+-    quote_public_key:key(30),receipt_public_key:key(31),transaction_formats:['v0_buffer'],cap_micro_usdc:'1000000',note_ttl_seconds:'2592000',challenge_seconds:'86400',
++    quote_public_key:key(30),receipt_public_key:key(31),transaction_formats:options.transactionFormats??['v0_buffer'],cap_micro_usdc:options.capMicroUsdc??'1000000',note_ttl_seconds:options.noteTtlSeconds??'2592000',challenge_seconds:'86400',
+     control_api_origin:'http://127.0.0.1:8788',inference_api_origin:'http://127.0.0.1:8789',proving_keys_base_url:'http://127.0.0.1:8788/keys',
+     idl_hash:await sha256Hex(idl),api_endpoints:['/zkapi/v1/config'],tariff_hashes:[],artifact_digests:{vault_idl:await sha256Hex(idl)},db_schema_version:'2',
+     authorities:{admin:authority,upgrade:{...authority,authority:key(25)}}};
+@@ -29,7 +29,7 @@ export async function chainFixture() {
+   m.circuit_profile_hash=await circuitProfileDigest(m);m.manifest_hash=await manifestDigest(m);
+   const manifest=await verifyManifest(jcsBytes(m),{anchor:{kind:'hash',sha256:m.manifest_hash},expected:{deployment_id:m.deployment_id,deployment_environment:m.deployment_environment,
+     genesis_hash:m.genesis_hash,program_id:m.program_id,pool:m.pool,mint:m.mint,token_program:m.token_program,control_api_origin:m.control_api_origin,inference_api_origin:m.inference_api_origin},
+-    build:{stateKey:m.state_key,clearanceKey:m.clearance_key,circuitProfileHash:m.circuit_profile_hash,idlHash:m.idl_hash,setupProfile:m.setup_profile}});
++    build:{stateKey:m.state_key,clearanceKey:m.clearance_key,circuitProfileHash:m.circuit_profile_hash,idlHash:m.idl_hash,setupProfile:m.setup_profile,transactionFormats:options.transactionFormats}});
+   const data=Buffer.alloc(422);data.set(await discriminator('PoolConfig','account'));data[8]=2;data[9]=bump;
+   for(const [offset,value] of [[10,m.genesis_hash],[42,m.mint],[74,m.token_program],[139,m.authorities.admin.authority],[171,key(29)]] as const)data.set(bs58.decode(value),offset);
+   data[106]=6;
+diff --git a/packages/sdk/test/client.test.ts b/packages/sdk/test/client.test.ts
+index 9178553..4893e7e 100644
+--- a/packages/sdk/test/client.test.ts
++++ b/packages/sdk/test/client.test.ts
+@@ -19,10 +19,13 @@ import { NativeJournalStore } from '../src/journal-node.ts';
+ import { jcsBytes, sha256Hex, type VerifiedManifest } from '../src/trust.ts';
+ import type { NoteProver } from '../src/prover.ts';
+ import type { Attempt, PlanRecord } from '../src/transport.ts';
++import { chainFixture } from './chain-fixture.ts';
++import { verifyPoolConfig } from '../src/trust.ts';
++import { NON_EXPIRING_NOTE_EXPIRY } from '../src/deposit-expiry.ts';
+ 
+ const field = (n: number) => '0x' + n.toString(16).padStart(64, '0');
+ const chat = (model = 'first') => ({ operationId: crypto.randomUUID(), model, messages: [{ role: 'user' as const, content: 'Hello' }], maxOutputTokens: 32 });
+-async function setup(t: TestContext, mode: Mode = 'proxy', keyReuseSeconds?: number) {
++async function setup(t: TestContext, mode: Mode = 'proxy', keyReuseSeconds?: number, manifest?: VerifiedManifest) {
+   const dir = await mkdtemp(join(tmpdir(), 'zkapi-app-')); t.after(() => rm(dir, { recursive: true, force: true }));
+   const store = await NativeJournalStore.open(dir), key = await importJournalKey(new Uint8Array(32).fill(17));
+   const makeJournal = () => new EncryptedJournal<NoteJournal>(store, key, { deploymentId: 'app-fixture', pool: 'pool' }, validateNoteJournal);
+@@ -38,7 +41,7 @@ async function setup(t: TestContext, mode: Mode = 'proxy', keyReuseSeconds?: num
+     control_api_origin: 'https://control.invalid', inference_api_origin: 'https://proxy.invalid', quote_public_key: bs58.encode(signer.publicKey.export({ format: 'der', type: 'spki' }).subarray(-32)),
+     receipt_public_key: bs58.encode(retirementSigner.publicKey.export({format:'der',type:'spki'}).subarray(-32)), request_vk_sha256: '22'.repeat(32), tariff_hashes: models.map(m => m.tariff.tariff_hash) };
+   const state = { balance_micro_usdc: '200', balance_blinding: field(3), note_leaf: field(4), commitment: { x: field(5), y: field(6) }, anchor: field(7), state_signature: null };
+-  await journal.create('note', { schema: 1, state, witness: { secret: field(2), note_id: 1, deposit_micro_usdc: '200', expiry: '9999999999' },
++  await journal.create('note', { schema: 1, state, witness: { secret: field(2), note_id: 1, deposit_micro_usdc: '200', expiry: manifest?.note_ttl_seconds === '0' ? NON_EXPIRING_NOTE_EXPIRY : '9999999999' },
+     wallet: { status: 'active', history: [] }, pending: null, history: [] });
+   const counts = { quote: 0, proof: 0, auth: 0, sends: 0, closes: 0, settles: 0, wallet: 0, clearance: 0, clearanceVerifications: 0 };
+   const behavior = { lose: false, closeUnavailable: false, closeDraining: false, httpStatus: 200, providerError: '', failVerifier: false, authUnknown: false, authConflict: false, stream: false, rejectQuote: false,
+@@ -128,7 +131,7 @@ async function setup(t: TestContext, mode: Mode = 'proxy', keyReuseSeconds?: num
+     const journal = makeJournal();
+     const components: ClientComponents = { store, noteId: 'note', mode, models, keyReuseSeconds,
+       control: new ControlClient({ context, journal, verifier, fetch: http, directProviderBases: { direct_openrouter: 'https://direct.invalid/v1' } }),
+-      wallet: { manifest: { deployment_id: context.deployment_id, pool: context.pool, cap_micro_usdc: '100',
++      wallet: { manifest: manifest ?? { deployment_id: context.deployment_id, pool: context.pool, cap_micro_usdc: '100',
+         control_api_origin: context.control_api_origin, inference_api_origin: context.inference_api_origin } as unknown as VerifiedManifest, journal, prover, fetch: http,
+         chain: { async snapshot() { throw Error('authorization must not select note accounts'); },
+           async sessionSnapshot() { return { root: field(1), siblings: Array(32).fill(field(0)), slot: 1, sequence: '1', nextNoteId: 2, clock: '100', paused: false }; },
+@@ -480,6 +483,26 @@ test('invalid model, API, ID and body cannot start an authorization; abort-befor
+   await assert.rejects(f.client.chat({ ...chat(), signal: AbortSignal.abort() }));
+   assert.equal(f.counts.quote, 0); assert.equal(f.counts.sends, 0);
+ });
++test('non-expiring client can dispatch with a canonical witness and rejects a mismatched witness before AUTH', async t => {
++  const f = await chainFixture({ noteTtlSeconds: '0', capMicroUsdc: '100' });
++  await verifyPoolConfig(f.manifest, f.manifest.genesis_hash, { address: f.manifest.pool, owner: f.manifest.program_id,
++    executable: false, lamports: 1n, data: f.poolData, slot: 100n, commitment: 'finalized' }, 100n);
++  const h = await setup(t, 'proxy', undefined, f.manifest);
++  const status = await h.client.status();
++  assert.equal(status.depositExpiryPolicy, 'none');
++  assert.equal(status.expiry, null);
++  assert.equal(status.canRequest, true);
++  await readChatText(await h.client.chat(chat()));
++  assert.equal(h.counts.sends, 1);
++  const r = (await h.journal.read('note'))!;
++  r.value.witness!.expiry = '9999999999';
++  await h.journal.compareAndSwap('note', r.revision, r.value);
++  const counts = { ...h.counts };
++  await assert.rejects(h.client.status(), /canonical expiry/);
++  await assert.rejects(h.client.chat(chat()), /canonical expiry/);
++  assert.deepEqual(h.counts, counts, 'mismatch must not prepare AUTH, sign or dispatch');
++});
++
+ test('expired, cleared, closed and insufficient notes cannot start chat', async t => {
+   for (const variant of ['expired', 'cleared', 'closed', 'insufficient']) {
+     const f = await setup(t), r = (await f.journal.read('note'))!;
+diff --git a/packages/sdk/test/inline-deposit.test.ts b/packages/sdk/test/inline-deposit.test.ts
+index 8189fb1..c9ab5cf 100644
+--- a/packages/sdk/test/inline-deposit.test.ts
++++ b/packages/sdk/test/inline-deposit.test.ts
+@@ -23,9 +23,11 @@ import {NativeJournalStore} from '../src/journal-node.ts';
+ import {validateNoteJournal,type NoteJournal,type PrivateState} from '../src/control.ts';
+ import {compactDepositPayload,expandCompactDepositPayload,encodeLayout2Args} from '../src/layout2.ts';
+ import {buildInlineDepositPlan,compileV0,prepareInlineDepositAttempt,restoreInlineDepositPlan,snapshotInlineDepositPlan,vaultAccounts,type InlineDepositAttempt,type FinalizedReceipt,type SignatureStatus,type V0Wallet} from '../src/transport.ts';
+-import {manifestDigest,sha256Hex,verifyManifest,type Manifest,type VerifiedManifest} from '../src/trust.ts';
++import {manifestDigest,sha256Hex,verifyManifest,verifyPoolConfig,type Manifest,type VerifiedManifest} from '../src/trust.ts';
+ import type {NoteProver} from '../src/prover.ts';
+ import type {WalletSnapshot} from '../src/wallet-chain.ts';
++import { chainFixture } from './chain-fixture.ts';
++import { NON_EXPIRING_NOTE_EXPIRY } from '../src/deposit-expiry.ts';
+ const read=(path:string)=>readFileSync(new URL('../../../'+path,import.meta.url));
+ const fixture=JSON.parse(read('tests/fixtures/vault/genesis-a.json').toString());
+ const profile=JSON.parse(read('tests/fixtures/layout2/profile.json').toString());
+@@ -43,18 +45,18 @@ async function manifest(inline=true,variant=false):Promise<VerifiedManifest>{
+   const raw={...m,manifest_hash:await manifestDigest(m)};
+   return verifyManifest(new TextEncoder().encode(JSON.stringify(raw)),{anchor:{kind:'hash',sha256:raw.manifest_hash},expected:{deployment_id:m.deployment_id,deployment_environment:m.deployment_environment,genesis_hash:m.genesis_hash,program_id:m.program_id,pool:m.pool,mint:m.mint,token_program:m.token_program,control_api_origin:m.control_api_origin,inference_api_origin:m.inference_api_origin},build:{stateKey:m.state_key,clearanceKey:m.clearance_key,circuitProfileHash:m.circuit_profile_hash,idlHash:m.idl_hash,setupProfile:m.setup_profile,transactionFormats:['v0_buffer','v0_inline_deposit_v1']}});
+ }
+-async function setup(t:TestContext,inline=true,begin=true){
++async function setup(t:TestContext,inline=true,begin=true,manifestOverride?:VerifiedManifest){
+   const dir=await mkdtemp(join(tmpdir(),'zkapi-inline-'));t.after(()=>rm(dir,{recursive:true,force:true}));
+   const native=await NativeJournalStore.open(dir),aes=await importJournalKey(new Uint8Array(32).fill(14));
+   const behavior={failCommit:false,loseCommitAck:false,failProof:false,loseSendAck:false,receipt:null as FinalizedReceipt|null,status:null as SignatureStatus|null,height:50,blockhash:{...blockhash}};
+   const counts={sign:0,send:0,rebase:0,proof:0,blockhash:0};
+   const store:AtomicJournalStore={read:k=>native.read(k),withLock:(k,a)=>native.withLock(k,a),compareAndSwap:async(k,r,n)=>{if(behavior.failCommit)throw Error('disk full');await native.compareAndSwap(k,r,n);if(behavior.loseCommitAck){behavior.loseCommitAck=false;throw Error('commit ACK lost');}}};
+-  const m=await manifest(inline),open=()=>new EncryptedJournal<NoteJournal>(store,aes,{deploymentId:m.deployment_id,pool:m.pool},validateNoteJournal),journal=open();
++  const m=manifestOverride??await manifest(inline),open=()=>new EncryptedJournal<NoteJournal>(store,aes,{deploymentId:m.deployment_id,pool:m.pool},validateNoteJournal),journal=open();
+   const state:PrivateState={balance_micro_usdc:String(fixture.deposit),balance_blinding:field(3),note_leaf:field(4),commitment:{x:field(5),y:field(6)},anchor:field(1),state_signature:null};
+   const snapshot:WalletSnapshot={root:fixture.trees[0].public_inputs[1],siblings:Array(32).fill(field(0)),slot:20,sequence:'1',nextNoteId:0,clock:String(fixture.now),paused:false,treasuryOwner:owner};
+   const prover={deposit:async(note_id:number,amount:string,expiry:string)=>({state:structuredClone(state),witness:{secret:field(2),note_id,deposit_micro_usdc:amount,expiry}}),inspect:async()=>({registration_commitment:'0x'+fixture.commitment}),
+     rebaseDeposit:async(w:NoteJournal['witness'],note_id:number,expiry:string)=>{counts.rebase++;return {state:structuredClone(state),witness:{...w!,note_id,expiry}};},
+-    tree:async(note:{note_id:number;expiry:string},root:string)=>{counts.proof++;const persisted=await open().read('note');assert.ok(persisted?.value.witness,'secret is durable before tree proof');if(behavior.failProof)throw Error('proof interrupted');const p=structuredClone(fixture.trees[0]);p.public_inputs[1]=root;p.public_inputs[3]=field(note.note_id);p.public_inputs[8]=field(BigInt(note.expiry));return p;}} as unknown as NoteProver;
++    tree:async(note:{note_id:number;expiry:string},root:string)=>{counts.proof++;const persisted=await open().read('note');assert.ok(persisted?.value.witness,'secret is durable before tree proof');if(behavior.failProof)throw Error('proof interrupted');const p=structuredClone(fixture.trees[0]);p.public_inputs[0]=m.vault_binding;p.public_inputs[1]=root;p.public_inputs[3]=field(note.note_id);p.public_inputs[8]=field(BigInt(note.expiry));return p;}} as unknown as NoteProver;
+   const wallet:V0Wallet={publicKey:pair.address,supportedTransactionVersions:new Set([0]),async signTransaction(tx){counts.sign++;tx = await signWith(tx, [pair]);return tx;}};
+   const options:WalletOptions={manifest:m,prover,journal,wallets:[wallet],priorityFeeMicroLamports:1n,chain:{snapshot:async()=>structuredClone(snapshot),buffer:async()=>{throw Error('inline must not consult a buffer');},bufferObservation:async()=>{throw Error('inline must not consult buffer absence');},blockhash:async()=>{counts.blockhash++;return {...behavior.blockhash};}},rpc:{signatureStatus:async()=>behavior.status,finalizedReceipt:async()=>behavior.receipt,finalizedBlockHeight:async()=>behavior.height,sendRawTransaction:async bytes=>{counts.send++;const saved=(await open().read('note'))!.value.wallet!.operation!;assert.equal(saved.current,transactionSignature(decodeTransaction(bytes)));assert.equal(saved.attempts.at(-1)!.wireHex,Buffer.from(bytes).toString('hex'));if(behavior.loseSendAck)throw Error('send ACK lost');return saved.current!;}}};
+   const client=new WalletClient(options),restart=()=>new WalletClient({...options,journal:open()});
+@@ -66,6 +68,34 @@ async function setup(t:TestContext,inline=true,begin=true){
+   return {client,restart,options,journal,store,open,behavior,counts,snapshot,roles,signed,receipt,fund};
+ }
+ 
++test('zero-TTL deposits retain canonical expiry through buffer recovery and inline pre-sign races',async t=>{
++  for (const inline of [false,true]) {
++    const f=await chainFixture({noteTtlSeconds:'0',transactionFormats:inline?['v0_buffer','v0_inline_deposit_v1']:['v0_buffer']});
++    await verifyPoolConfig(f.manifest,f.manifest.genesis_hash,{address:f.manifest.pool,owner:f.manifest.program_id,
++      executable:false,lamports:1n,data:f.poolData,slot:20n,commitment:'finalized'},20n);
++    const h=await setup(t,inline,false,f.manifest);
++    if(!inline)h.behavior.failProof=true;
++    const prepare=h.client.beginDeposit('note',String(fixture.deposit),h.roles);
++    if(inline)await prepare;else await assert.rejects(prepare,/proof interrupted/);
++    const first=(await h.open().read('note'))!;
++    assert.equal(first.value.witness!.expiry,NON_EXPIRING_NOTE_EXPIRY);
++    h.snapshot.clock=String(fixture.now+86400*100);h.snapshot.nextNoteId=1;h.snapshot.slot=25;
++    if(inline)assert.deepEqual(await h.client.advance('note'),{state:'ready'});
++    else {h.behavior.failProof=false;await h.restart().resumeProof('note');}
++    const rebased=(await h.open().read('note'))!;
++    assert.equal(rebased.value.witness!.expiry,NON_EXPIRING_NOTE_EXPIRY);
++    assert.equal(rebased.value.witness!.secret,first.value.witness!.secret);
++    assert.equal(rebased.value.witness!.note_id,1);
++    assert.equal(h.counts.rebase,1);assert.equal(h.counts.sign,0);assert.equal(h.counts.send,0);
++    if(inline){
++      h.snapshot.clock=String(fixture.now+86400*200);
++      assert.deepEqual(await h.client.advance('note'),{state:'pending'});
++      assert.equal(h.counts.rebase,1,'clock changes alone cannot renew or rebase an unlimited deposit');
++      assert.equal((await h.open().read('note'))!.value.wallet!.operation!.inlinePlan!.expiry,NON_EXPIRING_NOTE_EXPIRY);
++    }
++  }
++});
++
+ test('application facade preserves compact durable sign-once and read-only unknown-send recovery',async t=>{
+   const h=await setup(t,true,false);
+   const create=()=>new ZkApiClient({wallet:{...h.options,journal:h.open()},store:h.store,noteId:'note',mode:'proxy',
+diff --git a/packages/sdk/test/trust.test.ts b/packages/sdk/test/trust.test.ts
+index 9caaf5c..ebf8636 100644
+--- a/packages/sdk/test/trust.test.ts
++++ b/packages/sdk/test/trust.test.ts
+@@ -249,8 +249,9 @@ async function artifactFixture() {
+   return { manifest, bundle, verified };
+ }
+ 
+-test('application factory authenticates independent pins, tariffs and finalized pool without sending or running proofs', async () => {
++for (const ttl of ['2592000', '0']) test(`application factory authenticates pins and finalized Pool before exposing deposit policy (TTL ${ttl})`, async () => {
+   const { manifest, bundle } = await artifactFixture();
++  manifest.note_ttl_seconds = ttl;
+   const body = {version:'1',provider:'openrouter',model:'fixture',pricing_basis:'fixed_usage_rates',valid_from:'0',valid_until:'9999999999',rates:[],operator_fee_micro_usdc:'0'};
+   const tariff = {...body,tariff_hash:await sha256Hex(jcsBytes(body))};manifest.tariff_hashes=[tariff.tariff_hash];await resign(manifest);
+   const pool=await poolAccount(manifest);let reads=0;
+@@ -259,7 +260,7 @@ test('application factory authenticates independent pins, tariffs and finalized
+     storage:{key:await importJournalKey(new Uint8Array(32).fill(2)),store:{read:async()=>null,compareAndSwap:async()=>{throw Error('unexpected write');},withLock:async(_key,action)=>action()}},
+     prover:{run:async()=>{throw Error('unexpected proof');}},wallet:{publicKey:address(key(10)),supportedTransactionVersions:new Set([0]),signTransaction:async()=>{throw Error('unexpected signature');}},
+     mode:'proxy',noteId:'first',models:[{id:'fixture',provider:'openrouter',apis:['chat'],tariff}]};
+-  const client=await createZkApiClient(options);assert.equal((await client.status()).wallet,'empty');assert.equal(reads,2);
++  const client=await createZkApiClient(options);const status=await client.status();assert.equal(status.wallet,'empty');assert.equal(status.depositExpiryPolicy,ttl==='0'?'none':'fixed');assert.equal(status.expiry,null);assert.equal(status.canRequest,false);assert.equal(reads,2);
+   const tampered=structuredClone(options.deployment.artifacts);tampered.requestPk[0]^=1;
+   await assert.rejects(createZkApiClient({...options,deployment:{...options.deployment,artifacts:tampered}}),/artifact mismatch/);
+   await assert.rejects(createZkApiClient({...options,models:[{...options.models[0],tariff:{...tariff,operator_fee_micro_usdc:'1'}}]}),/tariff/);
+diff --git a/packages/sdk/src/deposit-expiry.ts b/packages/sdk/src/deposit-expiry.ts
+new file mode 100644
+index 0000000..38ad570
+--- /dev/null
++++ b/packages/sdk/src/deposit-expiry.ts
+@@ -0,0 +1,39 @@
++/** Deposit lifetime is separate from quote, provider-lease and withdrawal timers. */
++import { expiryNotice } from './control.ts';
++import { hasNonExpiringDeposits, type VerifiedManifest } from './trust.ts';
++
++export const NON_EXPIRING_NOTE_EXPIRY = '18446744073709551615';
++export type DepositExpiryPolicy = 'fixed' | 'none';
++const maximum = BigInt(NON_EXPIRING_NOTE_EXPIRY);
++
++function uint(value: string): bigint {
++  if (!/^(0|[1-9][0-9]*)$/.test(value) || BigInt(value) > maximum) throw new Error('invalid deposit time');
++  return BigInt(value);
++}
++
++/** Preserve the original expiry formula for every finite-lifetime Pool. */
++export function canonicalDepositExpiry(manifest: VerifiedManifest, chainClock: string): string {
++  const now = uint(chainClock);
++  if (hasNonExpiringDeposits(manifest)) return NON_EXPIRING_NOTE_EXPIRY;
++  const ttl = uint(manifest.note_ttl_seconds);
++  const expiry = (now + ttl + 86_399n) / 86_400n * 86_400n;
++  if (ttl === 0n || expiry > maximum) throw new Error('invalid deposit expiry');
++  return expiry.toString();
++}
++
++export function validateDepositExpiry(manifest: VerifiedManifest, expiry: string): void {
++  uint(expiry);
++  if (hasNonExpiringDeposits(manifest) && expiry !== NON_EXPIRING_NOTE_EXPIRY)
++    throw new Error('non-expiring deposit witness must match the canonical expiry');
++}
++
++/** A timestamp alone never suppresses the legacy claim warning. */
++export function depositExpiryStatus(manifest: VerifiedManifest, witness: { expiry: string } | undefined, now: bigint): {
++  depositExpiryPolicy: DepositExpiryPolicy; expiry: ReturnType<typeof expiryNotice> | null; canRequest: boolean;
++} {
++  const noExpiry = hasNonExpiringDeposits(manifest);
++  if (witness) validateDepositExpiry(manifest, witness.expiry);
++  const expiry = witness && !noExpiry ? expiryNotice(BigInt(witness.expiry), now) : null;
++  return { depositExpiryPolicy: noExpiry ? 'none' : 'fixed', expiry,
++    canRequest: !!witness && (noExpiry || expiry?.severity !== 'expired') };
++}
+diff --git a/packages/sdk/test/deposit-expiry.test.ts b/packages/sdk/test/deposit-expiry.test.ts
+new file mode 100644
+index 0000000..d6f1368
+--- /dev/null
++++ b/packages/sdk/test/deposit-expiry.test.ts
+@@ -0,0 +1,76 @@
++/** Synthetic signed manifest and finalized account observations; no network. */
++import { test } from 'node:test';
++import assert from 'node:assert/strict';
++import { chainFixture } from './chain-fixture.ts';
++import { verifyPoolConfig, hasNonExpiringDeposits, type VerifiedManifest } from '../src/trust.ts';
++import { canonicalDepositExpiry, depositExpiryStatus, validateDepositExpiry, NON_EXPIRING_NOTE_EXPIRY } from '../src/deposit-expiry.ts';
++import { ClientDaemon } from '../src/clientd-bridge.ts';
++import type { DaemonOptions } from '../src/clientd-bridge.ts';
++
++async function noExpiryFixture() {
++  const f = await chainFixture({ noteTtlSeconds: '0' });
++  const account = { address: f.manifest.pool, owner: f.manifest.program_id, executable: false,
++    lamports: 1n, data: f.poolData, slot: 100n, commitment: 'finalized' as const };
++  return { ...f, account, verify: () => verifyPoolConfig(f.manifest, f.manifest.genesis_hash, account, 100n) };
++}
++
++test('no-expiry policy requires both authenticated manifest and matching finalized Pool', async () => {
++  const f = await noExpiryFixture();
++  assert.throws(() => hasNonExpiringDeposits(f.manifest), /verified finalized PoolConfig/);
++  assert.throws(() => canonicalDepositExpiry(f.manifest, '1'), /verified finalized PoolConfig/);
++  assert.throws(() => depositExpiryStatus(f.manifest, undefined, 1n), /verified finalized PoolConfig/);
++  f.poolData.writeBigUInt64LE(86400n, 331);
++  await assert.rejects(f.verify(), /PoolConfig timing/);
++  assert.throws(() => hasNonExpiringDeposits(f.manifest), /verified finalized PoolConfig/);
++  f.poolData.writeBigUInt64LE(0n, 331);
++  await assert.rejects(verifyPoolConfig(f.manifest, f.manifest.genesis_hash, { ...f.account, commitment: 'confirmed' as never }, 100n), /finalized/);
++  await f.verify();
++  assert.equal(hasNonExpiringDeposits(f.manifest), true);
++  assert.throws(() => hasNonExpiringDeposits({ ...f.manifest } as VerifiedManifest), /not verified/);
++  const separate = await noExpiryFixture();
++  assert.throws(() => hasNonExpiringDeposits(separate.manifest), /verified finalized PoolConfig/);
++});
++
++test('canonical unlimited expiry survives clock and day changes without changing withdrawal timing', async () => {
++  const f = await noExpiryFixture(); await f.verify();
++  for (const clock of ['0', '86399', '86400', '1792886400', NON_EXPIRING_NOTE_EXPIRY])
++    assert.equal(canonicalDepositExpiry(f.manifest, clock), NON_EXPIRING_NOTE_EXPIRY);
++  assert.equal(f.manifest.challenge_seconds, '86400');
++  assert.deepEqual(depositExpiryStatus(f.manifest, undefined, 1n), { depositExpiryPolicy: 'none', expiry: null, canRequest: false });
++  for (const now of [1n, 1_792_886_400n, BigInt(NON_EXPIRING_NOTE_EXPIRY)])
++    assert.deepEqual(depositExpiryStatus(f.manifest, { expiry: NON_EXPIRING_NOTE_EXPIRY }, now),
++      { depositExpiryPolicy: 'none', expiry: null, canRequest: true });
++  for (const expiry of ['0', '86400', '9999999999', '018446744073709551615', '18446744073709551616'])
++    assert.throws(() => validateDepositExpiry(f.manifest, expiry), /expiry|deposit time/);
++});
++
++test('finite Pools retain exact day rounding, expired admission and full-principal warning', async () => {
++  const { manifest } = await chainFixture({ noteTtlSeconds: '86400' });
++  assert.equal(canonicalDepositExpiry(manifest, '0'), '86400');
++  assert.equal(canonicalDepositExpiry(manifest, '1'), '172800');
++  assert.equal(canonicalDepositExpiry(manifest, '86400'), '172800');
++  const status = depositExpiryStatus(manifest, { expiry: '86400' }, 86400n);
++  assert.equal(status.depositExpiryPolicy, 'fixed');
++  assert.equal(status.canRequest, false);
++  assert.equal(status.expiry?.severity, 'expired');
++  assert.match(status.expiry!.message, /entire principal.*treasury/);
++  const large = depositExpiryStatus(manifest, { expiry: NON_EXPIRING_NOTE_EXPIRY }, 1n);
++  assert.equal(large.depositExpiryPolicy, 'fixed', 'large timestamps alone cannot claim unlimited policy');
++  assert.match(large.expiry!.message, /treasury/);
++  assert.throws(() => canonicalDepositExpiry(manifest, NON_EXPIRING_NOTE_EXPIRY), /invalid deposit expiry/);
++});
++
++test('native daemon exposes authenticated no-expiry and preserves legacy warning without manifest', async () => {
++  const f = await noExpiryFixture(); await f.verify();
++  const value = { state: { balance_micro_usdc: '100' }, witness: { expiry: NON_EXPIRING_NOTE_EXPIRY },
++    pending: null, history: [], wallet: { status: 'active', history: [] } };
++  const options = { client: {}, journal: { read: async () => ({ value, head: 'fixture' }) }, noteId: 'note', mode: 'proxy',
++    models: ['model'], now: () => 2_000_000_000n, prepare: async () => { throw Error('must not prepare'); } } as unknown as DaemonOptions;
++  const unlimited = await new ClientDaemon({ ...options, manifest: f.manifest }).status() as { deposit_expiry_policy: string; expiry: null };
++  assert.equal(unlimited.deposit_expiry_policy, 'none');
++  assert.equal(unlimited.expiry, null);
++  const legacy = await new ClientDaemon(options).status() as { expiry: { message: string } };
++  assert.match(legacy.expiry!.message, /treasury/);
++  value.witness.expiry = '1';
++  await assert.rejects(new ClientDaemon({ ...options, manifest: f.manifest }).status(), /canonical expiry/);
++});

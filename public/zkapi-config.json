@@ -2,10 +2,10 @@
   "schema": 2,
   "chain": "solana:devnet",
   "label": "Solana zkAPI \u00b7 Public Devnet",
-  "profileUrl": "https://d366buuvadnp3.cloudfront.net/releases/public-devnet-20261021-state-v1/profile.json",
-  "profileSha256": "5e15d66c6f45265951cf1f8dd6cc0dae6574c4b8dd6756f828f7543ecaa97b9a",
+  "profileUrl": "https://d366buuvadnp3.cloudfront.net/releases/public-devnet-20261025-nonexpiry-v1/profile.json",
+  "profileSha256": "6a050132ad02df94996521d37337faf13d9a77c979e47fac11742ac65538121a",
   "modelProfile": {
-    "url": "https://d366buuvadnp3.cloudfront.net/releases/public-devnet-20261021-state-v1/profile-models.json",
-    "sha256": "52484d156c71e6c523c472e49a29913192f817fc77e4bd63df4e9564771d1c36"
+    "url": "https://d366buuvadnp3.cloudfront.net/releases/public-devnet-20261025-nonexpiry-v1/profile-models.json",
+    "sha256": "c4c74bc9c980c2e2549ea513aa1792b7e94cc00442f1954573cd3791f6843706"
   }
 }

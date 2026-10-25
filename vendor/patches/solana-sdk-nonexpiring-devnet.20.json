@@ -1,0 +1,9 @@
+{
+  "schema": 1,
+  "kind": "unpublished-local-preview",
+  "version": "0.2.0-devnet.20-noexpiry.1",
+  "baseCommit": "16859f71f501684b86aa778e0e1e3aaf53543844",
+  "sourcePatchSha256": "4ebbf1e3ad6e8ba73d561644fae57e36fb5f31a147a3b789af70ef1bc0804e21",
+  "archiveSha256": "16e147831b9dcee99a2e2f210f525953b96c54ba2c88bad98a7e35ad9ad72e37",
+  "scope": "SDK supports verified zero-TTL new Pools; existing finite profiles and custody are unchanged. Vault and operator updates are required separately."
+}

@@ -3,7 +3,7 @@ import type { ClientStatus } from "@zkapi/solana-sdk";
 import { expiryNotice } from "@zkapi/solana-sdk/control";
 import { expiryNotice as previousExpiryNotice } from "@zkapi/solana-sdk-previous/control";
 import { expiryNotice as legacyExpiryNotice } from "@zkapi/solana-sdk-legacy/control";
-import { depositExpiryNotice } from "../src/lib/depositExpiry";
+import { depositExpiryNotice, depositTerms } from "../src/lib/depositExpiry";
 
 type ExpiryStatus = Pick<ClientStatus, "wallet" | "expiry">;
 const deadline = 1_792_886_400n;
@@ -14,6 +14,35 @@ const active: ExpiryStatus = {
 const tokyo = { locale: "en-US", timeZone: "Asia/Tokyo" };
 
 describe("deposit expiry presentation", () => {
+  it("shows no deadline or forfeiture warning for authenticated non-expiring deposits", () => {
+    const status = {
+      wallet: "active" as const,
+      depositExpiryPolicy: "none" as const,
+      expiry: null,
+    };
+    expect(depositExpiryNotice(status, tokyo)).toBeNull();
+    expect(depositTerms(status).title).toBe("No deposit expiry");
+    expect(depositTerms(status).body).toContain("Unused funds do not expire");
+    expect(depositTerms(status).body).toContain("waiting period");
+  });
+
+  it("discloses forfeiture before funding legacy and finite-expiry deployments", () => {
+    for (const status of [
+      null,
+      active,
+      { ...active, depositExpiryPolicy: "fixed" as const },
+    ]) {
+      expect(depositTerms(status).title).toBe("This deposit has an expiry");
+      expect(depositTerms(status).body).toContain("including unused funds");
+    }
+  });
+
+  it("does not hide a retained expiry when policy and expiry data conflict", () => {
+    const status = { ...active, depositExpiryPolicy: "none" as const };
+    expect(depositExpiryNotice(status, tokyo)?.isoDate).toBeDefined();
+    expect(depositTerms(status).title).toBe("This deposit has an expiry");
+  });
+
   it.each([
     ["current", expiryNotice],
     ["previous", previousExpiryNotice],

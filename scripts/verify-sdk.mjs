@@ -1,6 +1,10 @@
 import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 for (const [version, expected] of Object.entries({
+  "0.2.0-devnet.20":
+    "58538cd0e8a566c6b094c1f523e9275a68c640b14f239f2a6ce281728d728e8c",
+  "0.2.0-devnet.20-noexpiry.1":
+    "16e147831b9dcee99a2e2f210f525953b96c54ba2c88bad98a7e35ad9ad72e37",
   "0.2.0-devnet.19":
     "cfdda081148cae2e4ae2d1fe0f821fcbf235f593a55bc50bfc042fb826c09424",
   "0.2.0-devnet.18":
@@ -32,7 +36,7 @@ for (const [version, expected] of Object.entries({
       `SDK ${version} archive SHA-256 mismatch. Refusing this artifact.`,
     );
   console.log(
-    `Solana zkAPI ${version}: ${["0.2.0-devnet.16", "0.2.0-devnet.17"].includes(version) ? "local patch" : "published GitHub release"} archive SHA-256 matches.`,
+    `Solana zkAPI ${version}: ${["0.2.0-devnet.16", "0.2.0-devnet.17", "0.2.0-devnet.20-noexpiry.1"].includes(version) ? "local patch" : "published GitHub release"} archive SHA-256 matches.`,
   );
 }
 
@@ -48,5 +52,5 @@ if (
 )
   throw new Error("Published verifier SHA-256 mismatch.");
 console.log(
-  "Published .19 verifier SHA-256 matches the retained bytes; original profile remains pinned.",
+  "Retained published verifier SHA-256 matches; its profile-specific override remains pinned.",
 );

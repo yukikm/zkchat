@@ -1,6 +1,8 @@
 # zkchat
 
-Solana zkAPIをLLMバックエンドにするReactチャットアプリです。公開SDK **[0.2.0-devnet.19](https://github.com/yukikm/solana-zkapi/releases/tag/v0.2.0-devnet.19)** と **public-devnet-20261021-state-v1** の認証済み公開Devnet profileを使います。GitHubのimmutable releaseとSDK・verifierのattestationを検証した配布物を使用しています。旧Poolの保存データは保持し、SDK `.12` と `.3` の復旧画面を同じoriginに同梱しています。Solanaは **`@solana/kit` 8.4.0**、ウォレット接続は **`@solana/kit-plugin-wallet` 0.21.0 / Wallet Standard**。`web3.js`は使用しません。
+**2026-10-25 Deposit期限なし対応:** SDK `0.2.0-devnet.20` と新Pool `public-devnet-20261025-nonexpiry-v1` に切り替える設定です。Depositだけで未使用残高を失う期限はなく、Withdrawの待機・challenge期限は維持します。同じ新Poolでは、同じウォレットと保存済み復元ファイルで別ブラウザへ入金データを復元できます。旧Poolのテスト残高は移行せず、手元の旧データは削除しません。[仕様・復元・検証範囲](docs/DEPOSIT-LIFETIME.md)。
+
+Solana zkAPIをLLMバックエンドにするReactチャットアプリです。SDK **[0.2.0-devnet.20](https://github.com/yukikm/solana-zkapi/releases/tag/v0.2.0-devnet.20)** と **public-devnet-20261025-nonexpiry-v1** の認証済みDevnet profileを使います。SDK archiveとprofileはSHA-256で固定します。`.20` のimmutable prereleaseと7配布物の署名証明・内容一致を検証済みです。公開元・配布確認の記録は[Deposit lifetime](docs/DEPOSIT-LIFETIME.md)を参照してください。旧Poolの保存データは保持し、SDK `.12` と `.3` の復旧画面を同じoriginに同梱しています。Solanaは **`@solana/kit` 8.4.0**、ウォレット接続は **`@solana/kit-plugin-wallet` 0.21.0 / Wallet Standard**。`web3.js`は使用しません。
 
 **2026-10-25 UX 改善:** SDK `.19` を使い、復元失敗時の導線、編集できる入金確認、入金一覧、出金の進捗・待機終了日時を改善しました。Faucet と従来の保存データを維持しています。[変更内容と検証](docs/UX-IMPROVEMENTS-20261025.md)。
 
@@ -48,7 +50,7 @@ npm run dev
 
 [localhostのアプリ](http://localhost:5173/)を開きます。`Wallet & balance` → `Connection details` → `Check service`で、資金や署名なしで公開サービスを確認できます。公開の決済APIは現在、localhostおよびHTTPSのorigin登録を必要としません。バックアップAPIのブラウザ利用は別の許可origin設定で、本番zkChatのoriginを許可しています。ローカルでバックアップ機能を検証する場合はSDKのテスト用サービスを使用してください。通信は`credentials: "omit"`です。`Try the demo`はローカルのサンプル応答です。
 
-**保存先のoriginを固定してください。** `localhost:5173`と`127.0.0.1:5173`は別の保存領域です。今回のSolflare実検証は`http://localhost:5173`を使用しました。残高や未完了操作がある場合は、同じURL・ブラウザprofile・アカウントを使います。
+**通常は保存先のoriginを固定してください。** `localhost:5173`と`127.0.0.1:5173`は別の保存領域です。別ブラウザへ切り替える場合は、以前のzkChatを閉じ、同じ新Pool・ウォレットと保存済み復元ファイルを使って復元します。復元ファイルなしで新しい保存領域を作っても既存の入金は戻りません。
 
 ## 旧Poolの保存領域を開く
 
@@ -76,11 +78,11 @@ npm run dev
 
 新しい会話の初期モデルは引き続き `openai/gpt-4o-mini` です。認証済みの追加profileと合わせて22モデルを選択肢に含めます。選択済み・保存済みの会話モデルと履歴は自動変更しません。旧会話のモデルが利用できない場合は送信・再送を止め、新規チャットを案内します。モデル一覧は利用成功の保証ではありません。送信前の読み取りチェックは通信障害時のみ一度再確認し、検証できない状態では新規送信を止めます。
 
-**データを失った場合:** 同じウォレットに接続して `Restore deposits from a recovery file` から保存したファイルを選びます。以前の端末・タブを停止してから復元してください。入金一覧と未確定の支払いは戻りますが、チャット履歴は対象外です。設定途中で止まった場合は元のブラウザで同じファイルを使って `Finish recovery setup` を選びます。
+**別ブラウザへの切替・データを失った場合:** 同じ新Pool・ウォレットに接続して `Restore deposits from a recovery file` から保存したファイルを選びます。以前の端末・タブを停止してから復元してください。ファイル保存後に追加したDepositも含め、入金一覧・選択状態・残高・未確定の支払いが戻ります。復元後は旧ブラウザからの操作を拒否します。チャット履歴は対象外です。設定途中で止まった場合は元のブラウザで同じファイルを使って `Finish recovery setup` を選びます。
 
 **追加のDeposit / 出金後の再入金:** `Wallet & balance` → `Add funds`で金額を入力し、`Review deposit`を押した時点で新しい入金を準備します。画面を開くだけでは入金先を増やしません。会話の支払いが残る場合は`Settle and continue`で確定後、同じ追加フォームへ進みます。入金確認後の`Return to chat`で元の会話・モデル・下書きへ戻ります。初回・追加のどちらにもUSDCとSOLのFaucetリンクを用意しています。同じウォレットで繰り返し利用できます。SDKは既存noteへの継ぎ足し・残高合算に対応しないため、各入金は独立したnoteです。`Saved deposits`で利用・出金する入金を選択します。前の残高と履歴は保持され、出金済みnoteも削除しません。未確定取引・未精算セッション・緊急出金がある間は追加と切替を止め、元の操作を完了します。残高が認証上限を下回ったら`Add funds`の案内から追加できます。
 
-**モデル:** 元の[公開profile](https://d366buuvadnp3.cloudfront.net/releases/public-devnet-20261021-state-v1/profile.json)のGPT-4o-miniに、同じPoolの[追加profile](https://d366buuvadnp3.cloudfront.net/releases/public-devnet-20261021-state-v1/profile-models.json)の21モデルを加えています。`public/zkapi-config.json` の `modelProfile` は独立したSHA-256で固定し、Pool・配布bundle・provider接続先・料金条件が元のprofileと一致することを確認します。すべてdirect OpenRouterのChat Completionsで、各profileのcapabilityに従います。旧Pool用profileからモデルを流用する仕組みではありません。
+**モデル:** 元の[公開profile](https://d366buuvadnp3.cloudfront.net/releases/public-devnet-20261025-nonexpiry-v1/profile.json)のGPT-4o-miniに、同じPoolの[追加profile](https://d366buuvadnp3.cloudfront.net/releases/public-devnet-20261025-nonexpiry-v1/profile-models.json)の21モデルを加えています。`public/zkapi-config.json` の `modelProfile` は独立したSHA-256で固定し、Pool・配布bundle・provider接続先・料金条件が元のprofileと一致することを確認します。すべてdirect OpenRouterのChat Completionsで、各profileのcapabilityに従います。旧Pool用profileからモデルを流用する仕組みではありません。
 
 22件は認証済みの選択肢であり、全モデルの実推論成功を検証したという意味ではありません。送信時には公開catalogとZDRでの利用可否も確認し、利用できないモデルは送信を止めます。ZDR catalogへの掲載だけでも、providerの権限・予算・推論成功は保証されません。追加profileを検証できない場合は新規送信を止め、元の保存データによる復旧を維持します。再取得するには同じウォレットへ再接続してください。
 
@@ -101,7 +103,7 @@ npm run dev
 
 `Connection details` → `Recheck connection`は接続と保存済み状態の確認です。`Disable authorization for withdrawal`（旧表記`Check authorization`）は未確定の認可を永久に無効化し、その入金を出金専用にします。単なるステータス確認ではありません。実行後は同じ入金でチャットを再開できないため、残高を出金してから新しい入金を作成します。メッセージの再送や出金は自動実行しません。
 
-公開readinessの待ち時間は1回60秒、読み取りの再試行は1回までです。SDKのフル診断は180秒まで待ちます。停止操作は読み取りも中断します。新Poolの `.13` と旧Poolの `.12` / `.3` は別の保存領域・profileを使います。旧PoolのAUTH・journalは元の復旧画面で扱い、新Poolへ移したり、さらに古いSDKで開き直したりしません。
+公開readinessの待ち時間は1回60秒、読み取りの再試行は1回までです。SDKのフル診断は180秒まで待ちます。停止操作は読み取りも中断します。現行 `.20` は10月25日の新Pool専用です。10月21日の `.13`〜`.19`、さらに古い `.12` / `.3` の保存領域・profileとは分離します。旧PoolのAUTH・journalを新Poolへ移したり、古いSDKで開き直したりしません。
 
 公開RPCがHTTP 429を返す場合、認証済みprofileのRPC URLに対する4種類の読み取りだけを10秒待って1回再試行します。`Retry-After`は15秒まで尊重し、それより長い場合は再試行せず失敗を返します。SDKの期限・停止操作を維持し、取引送信・AUTH・推論や操作全体を再実行しません。
 
@@ -130,13 +132,16 @@ npm run check:browser
 
 ## 固定設定と保存
 
-[`.15` 更新ガイド](https://github.com/yukikm/solana-zkapi/blob/94e4969f3169bfc790fc6f4186fc2bf94dbe074a/docs/getting-started/direct-recovery-upgrade.md)に従い、実行SDKと保存領域の世代を分離しています。公開SDKの配布元はnpm registryではなくGitHub releaseです。現行 `.16` はローカル復旧プレビューで、`verify:sdk`はレビューしたローカルarchiveとWASMのSHA-256を照合します。保持した `.15`・`.13`・`.12`・`.10`・`.8`・`.3` は公開SHA-256と照合します。現行 `.16` も現在の `.13` profileをそのまま受け入れ、profileと保存領域を変更しません。
+実行SDKのversionとPoolの保存領域を分離しています。現行 `.20` のarchiveは `verify:sdk` で固定SHA-256と照合します。新Poolの保存名と初回note IDは今後の同一Pool向けSDK更新でも保持します。旧 `.13`〜`.19` と `.20-noexpiry.1` プレビューの保存名は10月21日のPoolのままです。`.12`・`.3` の復旧画面も元の保存名を維持します。既存journalの付け替えや自動移行はありません。
 
-| 画面                             | 固定設定                                                       | 保存名 / 初回note ID                                                                             |
-| -------------------------------- | -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
-| 通常 `.16`（ローカルプレビュー） | `public/zkapi-config.json` / `public-devnet-20261021-state-v1` | `zkchat-sdk-public-devnet-20261021-state-v1` / `zkchat-note-sdk-public-devnet-20261021-state-v1` |
-| 復旧 `.12`                       | `config/zkapi-config.devnet.12.json` / 元のrevision-6 profile  | `zkchat-sdk-0.2.0-devnet.8` / `zkchat-note-sdk-0.2.0-devnet.8`                                   |
-| 復旧 `.3`                        | `config/zkapi-config.devnet.3.json` / 元のrevision-2 profile   | `zkchat-sdk-0.2.0-devnet.3` / `zkchat-note-sdk-0.2.0-devnet.3`                                   |
+| 画面・世代                              | 固定設定                                                           | 保存名 / 初回note ID                                                                                     |
+| --------------------------------------- | ------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------- |
+| 通常 `.20`                              | `public/zkapi-config.json` / `public-devnet-20261025-nonexpiry-v1` | `zkchat-sdk-public-devnet-20261025-nonexpiry-v1` / `zkchat-note-sdk-public-devnet-20261025-nonexpiry-v1` |
+| 保持する10月21日の旧データ `.13`〜`.19` | 元の10月21日のprofile                                              | `zkchat-sdk-public-devnet-20261021-state-v1` / `zkchat-note-sdk-public-devnet-20261021-state-v1`         |
+| 復旧 `.12`                              | `config/zkapi-config.devnet.12.json` / 元のrevision-6 profile      | `zkchat-sdk-0.2.0-devnet.8` / `zkchat-note-sdk-0.2.0-devnet.8`                                           |
+| 復旧 `.3`                               | `config/zkapi-config.devnet.3.json` / 元のrevision-2 profile       | `zkchat-sdk-0.2.0-devnet.3` / `zkchat-note-sdk-0.2.0-devnet.3`                                           |
+
+同じ新Poolの別ブラウザ復元は、deployment・Pool・ウォレット・profile hashが同じであることが条件です。SDKやUIだけを更新する際にこれらのidentityを変えません。profile hashの変更には別の互換性確認が必要です。
 
 追加モデルの設定は、元のprofile URL・SHA-256・保存領域のbindingを置き換えません。既存の残高、note ID、未精算session、復旧用Verifierはそのまま使用し、保存済み操作を再送しません。
 

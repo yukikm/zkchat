@@ -28,6 +28,10 @@ let original: typeof import("@zkapi/solana-sdk/journal");
 let sdk13: typeof import("@zkapi/solana-sdk/journal");
 let sdk16: typeof import("@zkapi/solana-sdk/journal");
 let sdk15: typeof import("@zkapi/solana-sdk/journal");
+let sdk19: typeof import("@zkapi/solana-sdk/journal");
+let october21Catalog: typeof createDepositCatalog;
+const october21StorageVersion = "public-devnet-20261021-state-v1";
+const october21NoteId = `zkchat-note-sdk-${october21StorageVersion}`;
 const extractedDirectories: string[] = [];
 
 async function releasedJournal(version: string, sha256: string) {
@@ -78,6 +82,19 @@ beforeAll(async () => {
     "0.2.0-devnet.13",
     "e6e7668e1d37938f67f8865673aba1a11f27b975d3715a376ac24a6dcfa8a8a9",
   );
+  sdk19 = await releasedJournal(
+    "0.2.0-devnet.19",
+    "cfdda081148cae2e4ae2d1fe0f821fcbf235f593a55bc50bfc042fb826c09424",
+  );
+  vi.stubEnv("VITE_ZKCHAT_SDK_VERSION", "0.2.0-devnet.19");
+  vi.resetModules();
+  try {
+    october21Catalog = (await import("../src/lib/deposits"))
+      .createDepositCatalog;
+  } finally {
+    vi.unstubAllEnvs();
+    vi.resetModules();
+  }
 });
 
 afterAll(async () => {
@@ -90,32 +107,48 @@ afterAll(async () => {
 
 describe("new Pool isolation and retained SDK .12 custody", () => {
   it("separates the new Pool while preserving both recovery namespace identities", () => {
-    expect(PUBLIC_PROFILE_SDK_VERSION).toBe("0.2.0-devnet.19");
+    expect(PUBLIC_PROFILE_SDK_VERSION).toBe("0.2.0-devnet.20");
     expect(PREVIOUS_VERSION).toBe("0.2.0-devnet.12");
-    expect(SDK_VERSION).toBe("0.2.0-devnet.19");
-    expect(SDK_STORAGE_VERSION).toBe("public-devnet-20261021-state-v1");
-    expect(SDK_STORAGE_NAME).toBe("zkchat-sdk-public-devnet-20261021-state-v1");
+    expect(SDK_VERSION).toBe("0.2.0-devnet.20");
+    expect(SDK_STORAGE_VERSION).toBe("public-devnet-20261025-nonexpiry-v1");
+    expect(SDK_STORAGE_NAME).toBe(
+      "zkchat-sdk-public-devnet-20261025-nonexpiry-v1",
+    );
     expect(ORIGINAL_NOTE_ID).toBe(
-      "zkchat-note-sdk-public-devnet-20261021-state-v1",
+      "zkchat-note-sdk-public-devnet-20261025-nonexpiry-v1",
     );
     expect(storageVersionFor("0.2.0-devnet.12")).toBe("0.2.0-devnet.8");
     expect(storageVersionFor("0.2.0-devnet.3")).toBe("0.2.0-devnet.3");
-    expect(storageVersionFor("0.2.0-devnet.13")).toBe(SDK_STORAGE_VERSION);
-    expect(storageVersionFor("0.2.0-devnet.15")).toBe(SDK_STORAGE_VERSION);
-    expect(storageVersionFor("0.2.0-devnet.16")).toBe(SDK_STORAGE_VERSION);
-    expect(storageVersionFor("0.2.0-devnet.17")).toBe(SDK_STORAGE_VERSION);
-    expect(storageVersionFor("0.2.0-devnet.18")).toBe(SDK_STORAGE_VERSION);
-    expect(storageVersionFor("0.2.0-devnet.19")).toBe(SDK_STORAGE_VERSION);
+    for (const version of [
+      "13",
+      "15",
+      "16",
+      "17",
+      "18",
+      "19",
+      "20-noexpiry.1",
+    ]) {
+      expect(storageVersionFor(`0.2.0-devnet.${version}`)).toBe(
+        october21StorageVersion,
+      );
+      expect(storageVersionFor(`0.2.0-devnet.${version}`)).not.toBe(
+        SDK_STORAGE_VERSION,
+      );
+    }
+    expect(storageVersionFor("0.2.0-devnet.20")).toBe(SDK_STORAGE_VERSION);
     expect(() => storageVersionFor("unknown")).toThrow("Unsupported SDK");
   });
 
   it("retains the .13 public-profile binding when reopening the same account with .19", async () => {
-    const config: PublicAppConfig = JSON.parse(
-      await readFile(
-        new URL("../public/zkapi-config.json", import.meta.url),
-        "utf8",
-      ),
-    );
+    const config: PublicAppConfig = {
+      schema: 2,
+      chain: "solana:devnet",
+      label: "Retained October 21 Pool",
+      profileUrl:
+        "https://d366buuvadnp3.cloudfront.net/releases/public-devnet-20261021-state-v1/profile.json",
+      profileSha256:
+        "5e15d66c6f45265951cf1f8dd6cc0dae6574c4b8dd6756f828f7543ecaa97b9a",
+    };
     const account = "synthetic-original-account";
     const previousStorageName = `zkchat-sdk-${storageVersionFor("0.2.0-devnet.13")}`;
     const binding = profileBindingKey(previousStorageName, account);
@@ -139,7 +172,7 @@ describe("new Pool isolation and retained SDK .12 custody", () => {
       expect(
         await retainProfileBinding(
           config,
-          SDK_STORAGE_NAME,
+          `zkchat-sdk-${storageVersionFor("0.2.0-devnet.19")}`,
           account,
           false,
           hasCustody,
@@ -169,7 +202,7 @@ describe("new Pool isolation and retained SDK .12 custody", () => {
       // regression by creating and reading both sides with the new implementation.
       const unresolvedNote = {
         schema: 2,
-        noteId: ORIGINAL_NOTE_ID,
+        noteId: october21NoteId,
         balanceMicroUsdc: "2000000",
         pending: {
           phase: "closing",
@@ -185,9 +218,9 @@ describe("new Pool isolation and retained SDK .12 custody", () => {
       };
       const savedCatalog = {
         schema: 1,
-        selectedId: ORIGINAL_NOTE_ID,
+        selectedId: october21NoteId,
         deposits: [
-          { id: ORIGINAL_NOTE_ID, createdAt: null },
+          { id: october21NoteId, createdAt: null },
           { id: secondId, createdAt: 1_700_000_000_000 },
         ],
       };
@@ -195,14 +228,14 @@ describe("new Pool isolation and retained SDK .12 custody", () => {
         version === "13" ? sdk13 : version === "15" ? sdk15 : sdk16
       ).EncryptedJournal(storage.store, storage.key, context, async () => {});
       const noteRecord = await originalJournal.create(
-        ORIGINAL_NOTE_ID,
+        october21NoteId,
         unresolvedNote,
       );
       await originalJournal.create("zkchat-deposit-catalog-v1", savedCatalog);
       const originalCiphertext = structuredClone([
         ...storage.records.entries(),
       ]);
-      const currentJournal = new CurrentEncryptedJournal(
+      const retainedJournal = new sdk19.EncryptedJournal(
         storage.store,
         storage.key,
         context,
@@ -210,24 +243,40 @@ describe("new Pool isolation and retained SDK .12 custody", () => {
       );
 
       expect(
-        await currentJournal.read(ORIGINAL_NOTE_ID, noteRecord.head),
+        await retainedJournal.read(october21NoteId, noteRecord.head),
       ).toEqual(noteRecord);
-      expect(await createDepositCatalog(storage, context).read()).toEqual(
+      expect(await october21Catalog(storage, context).read()).toEqual(
         savedCatalog,
       );
       expect([...storage.records.entries()]).toEqual(originalCiphertext);
 
-      // Reopening the new reader also leaves the original encrypted records and
+      // Reopening the retained reader also leaves the original encrypted records and
       // trusted revisions intact, including the unresolved operation and token.
-      const reopened = new CurrentEncryptedJournal(
+      const reopened = new sdk19.EncryptedJournal(
         storage.store,
         storage.key,
         context,
         async () => {},
       );
-      expect(await reopened.read(ORIGINAL_NOTE_ID, noteRecord.head)).toEqual(
+      expect(await reopened.read(october21NoteId, noteRecord.head)).toEqual(
         noteRecord,
       );
+      expect([...storage.records.entries()]).toEqual(originalCiphertext);
+
+      // The new Pool must neither adopt the old catalog nor rebind its notes.
+      await expect(
+        createDepositCatalog(storage, context).read(),
+      ).rejects.toThrow();
+      const newPoolJournal = new CurrentEncryptedJournal(
+        storage.store,
+        storage.key,
+        {
+          deploymentId: SDK_STORAGE_VERSION,
+          pool: "synthetic-new-nonexpiring-pool",
+        },
+        async () => {},
+      );
+      expect(await newPoolJournal.read(october21NoteId)).toBeNull();
       expect([...storage.records.entries()]).toEqual(originalCiphertext);
     },
   );

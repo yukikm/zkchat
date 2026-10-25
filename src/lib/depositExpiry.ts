@@ -11,6 +11,27 @@ interface ExpiryDisplayOptions {
   timeZone?: string;
 }
 
+// Older recovery SDKs do not expose a policy. Only the current SDK may report
+// `none`, after authenticating both the manifest and the finalized Pool timing.
+type ExpiryStatus = Pick<ClientStatus, "wallet" | "expiry"> & {
+  depositExpiryPolicy?: "none" | "fixed";
+};
+
+export function depositTerms(
+  status: ExpiryStatus | null,
+): DepositExpiryDisplay {
+  if (status?.depositExpiryPolicy === "none" && status.expiry === null) {
+    return {
+      title: "No deposit expiry",
+      body: "Unused funds do not expire. You can keep using your balance for chats. A delayed withdrawal still has a waiting period.",
+    };
+  }
+  return {
+    title: "This deposit has an expiry",
+    body: "This service still uses expiring deposits. After the deadline, the entire deposit, including unused funds, can be claimed. Check the deadline and withdraw before it expires.",
+  };
+}
+
 // SDK .3, .12, .16 and .17 expose the timestamp only in this exact message.
 // Unknown formats must never become a guessed deadline or raw SDK copy.
 const expiryMessage =
@@ -28,7 +49,7 @@ function expiryDate(message: string): Date | null {
 
 /** Presentation only: the SDK remains authoritative for admission and recovery. */
 export function depositExpiryNotice(
-  status: Pick<ClientStatus, "wallet" | "expiry"> | null,
+  status: ExpiryStatus | null,
   options: ExpiryDisplayOptions = {},
 ): DepositExpiryDisplay | null {
   if (!status?.expiry || !["active", "pending_escape"].includes(status.wallet))

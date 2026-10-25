@@ -259,7 +259,7 @@ test("public SDK browser factory creates and reopens unfunded custody with no si
     JSON.stringify(
       {
         observedAt: new Date().toISOString(),
-        sdk: "0.2.0-devnet.19",
+        sdk: "0.2.0-devnet.20",
         result: "initialized and reopened",
         blocked,
         visibleResult: await page.getByRole("dialog").innerText(),
@@ -394,7 +394,7 @@ test("public app requires backup before preparing a deposit", async ({
     JSON.stringify(
       {
         observedAt: new Date().toISOString(),
-        sdk: "0.2.0-devnet.19",
+        sdk: "0.2.0-devnet.20",
         result,
         blocked,
         serviceErrors,

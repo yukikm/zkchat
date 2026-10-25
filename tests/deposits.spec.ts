@@ -7,6 +7,7 @@ function depositStub(
     setup?: boolean;
     balance?: string;
     sessionAfterChat?: boolean;
+    depositExpiryPolicy?: "none" | "fixed";
   } = {},
 ) {
   return `
@@ -32,6 +33,7 @@ const balance=options.balance||'200000';
 let data = JSON.parse(localStorage.getItem('test-deposits') || 'null') || { selected:'original', entries:[{id:'original',createdAt:1792800000000}], states: {original:{ noteId:'original',mode:'direct_openrouter',wallet:'${wallet}',busy:false,session:null,walletOperation:null,emergencyEscape:null,settledBalanceMicroUsdc:'${wallet === "empty" || wallet === "closed" ? "0" : "' + balance + '"}',authorizationCapMicroUsdc:'1000000',canRequest:${wallet === "active"}&&BigInt(balance)>=1000000n }} };
 const listeners = new Set();
 const state = () => data.states[data.selected];
+if(options.depositExpiryPolicy) Object.assign(state(), {depositExpiryPolicy:options.depositExpiryPolicy,expiry:null});
 const publish = () => {localStorage.setItem('test-deposits',JSON.stringify(data)); for (const fn of listeners) fn({...state()});};
 export const connectZkapi = async (_config,_wallet,_account,initialize=false) => {
  count('opens');
@@ -117,6 +119,38 @@ async function review(page: Page) {
       exact: true,
     }),
   ).toBeVisible();
+}
+
+for (const policy of ["none", "fixed"] as const) {
+  test(`deposit review explains ${policy} expiry before any wallet work`, async ({
+    page,
+  }) => {
+    await install(page, depositStub("empty", { depositExpiryPolicy: policy }));
+    await connect(page);
+    await review(page);
+    await expect(
+      panel(page).getByText(
+        policy === "none" ? "No deposit expiry" : "This deposit has an expiry",
+        { exact: true },
+      ),
+    ).toBeVisible();
+    if (policy === "none") {
+      await expect(
+        panel(page).getByText(/Unused funds do not expire/),
+      ).toBeVisible();
+      await expect(
+        panel(page).getByText(/Withdraw by|may lose|can be claimed/),
+      ).toHaveCount(0);
+    } else {
+      await expect(
+        panel(page).getByText(
+          /entire deposit, including unused funds, can be claimed/,
+        ),
+      ).toBeVisible();
+    }
+    expect(await count(page, "prepares")).toBe(0);
+    expect(await count(page, "advances")).toBe(0);
+  });
 }
 async function confirmDeposit(page: Page) {
   await panel(page)

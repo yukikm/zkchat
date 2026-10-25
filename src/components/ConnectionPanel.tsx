@@ -14,6 +14,7 @@ import {
   SDK_VERSION,
   RETIRED_RUNTIME,
   LOCAL_RECOVERY_PREVIEW,
+  LOCAL_NONEXPIRING_PREVIEW,
 } from "../lib/sdkVersion";
 import { reusableSession } from "../lib/sdkStatus";
 import {
@@ -62,7 +63,7 @@ import {
 import { WalletIcon, WalletPicker } from "./WalletPicker";
 import { Modal } from "./Modal";
 import { RecoveryPanel } from "./RecoveryPanel";
-import { depositExpiryNotice } from "../lib/depositExpiry";
+import { depositExpiryNotice, depositTerms } from "../lib/depositExpiry";
 import { withdrawalPresentation } from "../lib/withdrawalPresentation";
 import type { useWalletObservation } from "../lib/walletObservation";
 
@@ -374,6 +375,7 @@ export function ConnectionPanel({
   const disabled = busy || locked || configLoading || !!status?.busy;
   const operation = status?.walletOperation;
   const expiryNotice = depositExpiryNotice(status);
+  const fundingTerms = depositTerms(status);
   const retiredDeposit = RETIRED_RUNTIME && operation?.kind === "deposit";
   const retiredUnsignedDeposit = retiredDeposit && !operation?.signature;
   const servicePaused =
@@ -1535,6 +1537,11 @@ export function ConnectionPanel({
                 Confirm this amount to prepare your deposit and open your wallet
                 for approval.
               </p>
+              <p className="notice" role="status">
+                <strong>{fundingTerms.title}</strong>
+                <br />
+                {fundingTerms.body}
+              </p>
               {additionalFunding && (
                 <p className="small muted">
                   This is a separate deposit. Your existing deposit is kept.
@@ -1977,8 +1984,12 @@ export function ConnectionPanel({
           )}
           <p className="small muted">
             SDK {SDK_VERSION}
-            {LOCAL_RECOVERY_PREVIEW ? " · Local recovery preview" : ""} · Solana
-            Devnet
+            {LOCAL_NONEXPIRING_PREVIEW
+              ? " · Local preview"
+              : LOCAL_RECOVERY_PREVIEW
+                ? " · Local recovery preview"
+                : ""}{" "}
+            · Solana Devnet
           </p>
           {config && (
             <>

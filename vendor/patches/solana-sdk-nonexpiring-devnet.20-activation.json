@@ -1,0 +1,21 @@
+{
+  "schema": 1,
+  "kind": "published-immutable-prerelease",
+  "version": "0.2.0-devnet.20",
+  "archiveSha256": "58538cd0e8a566c6b094c1f523e9275a68c640b14f239f2a6ce281728d728e8c",
+  "archiveBytes": 174573,
+  "deploymentId": "public-devnet-20261025-nonexpiry-v1",
+  "programId": "GnVHYANsc3zsYQfU6EBuFbT8v8tHZtd91baGNKJWFkMZ",
+  "pool": "DfzSmjTetKSNwAcGPM8Th3k2orQtxT1vZVheWr1YttTX",
+  "verifierWasmSha256": "88717b8e7349a5f2c5c74456b882fed952f23096667cf47d7745b12d23d50116",
+  "source": "Verified immutable GitHub release and seven byte-exact assets with release and individual asset attestations.",
+  "scope": "Explicit fresh zero-TTL Pool; stable Pool storage namespace; no migration or reinterpretation of existing finite-Pool notes.",
+  "sourceCommit": "813032cd9070a049c97a81eaa1ca26562416460f",
+  "profileSha256": "6a050132ad02df94996521d37337faf13d9a77c979e47fac11742ac65538121a",
+  "modelProfileSha256": "c4c74bc9c980c2e2549ea513aa1792b7e94cc00442f1954573cd3791f6843706",
+  "releaseUrl": "https://github.com/yukikm/solana-zkapi/releases/tag/v0.2.0-devnet.20",
+  "publishedAt": "2026-10-25T09:58:43Z",
+  "immutable": true,
+  "releaseAttestationVerified": true,
+  "individualAssetAttestationsVerified": 7
+}
